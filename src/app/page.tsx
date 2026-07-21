@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { GAME_CSS, GAME_SCRIPT } from './neonfall-content';
+import { SHELL_CSS, initShell } from './neonfall-shell';
 
 export default function Page() {
   const initRef = useRef(false);
@@ -17,24 +18,19 @@ export default function Page() {
     script.textContent = GAME_SCRIPT;
     document.body.appendChild(script);
 
-    // Register the service worker so the app becomes installable and works
-    // offline (music + app shell are precached by /sw.js).
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {
-          /* SW registration is best-effort; the game still runs online. */
-        });
-      });
-      // If load already fired, register immediately.
-      if (document.readyState === 'complete') {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
-      }
+    // Initialise the app-shell enhancements (install prompt, stats, SW update,
+    // online indicator). These observe the game's DOM and never modify the IIFE.
+    try {
+      initShell();
+    } catch {
+      /* shell is best-effort; the game must keep working regardless */
     }
   }, []);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: GAME_CSS }} />
+      <style dangerouslySetInnerHTML={{ __html: SHELL_CSS }} />
 
       <h1 id="title">NEONFALL</h1>
 
@@ -71,6 +67,46 @@ export default function Page() {
       <button id="info-btn">ⓘ</button>
       <button id="pause-btn">⏸</button>
       <button id="mute-btn">🔊</button>
+
+      {/* ===== App-shell enhancements (do not touch the game IIFE) ===== */}
+      <button id="nf-stats-btn" aria-label="Statistik öffnen" title="Statistik">
+        📊
+      </button>
+      <div id="nf-online-dot" aria-hidden="true" title="Online"></div>
+
+      <div id="nf-stats-panel" role="dialog" aria-modal="true" aria-label="Statistik">
+        <div id="nf-stats-card"></div>
+      </div>
+
+      <div id="nf-ios-install" role="dialog" aria-modal="true" aria-label="Auf dem iPhone installieren">
+        <div id="nf-ios-card">
+          <h2>Als App installieren</h2>
+          <div className="nf-ios-sub">So legst du NEONFALL aufs Startbildschirm:</div>
+          <ol className="nf-ios-steps">
+            <li>Tippe unten auf das <b>Teilen-Symbol</b> (Quadrat mit Pfeil nach oben).</li>
+            <li>Wähle <b>„Zum Startbildschirm hinzufügen“</b>.</li>
+            <li>Bestätige mit <b>„Hinzufügen“</b> — fertig!</li>
+          </ol>
+          <button className="nf-btn-primary" id="nf-ios-close">Verstanden</button>
+        </div>
+      </div>
+
+      <div id="nf-install-banner" role="dialog" aria-label="App installieren">
+        <div className="nf-install-icon">📱</div>
+        <div className="nf-install-text">
+          <div className="nf-install-title">NEONFALL installieren</div>
+          <div className="nf-install-sub">Schneller Start · offline spielbar · kein Browser-Rand</div>
+        </div>
+        <div className="nf-install-actions">
+          <button className="nf-btn-primary" id="nf-install-accept">Installieren</button>
+          <button className="nf-btn-ghost" id="nf-install-dismiss" aria-label="Schließen">✕</button>
+        </div>
+      </div>
+
+      <div id="nf-update-toast" role="status" aria-live="polite">
+        <span>✨ Neue Version verfügbar</span>
+        <button className="nf-btn-primary" id="nf-update-reload">Neuladen</button>
+      </div>
 
       <div id="game-container">
         <canvas id="tetris-canvas"></canvas>

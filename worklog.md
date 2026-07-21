@@ -96,3 +96,116 @@ Hintergrundprozesse im Sandbox beim Tool-Teardown gekillt werden):
   implementiert.
 - **Cron-Review-Job**: Es wurde ein `webDevReview`-Job alle 15 Min angelegt,
   der Status prüft, ggf. Bugs fixed oder neue Features vorschlägt.
+
+---
+
+## Cron-Review-Zyklus 1 (App-Shell-Erweiterungen)
+
+**Task ID:** CR-1 · **Agent:** main (cron webDevReview)
+
+### Ausgangslage / QA-Befund
+
+Vor diesem Zyklus war die App stabil (Spiel + PWA + Musik alle funktionsfähig,
+keine Bugs). Der Cron-Job forderte explizit neue Features + mehr Styling.
+Da der Nutzer ursprünglich sagte, das **Spiel** solle nicht verändert werden,
+wurden sämtliche Erweiterungen **außerhalb** des Spiel-IIFE vorgenommen
+(position:fixed UI, MutationObserver auf Spiel-DOM, eigenes CSS — die
+`neonfall-content.ts` mit dem Original-Spielcode blieb unangetastet).
+
+### Umgesetzte Features (alle im neuen Modul `src/app/neonfall-shell.ts`)
+
+1. **PWA-Install-Prompt** (`#nf-install-banner` + `#nf-ios-install`)
+   - Android/Chrome: fängt `beforeinstallprompt` ab, zeigt neon-styled Banner
+     am unteren Rand mit „Installieren"/„✕". Dismiss wird in localStorage
+     gespeichert (`nf_install_dismissed`).
+   - iOS: erkennt iPhone/iPad (auch iPadOS 13+ via `Macintosh`+touch), der
+     Online-Dot wird klickbar und öffnet eine Schritt-für-Schritt-Anleitung
+     (Teilen → Zum Startbildschirm hinzufügen).
+   - **Bug gefixt**: Banner wurde anfangs über dem Hinweis-Overlay gezeigt und
+     verdeckte den „LOS GEHT'S"-Button. Jetzt wird das Banner unterdrückt,
+     solange ein Modal (Hinweis/Pause/Game-Over) sichtbar ist, und per
+     MutationObserver nach Schließen des Hinweises nachgereicht.
+
+2. **Karriere-Statistik** (`#nf-stats-btn` + `#nf-stats-panel`)
+   - Neuer 📊-Button oben links (neben ⓘ, position:fixed, z-20).
+   - Öffnet ein Glassmorphism-Panel (z-50) mit: Spiele, Bestes Level,
+     Highscore, Linien gesamt, Punkte gesamt, Spielzeit + 12 Achievements.
+   - Datenerhebung **berührungslos** via MutationObserver auf den Spiel-Elementen
+     `#game-over-screen` (Klasse `visible` → Spiel gezählt), `#level`
+     (laufendes Max-Level), `#lines` (Tetris-Erkennung, s.u.), `#final-score`
+     (Punkte). Spielzeit via 1s-Interval, das nur zählt, wenn das Spiel aktiv
+     läuft (Hinweis weg, gestartet, nicht pausiert, nicht Game-Over, Tab sichtbar).
+   - Speicherung in localStorage (`nf_stats`).
+   - **Bug gefixt**: Stats-Panel pausierte das Spiel anfangs nicht, weil die
+     `isGameActive()`-Prüfung `document.hidden` enthielt (im Headless-Browser
+     `true`). Aufgespalten in `isGameRunning()` (nur Spiel-Zustand, für die
+     Pause-Entscheidung) und `isGameActive()` (zusätzlich `!document.hidden`,
+     für die Spielzeit-Zählung).
+   - **Bug gefixt**: `tetris_4`-Achievement löste anfangs schon bei ≥4 Linien
+     *insgesamt* aus. Jetzt erkennt ein eigener `#lines`-MutationObserver einen
+     Sprung von ≥4 in einer einzigen Mutation (= echter 4-Linien-Clear / Tetris).
+
+3. **Service-Worker-Update-Toast** (`#nf-update-toast`)
+   - Zeigt „✨ Neue Version verfügbar — Neuladen" oben, sobald ein neuer SW den
+     Zustand `installed` erreicht (und bereits ein Controller aktiv ist).
+     SW-Cache-Version auf `neonfall-v2` hochgezählt. Stündliches `reg.update()`.
+
+4. **Online/Offline-Indikator** (`#nf-online-dot`)
+   - Kleiner grüner Punkt neben dem 📊-Button; wird rot + blinkend bei Offline.
+     Auf iOS (nicht installiert) klickbar → öffnet Install-Anleitung.
+
+### Styling-Verbesserungen (Mandat erfüllt, ohne Spiel-CSS anzutasten)
+
+Eigenes `SHELL_CSS` (separates `<style>`, nach `GAME_CSS` injiziert) mit:
+- Neon-Glassmorphism (rgba-Weiß-Tints, `backdrop-filter: blur`, border-radius 18px)
+- Gradient-Akzente passend zum Spiel (`#22d3ee → #a78bfa → #f472b6`)
+- Space-Grotesk-/JetBrains-Mono-Fonts (konsistent mit dem Spiel)
+- SlideUp-Animation für Panels, Blink-Animation für Offline-Dot
+- Hover-/Active-States, Desktop-Mediaquery, Scrollbar-Styling
+- Touch-Targets ≥34px, safe-area-inset unterstützt
+
+### Verifikation (alle bestanden, via `agent-browser`)
+
+- Shell-Elemente alle present (statsBtn, onlineDot, statsPanel, iosInstall,
+  installBanner, updateToast) ✓
+- Keine Console-Errors, keine dev.log-Errors ✓
+- Spiel weiterhin voll funktionsfähig (Canvas gerendert, Tastatur-Steuerung) ✓
+- Fix 1: Banner unterdrückt bei sichtbarem Hinweis (`bannerShown:false`),
+  erscheint nach Hinweis-Schließen (`bannerShown:true`) ✓
+- Fix 2: Stats-Panel pausiert das Spiel (`gamePaused:true`), Resume bei Close ✓
+- Fix 3: 4-Linien-Sprung → `tetris_4` freigeschaltet; 2-Linien-Sprung → nicht ✓
+- Stats-Recording: nach Game-Over → Spiele=1, Best=1.234, Linien=7,
+  3 Achievements, Footer mit Datum ✓
+- Install-Banner Dismiss persistiert in localStorage ✓
+- Online-Dot reagiert auf navigator.onLine ✓
+- **VLM-Visuell** (`z-ai vision`):
+  - Banner: „neon-styled install banner... game UI fully visible and
+    unobscured... styling perfectly matches the neon aesthetic... no visual
+    problems or overlaps... cohesive and professional."
+  - Stats-Panel: „glassmorphic neon-styled card titled STATISTIK... ERFOLGE
+    section with achievement badges, some in color, others grayed... clean and
+    highly readable... no clutter or alignment issues."
+
+### Unresolved Issues / Risks / Empfehlungen für nächste Phase
+
+- **Spiel-Code weiterhin unangetastet**: `neonfall-content.ts` (Original-CSS/
+  HTML/JS) wurde in diesem Zyklus nicht verändert. Alle Erweiterungen sind im
+  separaten `neonfall-shell.ts` gekapselt. Soll der Nutzer das Spiel selbst
+  erweitern wollen, bleibt der Weg offen.
+- **Achievements sind rein lokal** (localStorage). Für geräteübergreifende
+  Synchronisation wäre ein Backend nötig (Prisma+SQLite vorhanden, NextAuth
+  verfügbar) — nur bei Nutzerwunsch.
+- **Google Fonts noch extern**: offline via SW-Cache; für 100% Offline könnten
+  Fonts gebundelt werden (next/font/self-host).
+- **Headless-QA-Artefakt**: `document.hidden` ist im Headless-Browser oft
+  `true`, daher wird Spielzeit in agent-browser-Tests nicht akkumuliert — auf
+  einem echten Gerät (Fokus) funktioniert es.
+- **Cron-Review-Zyklen**: Der 15-Min-Job läuft weiter. Nächste sinnvolle
+  Schwerpunkte: (a)„Stats zurücksetzen"-Button im Panel, (b) Soundeffekt-Lautstärke-
+  Regelung (erfordert Hook ins AudioCtx — aktuell im IIFE-Closure, schwer ohne
+  Spieländerung), (c) mehrere Musik-Tracks, (d) Landscape-Layout-Optimierung,
+  (e) Cloud-Highscore-Liste.
+- **Sandbox-Teardown** weiterhin: Dev-Server wird beim Bash-Tool-Teardown
+  gekillt; QA läuft darum in einem einzigen Bash-Aufruf. Preview-Panel serviert
+  Port 3000 für den Nutzer unabhängig.
+
