@@ -1,0 +1,40 @@
+{
+  "name": "NEONFALL",
+  "short_name": "NEONFALL",
+  "description": "Neon Tetris mit integrierter Musik, Momentum-Steuerung und Hold-Funktion.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a14",
+  "theme_color": "#0a0a14",
+  "categories": ["games", "entertainment"],
+  "lang": "de",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
