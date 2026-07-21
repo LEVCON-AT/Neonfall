@@ -209,3 +209,94 @@ Eigenes `SHELL_CSS` (separates `<style>`, nach `GAME_CSS` injiziert) mit:
   gekillt; QA läuft darum in einem einzigen Bash-Aufruf. Preview-Panel serviert
   Port 3000 für den Nutzer unabhängig.
 
+---
+
+## Cron-Review-Zyklus 2 (Stats-Reset, Recent Scores, Achievement-Toast, Landscape-Hint)
+
+**Task ID:** CR-2 · **Agent:** main (cron webDevReview)
+
+### Ausgangslage / QA-Befund
+
+App war stabil (Spiel + alle Shell-Features aus Zyklus 1 funktionsfähig, keine
+Console-/dev.log-Errors, Spiel spielbar). Der Stats-Reset-Button (aus Zyklus-1-
+Empfehlung) fehlte noch; keine Landsacpe-Unterstützung vorhanden. Der Cron-Job
+forderte erneut mehr Features + Styling. Auch hier wurde das Spiel-IIFE erneut
+**nicht angetastet** — alle Erweiterungen im `neonfall-shell.ts`.
+
+### Umgesetzte Features (alle in `src/app/neonfall-shell.ts` ergänzt)
+
+1. **Stats-Reset-Button** (`#nf-stats-reset` + `#nf-reset-confirm`)
+   - Roter „Statistik zurücksetzen"-Button am Ende des Stats-Panels.
+   - Klick → Inline-Bestätigungs-Dialog („Wirklich alle Statistiken & Erfolge
+     löschen?") mit „Löschen"/„Abbrechen". Löschen → `defaultStats()` + save +
+     re-render. Abbrechen → Dialog verbergen, Button wiederherstellen.
+   - **Bug gefixt**: Der Confirm-Dialog saß am Ende der scrollbaren Karte und
+     war nach Klick außerhalb des Viewports → YES/NO-Buttons nicht klickbar.
+     Fix: `scrollIntoView({block:'center'})` nach 50ms im Reset-Button-Handler.
+
+2. **Letzte-Spiele-Liste** (`.nf-recent`)
+   - Neue Sektion „Letzte Spiele" im Stats-Panel: zeigt die letzten 5 Spiele
+     mit Level, Linien, Zeitstempel („gerade eben"/„vor X min"/Datum) + Score.
+   - `recentScores: RecentScore[]` zum Stats-Interface hinzugefügt, beim
+     Game-Over via `unshift` + Trim auf 5 Einträge gepflegt.
+
+3. **Achievement-Unlock-Toast** (`#nf-ach-toast`)
+   - Goldener/amberner Toast oben Mitte (z-47): „ERFOLG FREIGESCHALTET" + Icon
+     + Name. Pop-Animation für Icon, auto-hide nach 3,2s.
+   - `unlock()` ruft jetzt `showAchToast(id)` auf — erscheint nur bei NEU
+     freigeschalteten Achievements (nicht bei bereits bestehenden).
+   - 12 Achievements unverändert; Tetris-Erkennung via #lines-Sprung-Observer
+     (aus Zyklus 1) bleibt erhalten.
+
+4. **Landscape-Rotate-Hint** (`#nf-rotate-hint`)
+   - Vollbild-Overlay (z-60) bei Landscape auf Phone-Klasse (min-Dimension
+     <500px). Animiertes Handy-Icon (Wiggle-Rotation), „Drehe dein Gerät"-Text.
+   - Tablets/Desktop (breit genug) werden nicht gestört. Reagiert auf
+     `resize` + `orientationchange`.
+
+### Styling-Verbesserungen
+
+- Reset-Button + Confirm in dezentem Rot (`#fb7185`), passend zum Game-Over-Stil.
+- Recent-Scores-Liste mit Meta-Text (cyan) + Score (JetBrains-Mono, weiß).
+- Achievement-Toast mit amber-goldenem Gradient (`#fbbf24 → #f472b6`),
+  Glow-Schatten, Pop-Keyframe-Animation.
+- Rotate-Hint mit neon-outlined Handy-Icon, Wiggle-Animation, Gradient-Titel.
+- Alles konsistent im Neon-Dark-Theme (Space Grotesk / JetBrains Mono).
+
+### Verifikation (alle bestanden, via `agent-browser`)
+
+- Keine Console-Errors, keine dev.log-Errors ✓
+- Neue Elemente present (achToast, rotateHint, resetBtn, resetConfirm) ✓
+- **Reset-Flow** (nach scrollIntoView-Fix):
+  - Reset → Confirm sichtbar (rect y=415, im Viewport) ✓
+  - NO → `confirmShow:false, resetBtnVisible:true` ✓
+  - YES → `games:0, recentCount:0, achCount:0, recentEmpty:true,
+    resetBtnBack:true, confirmHidden:true` (vollständig gelöscht) ✓
+- **Recent-Scores**: nach Game-Over → 1 Eintrag „L1 · 12 Linien · gerade eben
+  2.500" ✓
+- **Achievement-Toast**: erster Game-Over → `achToastShown:true,
+  achToastName:"Erstes Spiel", achToastLabel:"Erfolg freigeschaltet"` ✓;
+  auto-hide nach 3,2s ✓
+- **Landscape-Hint**: Phone-Landscape (740×360) → `rotateHintShown:true` ✓;
+  Portrait → `rotateHintHidden:true` ✓
+- Spiel weiterhin voll funktionsfähig (Canvas, Tastatur) ✓
+- **VLM-Visuell**:
+  - Toast: „golden/amber neon toast... ERFOLG FREIGESCHALTET... Erstes Spiel...
+    perfectly matches the app's neon aesthetic."
+  - Rotate: „full-screen overlay... neon-outlined phone icon... Drehe dein
+    Gerät... perfectly matches the app's signature neon dark aesthetic."
+
+### Unresolved Issues / Risks / Empfehlungen für nächste Phase
+
+- **Spiel-Code weiterhin unangetastet**: `neonfall-content.ts` unchanged.
+- **Achievement-Toast überlappt minimal BEST-Box** (laut VLM) — typisch für
+  Overlay-Notifications, akzeptabel. Könnte bei Bedarf höher positioniert
+  werden.
+- **Stats nur lokal** (localStorage): Cloud-Sync erst bei Nutzerwunsch
+  (Prisma+SQLite+NextAuth vorhanden).
+- **Nächste sinnvolle Schwerpunkte**: (a) mehrere Musik-Tracks (erfordert
+  Hook ins AudioCtx oder separates Audio-Element — aktuell im IIFE-Closure),
+  (b) Daily-Challenge-Modus, (c) Cloud-Highscore-Liste, (d) Settings-Import/
+  Export, (e) Tastatur-Shortcuts im Stats-Panel (S=Stats, Esc=Close).
+
+

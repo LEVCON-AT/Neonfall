@@ -1,7 +1,7 @@
 // NEONFALL Service Worker
 // Provides offline support (caches app shell + music) and the installability signal.
 
-const CACHE_VERSION = 'neonfall-v2';
+const CACHE_VERSION = 'neonfall-v3';
 const PRECACHE_URLS = [
   '/',
   '/neonfall-music.mp3',

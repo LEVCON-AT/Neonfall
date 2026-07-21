@@ -200,6 +200,207 @@ export const SHELL_CSS = `
     font-family: 'JetBrains Mono', monospace;
 }
 
+/* ---- Recent scores list ---- */
+.nf-recent {
+    margin-top: 4px;
+}
+.nf-recent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    margin-bottom: 5px;
+    font-size: 0.78em;
+}
+.nf-recent-item:last-child { margin-bottom: 0; }
+.nf-recent-meta { color: #9ca3ff; font-size: 0.92em; }
+.nf-recent-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #e8e8f5;
+}
+.nf-recent-empty {
+    color: #6b6b8a;
+    font-size: 0.76em;
+    text-align: center;
+    padding: 10px;
+    font-style: italic;
+}
+
+/* ---- Reset button + confirm ---- */
+.nf-reset-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 14px;
+}
+.nf-reset-btn {
+    background: rgba(251,113,133,0.08);
+    border: 1px solid rgba(251,113,133,0.25);
+    color: #fb7185;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.74em;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    letter-spacing: .5px;
+    transition: all .15s;
+}
+.nf-reset-btn:active { transform: scale(0.95); }
+.nf-reset-confirm {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 12px;
+    background: rgba(251,113,133,0.08);
+    border: 1px solid rgba(251,113,133,0.25);
+    border-radius: 10px;
+}
+.nf-reset-confirm.show { display: flex; }
+.nf-reset-confirm-text {
+    font-size: 0.78em;
+    color: #fda4af;
+    text-align: center;
+    line-height: 1.4;
+}
+.nf-reset-confirm-actions { display: flex; gap: 8px; }
+.nf-reset-yes {
+    background: rgba(251,113,133,0.25);
+    border: 1px solid rgba(251,113,133,0.4);
+    color: #fff;
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 0.76em;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.nf-reset-no {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #c7c7f0;
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 0.76em;
+    cursor: pointer;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.nf-reset-yes:active, .nf-reset-no:active { transform: scale(0.94); }
+
+/* ---- Achievement unlock toast ---- */
+#nf-ach-toast {
+    position: fixed;
+    top: calc(max(8px, env(safe-area-inset-top)) + 46px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-160%);
+    background: linear-gradient(135deg, rgba(251,191,36,0.16), rgba(244,114,182,0.16));
+    border: 1px solid rgba(251,191,36,0.4);
+    border-radius: 12px;
+    padding: 10px 14px 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 47;
+    color: #e8e8f5;
+    font-family: 'Space Grotesk', sans-serif;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 24px rgba(251,191,36,0.15);
+    transition: transform .4s cubic-bezier(.2,.8,.2,1), opacity .4s;
+    max-width: calc(100% - 24px);
+    opacity: 0;
+}
+#nf-ach-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+.nf-ach-toast-icon {
+    font-size: 1.6em;
+    filter: drop-shadow(0 0 8px rgba(251,191,36,0.5));
+    animation: nfAchPop .5s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes nfAchPop {
+    0% { transform: scale(0); }
+    60% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+.nf-ach-toast-body { line-height: 1.25; }
+.nf-ach-toast-label {
+    font-size: 0.62em;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fbbf24;
+    font-weight: 700;
+}
+.nf-ach-toast-name {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: #e8e8f5;
+}
+
+/* ---- Landscape rotate hint ---- */
+#nf-rotate-hint {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,6,14,0.96);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    color: #e8e8f5;
+    font-family: 'Space Grotesk', sans-serif;
+    text-align: center;
+    padding: 24px;
+}
+#nf-rotate-hint.show { display: flex; }
+.nf-rotate-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+.nf-rotate-phone {
+    width: 52px;
+    height: 92px;
+    border: 3px solid rgba(167,139,250,0.5);
+    border-radius: 10px;
+    position: relative;
+    animation: nfRotateWiggle 2s ease-in-out infinite;
+}
+.nf-rotate-phone::after {
+    content: '';
+    position: absolute;
+    top: 6px; left: 50%;
+    transform: translateX(-50%);
+    width: 14px; height: 3px;
+    background: rgba(167,139,250,0.5);
+    border-radius: 2px;
+}
+@keyframes nfRotateWiggle {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-90deg); }
+}
+.nf-rotate-title {
+    font-size: 1.1em;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.nf-rotate-sub {
+    font-size: 0.82em;
+    color: #9ca3ff;
+    max-width: 240px;
+    line-height: 1.5;
+}
+
 /* ---- Install banner (Android/Chrome) ---- */
 #nf-install-banner {
     position: fixed;
@@ -338,6 +539,7 @@ export function initShell() {
   (window as any).__nfShellInit = true;
 
   // ============ STATS ============
+  interface RecentScore { score: number; lines: number; level: number; date: string }
   interface Stats {
     gamesPlayed: number;
     totalLines: number;
@@ -347,9 +549,11 @@ export function initShell() {
     playTimeSec: number;
     lastPlayed: string | null;
     achievements: string[];
+    recentScores: RecentScore[];
   }
   const STATS_KEY = 'nf_stats';
   const DISMISS_KEY = 'nf_install_dismissed';
+  const RECENT_MAX = 5;
 
   const ACHIEVEMENTS: { id: string; name: string; icon: string }[] = [
     { id: 'first_game', name: 'Erstes Spiel', icon: '🎮' },
@@ -370,6 +574,7 @@ export function initShell() {
     return {
       gamesPlayed: 0, totalLines: 0, totalScore: 0, bestScore: 0,
       bestLevel: 1, playTimeSec: 0, lastPlayed: null, achievements: [],
+      recentScores: [],
     };
   }
   function loadStats(): Stats {
@@ -386,10 +591,24 @@ export function initShell() {
   let stats = loadStats();
   let runningMaxLevel = 1;
 
+  // ============ ACHIEVEMENT UNLOCK TOAST ============
+  const achToast = document.getElementById('nf-ach-toast');
+  let achToastTimer: any = null;
+  function showAchToast(id: string) {
+    const a = ACHIEVEMENTS.find(x => x.id === id);
+    if (!a || !achToast) return;
+    achToast.querySelector('.nf-ach-toast-icon')!.textContent = a.icon;
+    achToast.querySelector('.nf-ach-toast-name')!.textContent = a.name;
+    achToast.classList.add('show');
+    if (achToastTimer) clearTimeout(achToastTimer);
+    achToastTimer = setTimeout(() => achToast.classList.remove('show'), 3200);
+  }
+
   function unlock(id: string) {
     if (!stats.achievements.includes(id)) {
       stats.achievements.push(id);
       saveStats(stats);
+      showAchToast(id);
     }
   }
 
@@ -424,12 +643,15 @@ export function initShell() {
         wasGameOver = true;
         const singleScore = parseNum(document.getElementById('final-score')?.textContent);
         const singleLines = parseNum(document.getElementById('lines')?.textContent);
+        const singleLevel = runningMaxLevel;
         stats.gamesPlayed += 1;
         stats.totalLines += singleLines;
         stats.totalScore += singleScore;
         if (singleScore > stats.bestScore) stats.bestScore = singleScore;
         if (runningMaxLevel > stats.bestLevel) stats.bestLevel = runningMaxLevel;
         stats.lastPlayed = new Date().toISOString();
+        stats.recentScores.unshift({ score: singleScore, lines: singleLines, level: singleLevel, date: stats.lastPlayed });
+        if (stats.recentScores.length > RECENT_MAX) stats.recentScores.length = RECENT_MAX;
         checkAchievements(singleLines, singleScore);
         saveStats(stats);
       } else if (!visible && wasGameOver) {
@@ -521,6 +743,19 @@ export function initShell() {
     } catch { return '—'; }
   }
 
+  function fmtRecent(iso: string): string {
+    try {
+      const d = new Date(iso);
+      const now = new Date();
+      const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
+      if (diffMin < 1) return 'gerade eben';
+      if (diffMin < 60) return 'vor ' + diffMin + ' min';
+      const diffH = Math.floor(diffMin / 60);
+      if (diffH < 24) return 'vor ' + diffH + ' h';
+      return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+    } catch { return '—'; }
+  }
+
   function renderStats() {
     const s = loadStats();
     const card = document.getElementById('nf-stats-card');
@@ -531,6 +766,13 @@ export function initShell() {
         '<span class="nf-ach-icon">' + a.icon + '</span>' +
         '<span class="nf-ach-name">' + a.name + '</span></div>';
     }).join('');
+    const recentHtml = (s.recentScores && s.recentScores.length)
+      ? s.recentScores.map(r =>
+          '<div class="nf-recent-item">' +
+            '<span class="nf-recent-meta">L' + r.level + ' · ' + r.lines + ' Linien · ' + fmtRecent(r.date) + '</span>' +
+            '<span class="nf-recent-score">' + r.score.toLocaleString('de-DE') + '</span>' +
+          '</div>').join('')
+      : '<div class="nf-recent-empty">Noch keine Spiele — leg los!</div>';
     card.innerHTML =
       '<div class="nf-stats-header">' +
         '<div class="nf-stats-title">STATISTIK</div>' +
@@ -544,11 +786,42 @@ export function initShell() {
         '<div class="nf-stat-cell wide"><div class="nf-stat-label">Punkte gesamt</div><div class="nf-stat-value">' + s.totalScore.toLocaleString('de-DE') + '</div></div>' +
         '<div class="nf-stat-cell wide"><div class="nf-stat-label">Spielzeit</div><div class="nf-stat-value">' + fmtTime(s.playTimeSec) + '</div></div>' +
       '</div>' +
+      '<div class="nf-section-label">Letzte Spiele</div>' +
+      '<div class="nf-recent">' + recentHtml + '</div>' +
       '<div class="nf-section-label">Erfolge · ' + s.achievements.length + ' / ' + ACHIEVEMENTS.length + '</div>' +
       '<div class="nf-achievements">' + achHtml + '</div>' +
-      '<div class="nf-stats-footer">zuletzt gespielt: ' + fmtDate(s.lastPlayed) + '</div>';
+      '<div class="nf-stats-footer">zuletzt gespielt: ' + fmtDate(s.lastPlayed) + '</div>' +
+      '<div class="nf-reset-row"><button class="nf-reset-btn" id="nf-stats-reset">Statistik zurücksetzen</button></div>' +
+      '<div class="nf-reset-confirm" id="nf-reset-confirm">' +
+        '<div class="nf-reset-confirm-text">Wirklich alle Statistiken & Erfolge löschen?<br>Dies kann nicht rückgängig gemacht werden.</div>' +
+        '<div class="nf-reset-confirm-actions">' +
+          '<button class="nf-reset-yes" id="nf-reset-yes">Löschen</button>' +
+          '<button class="nf-reset-no" id="nf-reset-no">Abbrechen</button>' +
+        '</div>' +
+      '</div>';
     const closeBtn = document.getElementById('nf-stats-close');
     if (closeBtn) closeBtn.addEventListener('click', closeStats);
+    const resetBtn = document.getElementById('nf-stats-reset');
+    const resetConfirm = document.getElementById('nf-reset-confirm');
+    if (resetBtn) resetBtn.addEventListener('click', () => {
+      resetConfirm?.classList.add('show');
+      (resetBtn as HTMLElement).style.display = 'none';
+      // Scroll the confirm into view so its buttons are reachable (the card is
+      // scrollable and the confirm sits at the bottom).
+      setTimeout(() => resetConfirm?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    });
+    const resetNo = document.getElementById('nf-reset-no');
+    if (resetNo) resetNo.addEventListener('click', () => {
+      resetConfirm?.classList.remove('show');
+      const rb = document.getElementById('nf-stats-reset');
+      if (rb) (rb as HTMLElement).style.display = '';
+    });
+    const resetYes = document.getElementById('nf-reset-yes');
+    if (resetYes) resetYes.addEventListener('click', () => {
+      stats = defaultStats();
+      saveStats(stats);
+      renderStats();
+    });
   }
 
   function openStats() {
@@ -580,6 +853,23 @@ export function initShell() {
   updateOnline();
   window.addEventListener('online', updateOnline);
   window.addEventListener('offline', updateOnline);
+
+  // ============ LANDSCAPE ROTATE HINT ============
+  // The game is portrait-only. On narrow screens in landscape, show a polite
+  // "please rotate" overlay so the board isn't squished. Desktop/tablet (wide
+  // enough) is left alone.
+  const rotateHint = document.getElementById('nf-rotate-hint');
+  function updateRotateHint() {
+    if (!rotateHint) return;
+    const isLandscape = window.innerWidth > window.innerHeight;
+    // Only enforce on phone-class widths (portrait width < 500). Tablets / desktop
+    // have enough room in landscape.
+    const isPhone = Math.min(window.innerWidth, window.innerHeight) < 500;
+    rotateHint.classList.toggle('show', isLandscape && isPhone);
+  }
+  updateRotateHint();
+  window.addEventListener('resize', updateRotateHint);
+  window.addEventListener('orientationchange', updateRotateHint);
 
   // ============ PWA INSTALL ============
   const banner = document.getElementById('nf-install-banner');

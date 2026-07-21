@@ -108,6 +108,24 @@ export default function Page() {
         <button className="nf-btn-primary" id="nf-update-reload">Neuladen</button>
       </div>
 
+      <div id="nf-ach-toast" role="status" aria-live="polite">
+        <span className="nf-ach-toast-icon">🏆</span>
+        <div className="nf-ach-toast-body">
+          <div className="nf-ach-toast-label">Erfolg freigeschaltet</div>
+          <div className="nf-ach-toast-name">—</div>
+        </div>
+      </div>
+
+      <div id="nf-rotate-hint" aria-hidden="true">
+        <div className="nf-rotate-inner">
+          <div className="nf-rotate-phone"></div>
+          <div className="nf-rotate-title">Drehe dein Gerät</div>
+          <div className="nf-rotate-sub">
+            NEONFALL wird im Hochformat gespielt. Bitte drehe dein Handy aufrecht für das beste Spielerlebnis.
+          </div>
+        </div>
+      </div>
+
       <div id="game-container">
         <canvas id="tetris-canvas"></canvas>
         <div id="flash-overlay"></div>
