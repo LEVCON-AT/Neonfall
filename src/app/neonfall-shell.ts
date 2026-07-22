@@ -544,12 +544,13 @@ export const SHELL_CSS = `
     gap: 16px !important;
 }
 
-/* Issue 3: Desktop — constrain the whole app to a phone-width column with a thin
-   frame, exactly like on mobile. The game's body is full-width with content capped
-   at 440px; we instead cap the body itself so the app reads as a centered phone. */
+/* Issue 3: Desktop — constrain the app CONTENT to a phone-width column with a
+   thin frame, but let the animated gradient background cover the WHOLE screen.
+   body::before/after (the gradient blobs) stay position:fixed (their original
+   value) so they fill the viewport; only the app content sits in the 460px column. */
 @media (min-width: 700px) {
     html {
-        background: #050509;
+        background: #0a0a14;
     }
     body {
         max-width: 460px;
@@ -557,12 +558,6 @@ export const SHELL_CSS = `
         border-left: 1px solid rgba(255,255,255,0.07);
         border-right: 1px solid rgba(255,255,255,0.07);
         box-shadow: 0 0 80px rgba(0,0,0,0.7);
-        /* keep the gradient blobs INSIDE the phone column (body is position:relative) */
-        overflow: hidden;
-    }
-    /* Clip the decorative fixed gradient blobs to the body so the outside stays flat-dark. */
-    body::before, body::after {
-        position: absolute !important;
     }
 }
 
@@ -595,6 +590,28 @@ export const SHELL_CSS = `
 /* When the install banner is visible, shift the music bar up so they don't overlap. */
 #nf-music-bar.shift-up {
     bottom: calc(max(8px, env(safe-area-inset-bottom)) + 76px);
+}
+/* Collapsed state: shrinks to just a tiny pill with an equalizer icon. */
+#nf-music-bar.collapsed {
+    padding: 6px 10px;
+    gap: 0;
+}
+#nf-music-bar.collapsed .nf-music-btn,
+#nf-music-bar.collapsed .nf-music-info {
+    display: none;
+}
+#nf-music-bar.collapsed .nf-music-bars {
+    margin: 0;
+}
+/* Pulse hint on the mute button when a long-press / dblclk would toggle the
+   player — a subtle ring draws attention to the gesture. */
+#mute-btn.nf-hint-pulse {
+    box-shadow: 0 0 0 2px rgba(34,211,238,0.5);
+    animation: nfHintPulse 1.2s ease-out 2;
+}
+@keyframes nfHintPulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(34,211,238,0.5); }
+    50% { box-shadow: 0 0 0 5px rgba(34,211,238,0); }
 }
 .nf-music-btn {
     background: rgba(255,255,255,0.06);
@@ -997,14 +1014,14 @@ export function initShell() {
   // the real soundtrack with seamless 3 s crossfades between 8 tracks. It runs on
   // a separate AudioContext and syncs with the game's pause/mute/visibility.
   const TRACKS = [
-    { file: '/music/track-1-neon-pulse.mp3',        name: 'Neon Pulse' },
-    { file: '/music/track-2-neon-pulse-alt.mp3',    name: 'Neon Pulse (Alt)' },
-    { file: '/music/track-3-neon-pixel-run.mp3',    name: 'Neon Pixel Run' },
-    { file: '/music/track-4-neon-pixel-run-alt.mp3',name: 'Neon Pixel Run (Alt)' },
-    { file: '/music/track-5-neon-pixel-rush.mp3',   name: 'Neon Pixel Rush' },
-    { file: '/music/track-6-neon-pixel-rush-alt.mp3',name: 'Neon Pixel Rush (Alt)' },
-    { file: '/music/track-7-block-rush.mp3',        name: 'Block Rush' },
-    { file: '/music/track-8-block-rush-alt.mp3',    name: 'Block Rush (Alt)' },
+    { file: '/music/track-1-neon-pulse.mp3',        name: 'Pulse Drive' },
+    { file: '/music/track-2-neon-pulse-alt.mp3',    name: 'Static Bloom' },
+    { file: '/music/track-3-neon-pixel-run.mp3',    name: 'Pixel Drift' },
+    { file: '/music/track-4-neon-pixel-run-alt.mp3',name: 'Bitstream' },
+    { file: '/music/track-5-neon-pixel-rush.mp3',   name: 'Grid Runner' },
+    { file: '/music/track-6-neon-pixel-rush-alt.mp3',name: 'Circuit Breaker' },
+    { file: '/music/track-7-block-rush.mp3',        name: 'Cascade' },
+    { file: '/music/track-8-block-rush-alt.mp3',    name: 'Freefall' },
   ];
   const FADE_DUR = 3.0;          // seconds of crossfade between tracks
   const MUSIC_VOL = 0.5;         // target music volume (matches game's musicGain)
@@ -1150,6 +1167,48 @@ export function initShell() {
     ?.addEventListener('click', (e) => { e.stopPropagation(); skipMusic(-1); });
   (document.getElementById('nf-music-next') as HTMLButtonElement | null)
     ?.addEventListener('click', (e) => { e.stopPropagation(); skipMusic(1); });
+
+  // ============ Collapse / expand the music bar ============
+  // Toggle via: long-press on the mute button (mobile) OR double-click (desktop).
+  // A single click on mute still toggles audio mute (the game's own handler).
+  // The collapse state persists in localStorage so it survives reloads.
+  const COLLAPSE_KEY = 'nf_music_collapsed';
+  function isCollapsed() { try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; } }
+  function applyCollapse() { musicBar?.classList.toggle('collapsed', isCollapsed()); }
+  function toggleCollapse() {
+    try { localStorage.setItem(COLLAPSE_KEY, isCollapsed() ? '0' : '1'); } catch {}
+    applyCollapse();
+  }
+  applyCollapse();
+
+  const muteBtnEl = document.getElementById('mute-btn');
+  if (muteBtnEl) {
+    // Long-press (mobile / touch): 450 ms hold → toggle collapse.
+    let lpTimer: any = null;
+    let lpFired = false;
+    muteBtnEl.addEventListener('touchstart', () => {
+      lpFired = false;
+      lpTimer = setTimeout(() => { lpFired = true; toggleCollapse(); }, 450);
+    }, { passive: true });
+    const cancelLP = () => { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } };
+    muteBtnEl.addEventListener('touchend', cancelLP);
+    muteBtnEl.addEventListener('touchmove', cancelLP);
+    muteBtnEl.addEventListener('touchcancel', cancelLP);
+    // Prevent the game's click-mute from firing right after a long-press toggle.
+    muteBtnEl.addEventListener('click', (e) => { if (lpFired) { e.preventDefault(); e.stopPropagation(); lpFired = false; } }, true);
+
+    // Double-click (desktop / mouse): toggle collapse.
+    muteBtnEl.addEventListener('dblclick', (e) => { e.preventDefault(); e.stopPropagation(); toggleCollapse(); });
+
+    // One-time hint pulse so users discover the gesture.
+    setTimeout(() => {
+      if (!sessionStorage.getItem('nf_hint_shown')) {
+        muteBtnEl.classList.add('nf-hint-pulse');
+        setTimeout(() => muteBtnEl.classList.remove('nf-hint-pulse'), 2600);
+        try { sessionStorage.setItem('nf_hint_shown', '1'); } catch {}
+      }
+    }, 2500);
+  }
 
   // Start music on first user interaction (same triggers as the game's initAudio)
   function tryStartMusic() { if (!mStarted) startMusic(); }

@@ -451,3 +451,55 @@ MutationObserver aktiviert wird, wenn das Banner `show` hat.
   UI-Platz im Player).
 - Cron-Review-Job läuft weiter.
 
+---
+
+## Nutzer-Feedback Runde 2: Music-Player kollabierbar, fancy Namen, Hintergrund-Fix
+
+**Task ID:** UF-2 · **Agent:** main (Nutzer-Anfrage)
+
+### Problem 1: Music-Player ist im Weg
+**Lösung:** Player ist jetzt kollabierbar. Toggle-Geste wie vom Nutzer vorgeschlagen:
+- **Mobil:** Long-Press (450 ms) auf den 🔊-Lautsprecher-Button oben rechts
+- **Desktop:** Doppelklick auf den 🔊-Button
+- Kollabiert → winzige Pille nur mit Equalizer-Bars-Icon (kein Trackname/Buttons)
+- Expandiert → volle Music-Bar mit ⏮/⏭ + Trackname
+- Zustand persistiert in localStorage (`nf_music_collapsed`)
+- Einmaliger Hinweis-Puls (cyan-Ring) auf dem 🔊-Button beim ersten Besuch
+- Einzelklick auf 🔊 mutet weiterhin (Spiel-Handler unberührt); der synthetische
+  Klick nach einem Long-Press wird bewusst verschluckt (verhindert versehentliches
+  Muten direkt nach dem Kollabieren)
+
+### Problem 2: Tracks brauchen fancy Namen
+**Lösung:** 8 Tracks umbenannt (Dateinamen unverändert, nur Anzeige):
+- Neon Pulse → **Pulse Drive**
+- Neon Pulse (Alt) → **Static Bloom**
+- Neon Pixel Run → **Pixel Drift**
+- Neon Pixel Run (Alt) → **Bitstream**
+- Neon Pixel Rush → **Grid Runner**
+- Neon Pixel Rush (Alt) → **Circuit Breaker**
+- Block Rush → **Cascade**
+- Block Rush (Alt) → **Freefall**
+
+### Problem 3: Hintergrund außerhalb der App-Spalte ist schwarz
+**Ursache:** Mein Issue-3-Fix aus UF-1 hatte `body::before/after` auf
+`position: absolute !important` gesetzt → Gradient-Blobs wurden auf die 460px-
+Spalte geclippt. Außen zeigte nur `html { background: #050509 }` (fast schwarz).
+
+**Fix:** Override entfernt. `body::before/after` bleiben `position: fixed` (ihr
+Originalwert) → Blobs bedecken den **ganzen Viewport**. `html`-Base auf `#0a0a14`
+gesetzt (dunkles Navy, passend zur App). App-Content bleibt in der 460px-Spalte,
+aber der Gradient + die animierten Blobs füllen die gesamte Bildschirmfläche.
+
+### Verifikation (alle bestanden)
+- **Issue 3:** `htmlBg:rgb(10,10,20)` (#0a0a14), `blobBeforePos:fixed`,
+  `bodyMaxW:460px` ✓. VLM: „not pure black... dark navy/purple gradient with
+  glowing colored blobs... flows seamlessly... no hard black edge."
+- **Issue 2:** Track-Namen: Pixel Drift → Bitstream → Grid Runner ✓
+- **Issue 1:** Doppelklick → `collapsed:true, persisted:"1"` ✓; erneut →
+  `collapsed:false, persisted:"0"` ✓; Long-Press-Simulation → `collapsed:true` ✓;
+  Einzelklick mutet weiterhin ✓. VLM: „tiny minimal pill with equalizer bars...
+  significantly reduces obstruction... maintains neon aesthetic."
+- Spiel voll spielbar, keine Console-/dev.log-Errors ✓
+- SW-Cache-Version auf v6 hochgezählt.
+
+
