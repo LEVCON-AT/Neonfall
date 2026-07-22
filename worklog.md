@@ -373,3 +373,81 @@ looks like a phone app centered on a desktop screen."
   zugänglich). Option B: `neonfall-music.mp3` durch eine leere/Stumm-Datei
   ersetzen + Shell-Player übernimmt. Wird mit Nutzer klären.
 - Cron-Review-Job läuft weiter.
+
+---
+
+## 8-Track-Crossfade-Music-Player implementiert
+
+**Task ID:** MUSIC-1 · **Agent:** main (Nutzer-Anfrage)
+
+### Problem
+Nutzer: „Die Musik dauert sehr lange bis sie beginnt" + „ich habe auch 6
+einzelne Dateien, wenn das hilft. Diese müssten dann halt gefadet werden."
+(Nutzer lud 8 MP3s hoch — 4 Track-Namen × 2 Versionen, alle verschieden, je
+64–188 kbps, 48 kHz, 64–343 s Dauer.)
+
+### Lösung: Option B (stumme Datei + Shell-Player)
+
+1. **Stumme MP3** (16 KB, 2 s) ersetzt `public/neonfall-music.mp3` (vorher
+   16 MB). Das Spiel-IIFE bleibt **unverändert** — es lädt/loopt weiterhin
+   „neonfall-music.mp3", die aber jetzt stumm ist. Das alte Ladezeit-Problem
+   ist damit komplett gelöst (16 KB statt 16 MB, Preload entfällt faktisch).
+2. **8 Tracks** nach `public/music/track-1…8-*.mp3` kopiert (31 MB gesamt).
+3. **Crossfade-Player** im Shell-Modul (`neonfall-shell.ts`):
+   - Eigener `AudioContext` (separat vom Spiel-Closure).
+   - Lädt Tracks on-demand (decode + cache als AudioBuffer), preloaded
+     jeweils den nächsten Track.
+   - 3 s Crossfade: FADE_DUR vor Track-Ende startet der nächste Track,
+     aktueller faded aus.
+   - Startet bei erster Nutzer-Interaktion (gleiche Trigger wie Spiel:
+     touchstart/mousedown/keydown auf game-container, hint-close, start-prompt).
+   - Start-Track zufällig (mehr Abwechslung bei App-Start).
+   - UI: Music-Bar unten (z-48) mit ⏮/⏭-Buttons, animierten Equalizer-Bars,
+     „♪ NOW PLAYING"-Label + Trackname.
+
+### Sync mit dem Spiel (alles via MutationObserver, kein IIFE-Eingriff)
+- **Pause:** `#pause-overlay .visible` → Player pausiert (gain→0 + ctx.suspend).
+  Resume → gain→1 + ctx.resume.
+- **Mute:** `#mute-btn` textContent 🔇/🔊 → Player muted/unmuted (master gain).
+- **Tab-Hide:** visibilitychange → Player silences (wie das Spiel selbst).
+- **Game-Over:** Musik läuft weiter (besserer Vibe).
+- **Hinweis-Overlay / Game-Over-Screen sichtbar:** Music-Bar wird ausgeblendet
+  (hidden-by-game), damit sie nicht über Modals ragt.
+- **Install-Banner sichtbar:** Music-Bar rutscht hoch (shift-up, bottom 84px),
+  damit das Banner die Skip-Buttons nicht überdeckt.
+
+### Bug während QA gefunden & gefixt
+Skip-Buttons (⏮/⏭) wurden vom Install-Banner überdeckt (beide am Boden,
+Banner z-45 > Music-Bar z-22) → Skip funktionierte nicht. **Fix:** Music-Bar
+z-index auf 48 erhöht + `shift-up`-Klasse (bottom +76px), die per
+MutationObserver aktiviert wird, wenn das Banner `show` hat.
+
+### Verifikation (alle bestanden, via `agent-browser`)
+- Stumme MP3 + alle 8 Tracks servieren (HTTP 206) ✓
+- Music-Bar initial hidden (hidden-by-game während Hinweis) ✓
+- Nach Hinweis-Schließen + Spielstart: `barShow:true, trackName:"Neon Pixel
+  Run (Alt)"`, 2 Tracks geladen (current + preload) ✓
+- Skip next: Track wechselt korrekt (Neon Pixel Run (Alt) → Neon Pixel Rush
+  → Neon Pixel Rush (Alt)) ✓
+- Skip prev: Track wechselt zurück ✓
+- Pause-Sync: `gamePaused:true → musicBarPaused:true` ✓; Resume → false ✓
+- Mute-Sync: `muteBtn:🔇 → musicBarPaused:true` ✓; Unmute → false ✓
+- Shift-Up: Banner show → `shiftUp:true, bottom:84px` ✓; Skip klickbar ✓;
+  Banner hide → `shiftUp:false` ✓
+- 3 vorherige Fixes noch intakt: `bodyMaxW:460px, hintDir:column` ✓
+- Spiel voll spielbar (`boardDrawn:true`), keine Console-/dev.log-Errors ✓
+- **VLM-Visuell:** „compact music player bar at the bottom... NOW PLAYING...
+  Neon Pixel Rush... animated equalizer-bars icon... perfectly matches the
+  neon dark theme... no overlap."
+
+### Service Worker
+- Cache-Version auf v5 hochgezählt.
+- Alle 8 Tracks + stumme MP3 in PRECACHE_URLS → offline-fähig.
+
+### Offen / Nächste Schritte
+- Track-Reihenfolge ist fix (1→8, dann Loop). Ggf. Shuffle-Modus oder
+  Nutzer-Sortierung als zukünftiges Feature.
+- Musik-Lautstärke ist fix (0.5). Ein Volume-Slider wäre möglich (erfordert
+  UI-Platz im Player).
+- Cron-Review-Job läuft weiter.
+

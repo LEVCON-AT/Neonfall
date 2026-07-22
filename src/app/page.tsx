@@ -126,6 +126,18 @@ export default function Page() {
         </div>
       </div>
 
+      <div id="nf-music-bar" role="region" aria-label="Musikplayer">
+        <button className="nf-music-btn" id="nf-music-prev" aria-label="Vorheriger Track">⏮</button>
+        <div className="nf-music-bars" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div className="nf-music-info">
+          <div className="nf-music-label">♪ NOW PLAYING</div>
+          <div className="nf-music-track" id="nf-music-track">—</div>
+        </div>
+        <button className="nf-music-btn" id="nf-music-next" aria-label="Nächster Track">⏭</button>
+      </div>
+
       <div id="game-container">
         <canvas id="tetris-canvas"></canvas>
         <div id="flash-overlay"></div>

@@ -565,6 +565,94 @@ export const SHELL_CSS = `
         position: absolute !important;
     }
 }
+
+/* ===== Music crossfade player (8-track playlist) ===== */
+#nf-music-bar {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 4px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 6px 10px 6px 8px;
+    z-index: 48;
+    color: #c7c7f0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72em;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    max-width: calc(100% - 96px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s, bottom .3s;
+}
+#nf-music-bar.show { opacity: 0.92; pointer-events: auto; }
+#nf-music-bar.hidden-by-game { opacity: 0 !important; pointer-events: none !important; }
+/* When the install banner is visible, shift the music bar up so they don't overlap. */
+#nf-music-bar.shift-up {
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 76px);
+}
+.nf-music-btn {
+    background: rgba(255,255,255,0.06);
+    border: none;
+    color: #c7c7f0;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.85em;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.nf-music-btn:active { transform: scale(0.9); }
+.nf-music-info {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+.nf-music-label {
+    font-size: 0.82em;
+    color: #9ca3ff;
+    letter-spacing: .5px;
+}
+.nf-music-track {
+    font-weight: 600;
+    color: #e8e8f5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nf-music-bars {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 12px;
+    margin-right: 2px;
+    flex-shrink: 0;
+}
+.nf-music-bars span {
+    width: 2px;
+    background: linear-gradient(180deg, #22d3ee, #a78bfa);
+    border-radius: 1px;
+    animation: nfMusicBar 0.8s ease-in-out infinite;
+}
+.nf-music-bars span:nth-child(2) { animation-delay: .15s; }
+.nf-music-bars span:nth-child(3) { animation-delay: .3s; }
+.nf-music-bars span:nth-child(4) { animation-delay: .45s; }
+@keyframes nfMusicBar {
+    0%, 100% { height: 30%; }
+    50% { height: 100%; }
+}
+#nf-music-bar.paused .nf-music-bars span { animation-play-state: paused; opacity: 0.4; }
+
+@media (hover: hover) and (pointer: fine) {
+    .nf-music-btn:hover { background: rgba(255,255,255,0.14); }
+}
 `;
 
 export function initShell() {
@@ -903,6 +991,234 @@ export function initShell() {
   updateRotateHint();
   window.addEventListener('resize', updateRotateHint);
   window.addEventListener('orientationchange', updateRotateHint);
+
+  // ============ MUSIC CROSSFADE PLAYER (8 tracks) ============
+  // The game's own neonfall-music.mp3 is now a silent stub; this player provides
+  // the real soundtrack with seamless 3 s crossfades between 8 tracks. It runs on
+  // a separate AudioContext and syncs with the game's pause/mute/visibility.
+  const TRACKS = [
+    { file: '/music/track-1-neon-pulse.mp3',        name: 'Neon Pulse' },
+    { file: '/music/track-2-neon-pulse-alt.mp3',    name: 'Neon Pulse (Alt)' },
+    { file: '/music/track-3-neon-pixel-run.mp3',    name: 'Neon Pixel Run' },
+    { file: '/music/track-4-neon-pixel-run-alt.mp3',name: 'Neon Pixel Run (Alt)' },
+    { file: '/music/track-5-neon-pixel-rush.mp3',   name: 'Neon Pixel Rush' },
+    { file: '/music/track-6-neon-pixel-rush-alt.mp3',name: 'Neon Pixel Rush (Alt)' },
+    { file: '/music/track-7-block-rush.mp3',        name: 'Block Rush' },
+    { file: '/music/track-8-block-rush-alt.mp3',    name: 'Block Rush (Alt)' },
+  ];
+  const FADE_DUR = 3.0;          // seconds of crossfade between tracks
+  const MUSIC_VOL = 0.5;         // target music volume (matches game's musicGain)
+  const musicBar = document.getElementById('nf-music-bar');
+  const musicTrackEl = document.getElementById('nf-music-track');
+  let mCtx: AudioContext | null = null;
+  let mMaster: GainNode | null = null;     // master (mute) gain
+  let mVol: GainNode | null = null;        // volume gain (for crossfades + pause ramps)
+  let buffers: (AudioBuffer | null)[] = TRACKS.map(() => null);
+  let curIdx = 0;
+  let curSrc: AudioBufferSourceNode | null = null;
+  let nextTimer: any = null;
+  let mStarted = false;
+  let mPaused = false;          // paused by game-pause sync
+  let mMuted = false;           // muted by game-mute sync
+
+  async function loadTrack(i: number): Promise<AudioBuffer | null> {
+    if (buffers[i]) return buffers[i];
+    if (!mCtx) return null;
+    try {
+      const res = await fetch(TRACKS[i].file);
+      const ab = await res.arrayBuffer();
+      const buf = await mCtx.decodeAudioData(ab);
+      buffers[i] = buf;
+      return buf;
+    } catch { return null; }
+  }
+
+  function updateMusicBar() {
+    if (!musicBar || !musicTrackEl) return;
+    musicTrackEl.textContent = TRACKS[curIdx]?.name || '—';
+    musicBar.classList.toggle('paused', mPaused || mMuted);
+  }
+
+  function stopCurSource() {
+    if (nextTimer) { clearTimeout(nextTimer); nextTimer = null; }
+    if (curSrc) {
+      try { curSrc.onended = null; curSrc.stop(); } catch {}
+      curSrc = null;
+    }
+  }
+
+  // Play track i immediately, fading in over fadeInDur. Schedules the next track
+  // to crossfade in FADE_DUR before this track ends.
+  async function playTrack(i: number, fadeInDur: number) {
+    if (!mCtx || !mVol) return;
+    const buf = await loadTrack(i);
+    if (!buf || !mCtx) return;
+    // If we switched tracks while loading, abort.
+    if (curIdx !== i) return;
+    stopCurSource();
+    curSrc = mCtx.createBufferSource();
+    curSrc.buffer = buf;
+    curSrc.loop = false;
+    const t0 = mCtx.currentTime;
+    const srcGain = mCtx.createGain();
+    srcGain.gain.setValueAtTime(0.0001, t0);
+    srcGain.gain.exponentialRampToValueAtTime(MUSIC_VOL, t0 + fadeInDur);
+    curSrc.connect(srcGain); srcGain.connect(mVol);
+    curSrc.start(t0);
+    // schedule crossfade to next track
+    const dur = buf.duration;
+    const crossStart = Math.max(0, dur - FADE_DUR);
+    if (nextTimer) clearTimeout(nextTimer);
+    nextTimer = setTimeout(() => {
+      // fade out current, start next
+      if (curSrc && mCtx) {
+        const tt = mCtx.currentTime;
+        try {
+          srcGain.gain.cancelScheduledValues(tt);
+          srcGain.gain.setValueAtTime(srcGain.gain.value, tt);
+          srcGain.gain.exponentialRampToValueAtTime(0.0001, tt + FADE_DUR);
+        } catch {}
+      }
+      curIdx = (curIdx + 1) % TRACKS.length;
+      // give the fade-out a moment, then start next (overlapping)
+      setTimeout(() => { playTrack(curIdx, FADE_DUR); updateMusicBar(); }, 50);
+      // stop the old source after the fade completes
+      setTimeout(() => {
+        if (curSrc && curSrc.buffer === buf) {
+          try { curSrc.stop(); } catch {}
+        }
+      }, FADE_DUR * 1000 + 100);
+    }, crossStart * 1000);
+    updateMusicBar();
+  }
+
+  function startMusic() {
+    if (mStarted) return;
+    mStarted = true;
+    try {
+      mCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      mMaster = mCtx.createGain();
+      mMaster.gain.value = mMuted ? 0 : 1;
+      mMaster.connect(mCtx.destination);
+      mVol = mCtx.createGain();
+      mVol.gain.value = mPaused ? 0 : 1;
+      mVol.connect(mMaster);
+    } catch { return; }
+    musicBar?.classList.add('show');
+    curIdx = Math.floor(Math.random() * TRACKS.length); // start on a random track
+    playTrack(curIdx, 1.5);
+    // preload the next track in the background
+    loadTrack((curIdx + 1) % TRACKS.length);
+  }
+
+  function setMusicMuted(muted: boolean) {
+    mMuted = muted;
+    if (mMaster && mCtx) {
+      const t = mCtx.currentTime;
+      mMaster.gain.cancelScheduledValues(t);
+      mMaster.gain.setValueAtTime(mMaster.gain.value, t);
+      mMaster.gain.linearRampToValueAtTime(muted ? 0 : 1, t + 0.08);
+    }
+    updateMusicBar();
+  }
+  function setMusicPaused(paused: boolean) {
+    mPaused = paused;
+    if (mVol && mCtx) {
+      const t = mCtx.currentTime;
+      mVol.gain.cancelScheduledValues(t);
+      mVol.gain.setValueAtTime(mVol.gain.value, t);
+      mVol.gain.linearRampToValueAtTime(paused ? 0 : 1, t + 0.12);
+    }
+    if (mCtx) {
+      if (paused) mCtx.suspend().catch(() => {});
+      else mCtx.resume().catch(() => {});
+    }
+    updateMusicBar();
+  }
+  function skipMusic(dir: number) {
+    if (!mStarted) { startMusic(); return; }
+    curIdx = (curIdx + dir + TRACKS.length) % TRACKS.length;
+    // stop + immediately play new track with short fade
+    stopCurSource();
+    if (mCtx) mCtx.resume().catch(() => {});
+    playTrack(curIdx, 0.8);
+    loadTrack((curIdx + 1) % TRACKS.length);
+  }
+
+  // Wire player buttons
+  (document.getElementById('nf-music-prev') as HTMLButtonElement | null)
+    ?.addEventListener('click', (e) => { e.stopPropagation(); skipMusic(-1); });
+  (document.getElementById('nf-music-next') as HTMLButtonElement | null)
+    ?.addEventListener('click', (e) => { e.stopPropagation(); skipMusic(1); });
+
+  // Start music on first user interaction (same triggers as the game's initAudio)
+  function tryStartMusic() { if (!mStarted) startMusic(); }
+  const gc = document.getElementById('game-container');
+  gc?.addEventListener('touchstart', tryStartMusic, { passive: true });
+  gc?.addEventListener('mousedown', tryStartMusic);
+  document.addEventListener('keydown', tryStartMusic);
+  // also start when the hint closes / start-prompt tapped
+  document.getElementById('hint-close-button')?.addEventListener('click', tryStartMusic);
+  document.getElementById('start-prompt')?.addEventListener('click', tryStartMusic);
+
+  // Sync with game pause (#pause-overlay .visible)
+  const pauseOv = document.getElementById('pause-overlay');
+  if (pauseOv) {
+    new MutationObserver(() => {
+      if (!mStarted) return;
+      setMusicPaused(pauseOv.classList.contains('visible'));
+    }).observe(pauseOv, { attributes: true, attributeFilter: ['class'] });
+  }
+  // Sync with game-over screen: keep playing (no change), but if the user
+  // restarts we just keep the music flowing.
+  // Sync with game mute (#mute-btn textContent 🔇/🔊)
+  const muteBtn = document.getElementById('mute-btn');
+  if (muteBtn) {
+    new MutationObserver(() => {
+      setMusicMuted(muteBtn.textContent?.includes('🔇') || false);
+    }).observe(muteBtn, { childList: true, characterData: true, subtree: true });
+  }
+  // Sync with tab visibility (game silences its audio on hide; do the same)
+  document.addEventListener('visibilitychange', () => {
+    if (!mStarted) return;
+    if (document.hidden) {
+      if (mMaster && mCtx) {
+        const t = mCtx.currentTime;
+        mMaster.gain.cancelScheduledValues(t);
+        mMaster.gain.setValueAtTime(mMaster.gain.value, t);
+        mMaster.gain.linearRampToValueAtTime(0, t + 0.05);
+      }
+    } else if (!mMuted) {
+      if (mMaster && mCtx) {
+        const t = mCtx.currentTime;
+        mMaster.gain.cancelScheduledValues(t);
+        mMaster.gain.setValueAtTime(0, t);
+        mMaster.gain.linearRampToValueAtTime(1, t + 0.2);
+      }
+    }
+  });
+  // Hide the music bar while a game modal covers the board (hint at first load)
+  function syncMusicBarVisibility() {
+    const hint = document.getElementById('hint-overlay');
+    const over = document.getElementById('game-over-screen');
+    const hide = (hint && !hint.classList.contains('hidden')) || (over && over.classList.contains('visible'));
+    musicBar?.classList.toggle('hidden-by-game', !!hide);
+  }
+  ['hint-overlay', 'game-over-screen'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) new MutationObserver(syncMusicBarVisibility).observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+  syncMusicBarVisibility();
+
+  // Shift the music bar up when the install banner is visible (they share the
+  // bottom edge; this prevents the banner from covering the skip buttons).
+  const installBanner = document.getElementById('nf-install-banner');
+  function syncMusicBarShift() {
+    musicBar?.classList.toggle('shift-up', installBanner?.classList.contains('show') || false);
+  }
+  if (installBanner) {
+    new MutationObserver(syncMusicBarShift).observe(installBanner, { attributes: true, attributeFilter: ['class'] });
+  }
 
   // ============ PWA INSTALL ============
   const banner = document.getElementById('nf-install-banner');

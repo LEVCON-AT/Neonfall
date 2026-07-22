@@ -1,7 +1,7 @@
 // NEONFALL Service Worker
 // Provides offline support (caches app shell + music) and the installability signal.
 
-const CACHE_VERSION = 'neonfall-v4';
+const CACHE_VERSION = 'neonfall-v5';
 const PRECACHE_URLS = [
   '/',
   '/neonfall-music.mp3',
@@ -10,6 +10,14 @@ const PRECACHE_URLS = [
   '/icon-512.png',
   '/apple-touch-icon.png',
   '/favicon.png',
+  '/music/track-1-neon-pulse.mp3',
+  '/music/track-2-neon-pulse-alt.mp3',
+  '/music/track-3-neon-pixel-run.mp3',
+  '/music/track-4-neon-pixel-run-alt.mp3',
+  '/music/track-5-neon-pixel-rush.mp3',
+  '/music/track-6-neon-pixel-rush-alt.mp3',
+  '/music/track-7-block-rush.mp3',
+  '/music/track-8-block-rush-alt.mp3',
 ];
 
 // --- INSTALL: precache the app shell + music so the game runs offline ---
