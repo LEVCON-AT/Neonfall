@@ -50,6 +50,17 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
           rel="stylesheet"
         />
+        {/* Preload the music so it starts fetching immediately on page load.
+            The game fetches neonfall-music.mp3 on first user interaction; with
+            this preload, the 16 MB download completes during hint-reading time,
+            so the music starts within ~100 ms (decode) of the first tap instead
+            of waiting for a multi-second download. */}
+        <link
+          rel="preload"
+          href="/neonfall-music.mp3"
+          as="fetch"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>{children}</body>
     </html>

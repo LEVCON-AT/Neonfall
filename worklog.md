@@ -299,4 +299,77 @@ forderte erneut mehr Features + Styling. Auch hier wurde das Spiel-IIFE erneut
   (b) Daily-Challenge-Modus, (c) Cloud-Highscore-Liste, (d) Settings-Import/
   Export, (e) Tastatur-Shortcuts im Stats-Panel (S=Stats, Esc=Close).
 
+---
 
+## Nutzer-Feedback: 3 Probleme (Musik-Ladezeit, Hinweis-Layout, Desktop-Breite)
+
+**Task ID:** UF-1 · **Agent:** main (Nutzer-Anfrage, Vorrang vor Cron)
+
+### Problem 1: Musik dauert lange bis sie beginnt
+**Ursache:** Das Spiel fetcht `neonfall-music.mp3` (16 MB) erst bei der ersten
+Nutzer-Interaktion (`initAudio`), dann `decodeAudioData`. Auf dem Handy heißt
+das: 16 MB Download über mobiles Netz + Decode = mehrere Sekunden Wartezeit.
+
+**Fix:** `<link rel="preload" href="/neonfall-music.mp3" as="fetch" crossorigin>`
+in `layout.tsx` head. Der Browser startet den Download sofort beim Seitenladen
+(hohe Priorität), während der Nutzer den Hinweis liest. Beim ersten Tap ist die
+Datei bereits im HTTP-Cache → `fetch()` im Spiel liefert sofort, nur noch
+Decode (~100 ms).
+
+**Verifiziert:** Resource-Timing zeigt `initiator:link, startTime:89ms,
+duration:140ms, decodedMB:16.02` — Preload läuft sofort. Nach `initAudio`:
+`musicTransferKB:0` (aus Cache) — Musik startet innerhalb ~100 ms. ✓
+
+**Offen (6-Track-Crossfade):** Nutzer erwähnt 6 einzelne Musikdateien, die
+gefadet werden sollen. Dateien noch nicht hochgeladen → kann noch nicht
+implementiert werden. Wurde vom Nutzer angefragt; auf Upload wartend.
+
+### Problem 2: Hinweis-Overlay zweispaltig (sieht schlecht aus)
+**Ursache:** Original-Game-CSS hat `@media (min-width: 700px) {
+.hint-cols-wrap { display: flex; gap: 24px; } }` → auf Desktop/Breitbild werden
+Touch- und Tastatur-Anleitung nebeneinander gezeigt. Nutzer sagt: „war so auch
+nicht" (soll einspaltig sein).
+
+**Fix:** Shell-CSS-Override (injected nach Game-CSS):
+`.hint-cols-wrap { display: flex !important; flex-direction: column !important;
+gap: 16px !important; }` → Touch und Tastatur stapeln sich immer vertikal.
+
+**Verifiziert:** `hintColsWrapDirection:column` ✓. VLM: „single vertical column
+(stacked)... no longer split into two side-by-side columns... highly readable,
+well-spaced... no significant layout problems."
+
+### Problem 3: Desktop-App zu breit
+**Ursache:** Original-Game-CSS setzt nur `#top-bar, #second-bar,
+#game-container { max-width: 440px }` in der Desktop-Mediaquery, aber `body`
+selbst ist voll-bildschirmbreit. Inhalt ist 440px zentriert, aber Body-
+Hintergrund + Gradient-Blobs füllen den ganzen Viewport → App wirkt „zu breit".
+
+**Fix:** Shell-CSS-Override in `@media (min-width: 700px)`:
+- `html { background: #050509 }` (außen dunkler)
+- `body { max-width: 460px; margin: 0 auto; border-left/right: 1px solid
+  rgba(255,255,255,0.07); box-shadow: 0 0 80px rgba(0,0,0,0.7) }`
+- `body::before, body::after { position: absolute !important }` → Gradient-Blobs
+  werden auf die Body-Säule geclippt (body ist position:relative), außen bleibt
+  flach-dunkel.
+
+**Verifiziert:** `bodyW:460, bodyMaxW:460px, htmlBg:rgb(5,5,9), bodyBorderL:1px,
+contentW:440` ✓. VLM: „narrow column centered on screen... empty dark space on
+both sides... thin border/frame... content occupies most of that narrow width...
+looks like a phone app centered on a desktop screen."
+
+### Verifikation Gesamt
+- Keine Console-Errors, keine dev.log-Errors ✓
+- Spiel weiterhin voll funktionsfähig (Canvas, Tastatur) ✓
+- Preload-Link im HTML bestätigt ✓
+- SW-Cache-Version auf v4 hochgezählt ✓
+- Lint: 0 Errors ✓
+
+### Offen / Nächste Schritte
+- **6-Track-Crossfade:** Warte auf Upload der 6 Musikdateien. Plan: separater
+  Web-Audio-Crossfade-Player im Shell-Modul (6× AudioBuffer, nahtloses
+  Überblenden). Herausforderung: Koexistenz mit dem Spiel-eigenen AudioCtx
+  (IIFE-Closure). Option A: Spiel-Musik stummschalten und nur Shell-Player
+  nutzen (erfordert Eingriff in `masterGain`/`musicGain` — nicht von außen
+  zugänglich). Option B: `neonfall-music.mp3` durch eine leere/Stumm-Datei
+  ersetzen + Shell-Player übernimmt. Wird mit Nutzer klären.
+- Cron-Review-Job läuft weiter.

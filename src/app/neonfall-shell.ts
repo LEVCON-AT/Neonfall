@@ -532,6 +532,39 @@ export const SHELL_CSS = `
 @media (min-width: 700px) {
     #nf-stats-card { max-width: 420px; }
 }
+
+/* ===== User-requested fixes (override game CSS, injected AFTER game CSS) ===== */
+
+/* Issue 2: Hint overlay — always single column (stacked), never two columns.
+   The game's @media(min-width:700px) sets .hint-cols-wrap to flex row; we override
+   to flex-column so Touch and Tastatur stack vertically on every screen. */
+.hint-cols-wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+}
+
+/* Issue 3: Desktop — constrain the whole app to a phone-width column with a thin
+   frame, exactly like on mobile. The game's body is full-width with content capped
+   at 440px; we instead cap the body itself so the app reads as a centered phone. */
+@media (min-width: 700px) {
+    html {
+        background: #050509;
+    }
+    body {
+        max-width: 460px;
+        margin: 0 auto;
+        border-left: 1px solid rgba(255,255,255,0.07);
+        border-right: 1px solid rgba(255,255,255,0.07);
+        box-shadow: 0 0 80px rgba(0,0,0,0.7);
+        /* keep the gradient blobs INSIDE the phone column (body is position:relative) */
+        overflow: hidden;
+    }
+    /* Clip the decorative fixed gradient blobs to the body so the outside stays flat-dark. */
+    body::before, body::after {
+        position: absolute !important;
+    }
+}
 `;
 
 export function initShell() {
