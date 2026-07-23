@@ -324,6 +324,15 @@ body.nf-playing::after { animation-play-state: paused !important; }
   border: 1px solid rgba(244,114,182,0.2);
   border-radius: 8px;
   background: #08080f;
+  /* Responsive: small on mobile, larger on desktop */
+  width: 120px;
+  height: 200px;
+}
+@media (min-width: 768px) {
+  .nf-mp-dialog { max-width: 520px !important; }
+  .nf-mp-opponent-canvas { width: 180px; height: 300px; }
+  .nf-mp-playing { flex-direction: row; align-items: flex-start; gap: 20px; }
+  .nf-mp-vs { margin-bottom: 8px; }
 }
 .nf-mp-result { gap: 8px; padding: 16px 0; }
 .nf-mp-result-icon { display: flex; justify-content: center; margin-bottom: 4px; }
@@ -1320,6 +1329,48 @@ export function NeonfallApp() {
       /* localStorage unavailable — noop */
     }
   }, [showHintOnStart]);
+
+  // ===== Effect M: Mode-specific Game-Over title. The IIFE ships a hardcoded
+  //       "GAME OVER" <h1> in #game-over-screen. For Sprint (40 lines cleared)
+  //       and Ultra (time up) we override the text via direct DOM mutation
+  //       when the game-over screen becomes visible, so the message matches
+  //       the mode. Marathon/Zen keep "GAME OVER". =====
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const goScreen = document.getElementById('game-over-screen');
+    if (!goScreen) return;
+    const h1 = goScreen.querySelector('h1');
+    if (!h1) return;
+
+    const updateTitle = () => {
+      if (!goScreen.classList.contains('visible')) return;
+      const currentMode = useGameStore.getState().mode;
+      if (currentMode === 'sprint') {
+        h1.textContent = '40 LINIEN!';
+        h1.style.background = 'linear-gradient(90deg, #f472b6, #a78bfa)';
+        h1.style.webkitBackgroundClip = 'text';
+        h1.style.backgroundClip = 'text';
+        h1.style.color = 'transparent';
+      } else if (currentMode === 'ultra') {
+        h1.textContent = 'ZEIT ABGELAUFEN';
+        h1.style.background = 'linear-gradient(90deg, #a78bfa, #22d3ee)';
+        h1.style.webkitBackgroundClip = 'text';
+        h1.style.backgroundClip = 'text';
+        h1.style.color = 'transparent';
+      } else {
+        h1.textContent = 'GAME OVER';
+        h1.style.background = '';
+        h1.style.webkitBackgroundClip = '';
+        h1.style.backgroundClip = '';
+        h1.style.color = '';
+      }
+    };
+
+    const obs = new MutationObserver(updateTitle);
+    obs.observe(goScreen, { attributes: true, attributeFilter: ['class'] });
+    updateTitle();
+    return () => obs.disconnect();
+  }, []);
 
   return (
     <>
