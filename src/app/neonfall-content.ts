@@ -67,7 +67,7 @@ export const GAME_CSS = `
         align-items: stretch;
         justify-content: center;
         width: 100%;
-        max-width: 320px;
+        max-width: 360px;
         gap: 6px;
         flex: 0 0 auto;
     }
@@ -146,7 +146,7 @@ export const GAME_CSS = `
         flex: 1 1 auto;
         min-height: 0;
         width: 100%;
-        max-width: 320px;
+        max-width: 360px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -506,7 +506,7 @@ export const GAME_CSS = `
     @media (min-width: 700px) {
         html, body { touch-action: auto; }
         h1#title { font-size: 1.4em; }
-        #top-bar, #second-bar, #game-container { max-width: 440px; }
+        #top-bar, #second-bar, #game-container { max-width: 480px; }
         .stat-box p { font-size: 1.3em; }
         .mini-box h3, .stat-box h3 { font-size: 0.65em; }
         #hint-content { max-width: 560px; }
@@ -641,9 +641,14 @@ export const GAME_HTML = `<h1 id="title">NEONFALL</h1>
 export const GAME_SCRIPT = `
 (function () {
     // --- KONSTANTEN ---
-    const COLS = 10;
+    // S5b/P1: Grid von 10→12 Spalten erweitert (rechtliche Abhebung vom
+    //   Tetris-Standard 10×20). Combined mit den zusätzlichen Pentomino-Formen
+    //   ergibt das eine deutliche Abhebung vom Tetris "look & feel".
+    const COLS = 12;
     const ROWS = 20;
-    const BLOCK_SIZE = 28;
+    // BLOCK_SIZE von 28→24 reduziert, damit 12 Spalten auf Mobile (360px)
+    //   noch bequem passen: 12×24=288px Canvas-Breite (vorher 10×28=280px).
+    const BLOCK_SIZE = 24;
 
     const canvas = document.getElementById('tetris-canvas');
     const ctx = canvas.getContext('2d');
@@ -674,16 +679,30 @@ export const GAME_SCRIPT = `
     const muteBtn = document.getElementById('mute-btn');
     const pauseBtn = document.getElementById('pause-btn');
 
+    // S5b/P1: 7 Standard-Tetrominos + 5 eigene Pentomino-Formen (5 Zellen).
+    //   Pentominoes sind prä-Tetris (Solomon Golomb 1953), öffentliches Gut.
+    //   Die Kombination aus 12er-Grid + Pentomino-Mix hebt NEONFALL deutlich
+    //   vom Tetris "look & feel" ab (Tetris Holding LLC v. Xio, 2012).
+    //   Pentomino-Auswahl: F, L5, P, T5, Y — gut spielbar, visuell distinkt.
     const SHAPES = {
+        // --- 7 Tetrominos (4 Zellen) ---
         'I': { shape: [[1, 1, 1, 1]], color: '#22d3ee' },
         'J': { shape: [[1, 0, 0], [1, 1, 1]], color: '#6366f1' },
         'L': { shape: [[0, 0, 1], [1, 1, 1]], color: '#fb923c' },
         'O': { shape: [[1, 1], [1, 1]], color: '#fbbf24' },
         'S': { shape: [[0, 1, 1], [1, 1, 0]], color: '#34d399' },
         'T': { shape: [[0, 1, 0], [1, 1, 1]], color: '#a78bfa' },
-        'Z': { shape: [[1, 1, 0], [0, 1, 1]], color: '#fb7185' }
+        'Z': { shape: [[1, 1, 0], [0, 1, 1]], color: '#fb7185' },
+        // --- 5 Pentominoes (5 Zellen) — eigene Neon-Farben ---
+        'F': { shape: [[0, 1, 1], [1, 1, 0], [0, 1, 0]], color: '#06b6d4' },
+        'P': { shape: [[1, 1], [1, 1], [1, 0]], color: '#ec4899' },
+        'T5': { shape: [[1, 1, 1], [0, 1, 0], [0, 1, 0]], color: '#10b981' },
+        'Y': { shape: [[1, 0], [1, 1], [1, 0], [1, 0]], color: '#f59e0b' },
+        'L5': { shape: [[1, 0], [1, 0], [1, 0], [1, 1]], color: '#8b5cf6' }
     };
-    const PIECE_TYPES = 'IJLOSTZ';
+    // PIECE_TYPES als Array (nicht String) weil 'T5' und 'L5' 2-Char-Typen sind.
+    //   Ein String.split('') würde sie in einzelne Zeichen zerlegen.
+    const PIECE_TYPES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z', 'F', 'P', 'T5', 'Y', 'L5'];
 
     let board = createBoard();
     let score = 0;
@@ -727,10 +746,13 @@ export const GAME_SCRIPT = `
         return b;
     }
 
-    // 7-Bag-Randomizer: jeder Stein kommt genau einmal pro 7er-Bag, keine langen Duerren/Fluten
+    // 12-Bag-Randomizer: jeder Stein kommt genau einmal pro 12er-Bag, keine langen Duerren/Fluten.
+    //   (Vor S5b/P1: 7-Bag mit 7 Tetrominos; jetzt 12 Formen inkl. 5 Pentominoes.)
     let pieceBag = [];
     function refillBag() {
-        pieceBag = PIECE_TYPES.split('');
+        // S5b/P1: PIECE_TYPES ist jetzt ein Array (für 2-Char-Typen wie 'T5').
+        //   slice() statt split('').
+        pieceBag = PIECE_TYPES.slice();
         for (let i = pieceBag.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [pieceBag[i], pieceBag[j]] = [pieceBag[j], pieceBag[i]];

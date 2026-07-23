@@ -841,3 +841,45 @@ Stage Summary:
 - P1: wartet auf Nutzer-Entscheidung (Pentomino-Formen)
 - P4: Testliste erstellt
 - 0 lint errors, HTTP 200, keine console errors
+
+---
+Task ID: S5b-P1
+Agent: Main Agent (Z.ai Code)
+Task: P1 — 12×20 Grid + 5 Pentomino-Formen (rechtliche Abhebung vom Tetris look&feel)
+
+Work Log:
+- Rechtliche Bewertung: Tetris Holding LLC v. Xio (2012) — 10×20 Grid + 7 Standard-Tetrominos + 7-Bag-Randomizer = geschütztes "look & feel". 12×20 + Pentomino-Mix macht Klagebasis extrem schwach.
+- IIFE geändert (byte-identical-Constraint vom Nutzer für P1 explizit gelockert):
+  1. COLS: 10 → 12 (12×20 Grid statt 10×20)
+  2. BLOCK_SIZE: 28 → 24 (12×24=288px Canvas statt 10×28=280px — passt auf 360px Mobile)
+  3. SHAPES: 7 Tetrominos + 5 Pentominoes (F, P, T5, Y, L5) = 12 Formen total
+     - F: [[0,1,1],[1,1,0],[0,1,0]] color #06b6d4 (cyan)
+     - P: [[1,1],[1,1],[1,0]] color #ec4899 (pink)
+     - T5: [[1,1,1],[0,1,0],[0,1,0]] color #10b981 (green)
+     - Y: [[1,0],[1,1],[1,0],[1,0]] color #f59e0b (amber)
+     - L5: [[1,0],[1,0],[1,0],[1,1]] color #8b5cf6 (purple)
+  4. PIECE_TYPES: String 'IJLOSTZ' → Array ['I','J','L','O','S','T','Z','F','P','T5','Y','L5']
+     (Array nötig weil 'T5' und 'L5' 2-Char-Typen sind — String.split('') würde sie zerlegen)
+  5. refillBag: PIECE_TYPES.split('') → PIECE_TYPES.slice() (Array-Kompatibilität)
+  6. Kommentar: "7-Bag-Randomizer" → "12-Bag-Randomizer"
+- CSS angepasst: #top-bar/#second-bar max-width 320→360px, @media(700px) 440→480px (für breiteres Canvas)
+- Rotation: generische Matrix-Rotation (rotateCW/rotateCCW) funktioniert für alle Formen inkl. Pentominoes — keine Änderung nötig.
+- createPiece: pos.x = Math.floor(COLS/2) - Math.ceil(matrix[0].length/2) — funktioniert für 12 cols automatisch.
+- Lint: 0 errors (1 pre-existing font-Warnung).
+- Verifikation via agent-browser:
+  - Canvas: 288×480 (12×24=288, 20×24=480) ✅
+  - Game-Container: 360px (passt auf 360px Mobile) ✅
+  - 12 PIECE_TYPES im IIFE: 'I','J','L','O','S','T','Z','F','P','T5','Y','L5' ✅
+  - Pentomino shapes (T5, L5, F) im IIFE ✅
+  - refillBag nutzt slice() nicht split('') ✅
+  - Game läuft (bodyPlaying: true, restart funktioniert) ✅
+  - 40 Hard Drops: 3+ eindeutige Farben erschienen inkl. P-Pentomino (rgb 243,86,174 ≈ #ec4899) und T5-Pentomino (rgb 61,223,173 ≈ #10b981) ✅
+  - Score=0 (ungezielte Hard Drops füllen keine Reihen) — korrektes Verhalten
+  - Screenshots: p1-01-12col-game.png, p1-02-12col-playing.png, p1-03-12col-restarted.png
+
+Stage Summary:
+- Rechtliche Abhebung: 12×20 Grid (statt 10×20) + 5 Pentomino-Formen (statt nur 7 Tetrominos) = deutliche Distanz zum Tetris "look & feel"
+- Pentominoes sind prä-Tetris (Solomon Golomb 1953), öffentliches Gut — keine Markenrechte
+- Spielgefühl: etwas schwerer wegen 5-Zellen-Pentominoes, aber 12 Spalten geben mehr Platz
+- Canvas-Breite 288px passt auf 360px Mobile (vorher 280px)
+- IIFE-Constraint wurde für P1 vom Nutzer explizit gelockert (rechtliche Notwendigkeit)
