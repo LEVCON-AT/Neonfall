@@ -563,3 +563,39 @@ Stage Summary:
 - Repo URL: https://github.com/LEVCON-AT/Neonfall
 - Token aus git config entfernt, liegt aber im Chatverlauf → Nutzer sollte PAT bei GitHub revoken (Sicherheitsbest practice)
 - App läuft stabil auf Port 3000, moderne React-Architektur verifiziert
+
+---
+Task ID: S2.2
+Agent: Main Agent (Z.ai Code)
+Task: Sprint 2.2 — Dead-Settings-Cleanup (Musik/SFX/Geisterstein entfernen)
+
+Work Log:
+- Recherche: Alle Referenzen auf musicVolume/sfxVolume/ghostPiece in 3 Dateien (SettingsDialog.tsx, settings-store.ts, types.ts). Keine versteckten Abhängigkeiten.
+- SettingsDialog.tsx:
+  - Imports aufgeräumt: Volume2, Music, Eye entfernt (nur Vibrate, Gauge, Lightbulb, Keyboard bleiben)
+  - Audio-Tab komplett entfernt (TabsTrigger + TabsContent mit Musik/SFX-Slider)
+  - Geisterstein aus Anzeige-Tab entfernt (nur „Hinweis beim Start" bleibt)
+  - defaultValue von "audio" auf "feedback" geändert (neuer Default-Tab)
+  - Description-Text angepasst: „Passe Feedback, Anzeige und Steuerung an" (vorher „Audio, Feedback, Anzeige und Steuerung")
+- settings-store.ts:
+  - setMusicVolume, setSfxVolume, toggleGhostPiece aus interface entfernt
+  - musicVolume, sfxVolume, ghostPiece aus DEFAULTS entfernt
+  - Setter aus create() entfernt
+  - persist version 1→2 mit migrate-Funktion (löscht alte Keys stillschweigend aus localStorage beim Laden)
+- types.ts: musicVolume, sfxVolume, ghostPiece aus Settings-Interface entfernt
+- IIFE (neonfall-content.ts) NICHT angetastet — byte-identisch.
+- Lint: 0 errors (1 pre-existing font-Warnung).
+- Verifikation via agent-browser:
+  - HTTP 200, Settings-Dialog öffnet per S-Taste
+  - Screenshot s2-05-cleanup.png: 3 Tabs (Feedback/Anzeige/Steuerung), kein Audio-Tab
+  - eval: audioTab=false, ghostSwitch=false ✅
+  - Auf Anzeige-Tab geklickt: Hinweis beim Start switch checked=true, ghostSwitch=false ✅
+  - Screenshot s2-06-display-tab.png
+  - dev.log: keine Errors
+
+Stage Summary:
+- 3 von 5 dead Settings entfernt (Musiklautstärke, Effektlautstärke, Geisterstein)
+- Übrig: Rattle + Impact (funktional via syncGameSlider), Haptik (funktional via S2.1), Hinweis beim Start (funktional via S2.1)
+- Settings-Dialog jetzt schlank: 3 Tabs, 4 funktionale Einstellungen, 0 tote UI
+- Persist-Migration v1→v2 sichert localStorage-Kompatibilität (alte Keys werden stillschweigend gedroppt)
+- Nächster Schritt (S2.3, nach Nutzer-Go): Top-Bar-Konsolidierung & 360px-Layout

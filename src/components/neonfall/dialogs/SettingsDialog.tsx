@@ -14,11 +14,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
-  Volume2,
-  Music,
   Vibrate,
   Gauge,
-  Eye,
   Lightbulb,
   Keyboard,
 } from 'lucide-react';
@@ -80,70 +77,24 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         <DialogHeader>
           <DialogTitle className="nf-dialog-title">Einstellungen</DialogTitle>
           <DialogDescription className="nf-dialog-desc">
-            Passe Audio, Feedback, Anzeige und Steuerung an. Wird lokal
-            gespeichert. NEONFALL ist ein Neon-Dark-Spiel — ein heller Modus
-            ist nicht verfügbar.
+            Passe Feedback, Anzeige und Steuerung an. Wird lokal gespeichert.
+            NEONFALL ist ein Neon-Dark-Spiel — ein heller Modus ist nicht
+            verfügbar.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="audio" className="nf-settings-tabs">
+        <Tabs defaultValue="feedback" className="nf-settings-tabs">
           <TabsList className="nf-settings-tabslist">
-            <TabsTrigger value="audio">
-              <Volume2 size={14} aria-hidden="true" /> Audio
-            </TabsTrigger>
             <TabsTrigger value="feedback">
               <Vibrate size={14} aria-hidden="true" /> Feedback
             </TabsTrigger>
             <TabsTrigger value="display">
-              <Eye size={14} aria-hidden="true" /> Anzeige
+              <Lightbulb size={14} aria-hidden="true" /> Anzeige
             </TabsTrigger>
             <TabsTrigger value="controls">
               <Keyboard size={14} aria-hidden="true" /> Steuerung
             </TabsTrigger>
           </TabsList>
-
-          {/* ===== Audio ===== */}
-          <TabsContent value="audio" className="nf-tab-content">
-            <div className="nf-setting-row">
-              <Label htmlFor="set-music" className="nf-setting-label">
-                <Music size={14} aria-hidden="true" /> Musiklautstärke
-              </Label>
-              <div className="nf-setting-control">
-                <Slider
-                  id="set-music"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={[Math.round(s.musicVolume * 100)]}
-                  onValueChange={(v) => s.setMusicVolume(v[0] / 100)}
-                />
-                <span className="nf-setting-value">
-                  {Math.round(s.musicVolume * 100)}%
-                </span>
-              </div>
-            </div>
-            <div className="nf-setting-row">
-              <Label htmlFor="set-sfx" className="nf-setting-label">
-                <Volume2 size={14} aria-hidden="true" /> Effektlautstärke
-              </Label>
-              <div className="nf-setting-control">
-                <Slider
-                  id="set-sfx"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={[Math.round(s.sfxVolume * 100)]}
-                  onValueChange={(v) => s.setSfxVolume(v[0] / 100)}
-                />
-                <span className="nf-setting-value">
-                  {Math.round(s.sfxVolume * 100)}%
-                </span>
-              </div>
-            </div>
-            <p className="nf-setting-hint">
-              Die Lautstärke wird beim nächsten Sound-Abspielen übernommen.
-            </p>
-          </TabsContent>
 
           {/* ===== Feedback ===== */}
           <TabsContent value="feedback" className="nf-tab-content">
@@ -209,16 +160,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
           {/* ===== Anzeige ===== */}
           <TabsContent value="display" className="nf-tab-content">
-            <div className="nf-setting-row">
-              <Label htmlFor="set-ghost" className="nf-setting-label">
-                <Eye size={14} aria-hidden="true" /> Geisterstein
-              </Label>
-              <Switch
-                id="set-ghost"
-                checked={s.ghostPiece}
-                onCheckedChange={() => s.toggleGhostPiece()}
-              />
-            </div>
             <div className="nf-setting-row">
               <Label htmlFor="set-hint" className="nf-setting-label">
                 <Lightbulb size={14} aria-hidden="true" /> Hinweis beim Start

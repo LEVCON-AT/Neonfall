@@ -61,12 +61,9 @@ export interface CareerStats {
 export interface Settings {
   rattleStrength: number;   // 0..2 (slider 0..200 %)
   impactStrength: number;   // 0..2
-  musicVolume: number;      // 0..1
-  sfxVolume: number;        // 0..1
   hapticsEnabled: boolean;
   theme: 'dark' | 'light' | 'system';
   showHintOnStart: boolean;
-  ghostPiece: boolean;
 }
 
 export const GAME_MODES: Record<
