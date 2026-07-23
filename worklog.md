@@ -543,3 +543,23 @@ Stage Summary:
   A) Personal Access Token (PAT) mit repo-scope bereitstellen → ich pushe per HTTPS
   B) git bundle (neonfall-restore.bundle, 54MB) selbst pushen:
      `git clone neonfall-restore.bundle neonfall && cd neonfall && git remote add origin https://github.com/LEVCON-AT/Neonfall.git && git push -u origin main`
+
+---
+Task ID: GITHUB-PUSH
+Agent: Main Agent (Z.ai Code)
+Task: Restore zu GitHub (LEVCON-AT/Neonfall) pushen
+
+Work Log:
+- PAT (ghp_...) vom Nutzer erhalten, remote URL temporär mit token gesetzt
+- git ls-remote: Repo erreichbar (leer, fresh)
+- git push -u origin main: erfolgreich, aber GitHub warnte vor 53MB neonfall-restore.bundle
+- Cleanup: git rm --cached neonfall-restore.bundle, .gitignore ergänzt (bundle, dev.log, server.log, mini-service pid/node_modules), commit, force-push
+- Token aus remote URL entfernt (Sicherheit): origin zurück auf https://github.com/LEVCON-AT/Neonfall.git
+- Bundle von disk gelöscht (nicht mehr benötigt)
+- Finale Verifikation: HTTP 200, moderne Marker (Einstellungen/NeonfallApp/nf-app-footer) in served page, dev.log sauber
+
+Stage Summary:
+- GitHub-Repo LEVCON-AT/Neonfall populated mit main branch, 4 neue commits (Restore + Worklog + Bundle-Cleanup + .gitignore)
+- Repo URL: https://github.com/LEVCON-AT/Neonfall
+- Token aus git config entfernt, liegt aber im Chatverlauf → Nutzer sollte PAT bei GitHub revoken (Sicherheitsbest practice)
+- App läuft stabil auf Port 3000, moderne React-Architektur verifiziert
