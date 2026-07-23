@@ -674,3 +674,47 @@ Stage Summary:
 - Performance: frame-timing 16.6ms avg (60fps) bestätigt, drift-animation pausiert während gameplay spart GPU-cycles
 - IIFE (neonfall-content.ts) NICHT angetastet — byte-identisch
 - Sprint 3 komplett
+
+---
+Task ID: S4
+Agent: Main Agent (Z.ai Code)
+Task: Sprint 4 — Full Feature Verification (in 4 Teilen)
+
+Work Log:
+
+### S4.1 — Core Gameplay ✅
+- S4.1a Spielstart: Hint sichtbar beim Load → Hint-Close-Button klickbar → Start-Prompt erscheint → Canvas-Klick → Spiel läuft (bodyPlaying: true, canvas 280×560). Screenshots s4-01a/b/c.
+- S4.1b Movement: ArrowLeft/Right/Up/Down via KeyboardEvent dispatch — Canvas zeigt Content, Input-Response bestätigt.
+- S4.1c Hard Drop + Hold: Space (Hard Drop) verifiziert via Next-Preview Farbwechsel (purple→pink). Hold (Shift) verifiziert via hold-canvas nonBlack-Pixel-Zunahme (0→1346).
+- S4.1d Game Over + Restart: 30 Hard Drops erzwungen Game Over (goClasses: "visible", display: flex). Restart-Button klickbar → Score/lines/level zurückgesetzt, bodyPlaying: true. Share-Button (#nf-share-btn) vorhanden.
+
+### S4.2 — Game Modes ✅
+- Mode-Dialog: 4 Karten (Marathon/Sprint 40L/Ultra 3:00/Zen), auswählbar via Klick.
+- Marathon: mode="marathon", kein ModeHud (endlos). ✅
+- Sprint: mode="sprint", ModeHud sichtbar mit "0 / 40" Progress. ✅
+- Ultra: mode="ultra", ModeHud sichtbar mit Countdown "2:59 → 2:57 → 2:52" (5s vergangen = 5s weniger). ✅
+- Zen: mode="zen", kein ModeHud (kein Zeitdruck). ✅
+- Footer-Mode-Badge aktualisiert sich je Mode. Screenshots s4-11 bis s4-24.
+
+### S4.3 — UI/Dialogs ✅ (mit Bug-Fund)
+- S4.3a Settings: 3 Tabs (Feedback/Anzeige/Steuerung), Default "feedback". Feedback: rattle/impact/haptics Controls. Anzeige: nur Hint-Switch (kein Ghost, S2.2 entfernt). Haptics-Toggle schreibt in localStorage (hapticsEnabled: false bestätigt). Screenshots s4-25 bis s4-30.
+- S4.3b Leaderboard: 4 Tabs (Marathon/Sprint/Ultra/Zen). API /api/leaderboard funktioniert (GET + POST /api/scores verifiziert). 4 Test-Scores (Carol/Alice/TestPlayer/Bob) gerendert mit Crown/Medal-Award Icons. ACHTUNG: Service-Worker cached API-Responses — nach SW-Clear werden frische Daten geladen. Screenshots s4-31 bis s4-42.
+- S4.3c Footer + Shortcuts: Footer mit 3 Buttons (Bestenliste/Spielmodus/Einstellungen) + Mode-Badge + NEONFALL-Brand. Shortcuts S/G/L funktionieren wenn keine Shell-Dialoge offen. BUG GEFUNDEN: Name-Dialog (#nf-name-modal) popt nach Game-Over automatisch auf und lässt sich nicht schließen — Shell hat keine Logik dafür (nur React-Markup ohne Handler). Blockiert S/G/L-Shortcuts. Für S5 dokumentiert.
+
+### S4.4 — PWA & Responsive ✅
+- Manifest: name="NEONFALL", short_name, display=standalone, theme_color=#0a0a14, 4 icons. ✅
+- Service Worker: registered, scope="/". ✅
+- Viewport: width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no. ✅
+- 360px: topBar 320px, gameContainer 320px, canvas 300px, footer 360px. ✅
+- 390px (iPhone): Buttons bei top=8 (safe-area aware), footer bei bottom=844=viewportH. ✅
+- 768px (tablet): topBar 440px, gameContainer 440px (IIFE @media min-width:700px greift). ✅
+
+Stage Summary:
+- S4.1-S4.4 alle verifiziert via agent-browser, 48+ Screenshots in analysis-shots/s4-*.png
+- Core Gameplay: Start, Movement, Hard Drop, Hold, Game Over, Restart — alle funktional
+- Game Modes: 4 Modi mit korrekten ModeHud-Anzeigen (Sprint Progress, Ultra Countdown)
+- UI: Settings (3 Tabs), Leaderboard (4 Tabs mit API-Daten), Footer (3 Buttons)
+- PWA: Manifest + SW + Viewport + Responsive (360/390/768px) + Safe-Area
+- BUG gefunden: Name-Dialog nach Game-Over nicht schließbar (S5-Prio)
+- BUG gefunden: Service-Worker cached API-Responses (S5-Prio)
+- dev.log: keine Errors, 0 lint-errors
