@@ -981,6 +981,8 @@ export const GAME_SCRIPT = `
 
             updateStats();
             playLineClearSound(cleared);
+            // S5c: dispatch event for multiplayer + haptics. detail.cleared = 1..4.
+            try { window.dispatchEvent(new CustomEvent('nf-lines-cleared', { detail: { cleared } })); } catch (e) {}
         } else {
             comboCount = -1;
         }
@@ -1161,6 +1163,8 @@ export const GAME_SCRIPT = `
         player.matrix.forEach((row, y) => row.forEach((value, x) => {
             if (value !== 0) drawCell(ctx, x + player.pos.x, y + player.pos.y, player.color, BLOCK_SIZE, 16);
         }));
+        // S5c: dispatch board-updated event for multiplayer opponent preview.
+        try { window.dispatchEvent(new CustomEvent('nf-board-updated')); } catch (e) {}
     }
 
     function drawMiniPreview(context, canvasEl, type) {
@@ -1611,5 +1615,40 @@ export const GAME_SCRIPT = `
     } else {
         hintVisible = true;
     }
+
+    // ===== S5c: Multiplayer hooks =====
+    // Garbage queue: lines sent by the opponent that get applied (with a hole)
+    // at the bottom of the board when the next piece spawns.
+    let pendingGarbage = 0;
+    function applyGarbage() {
+        if (pendingGarbage <= 0) return;
+        const n = Math.min(pendingGarbage, ROWS - 2);
+        pendingGarbage = 0;
+        // Random hole column for each garbage row.
+        for (let i = 0; i < n; i++) {
+            board.shift(); // remove top row
+            const hole = Math.floor(Math.random() * COLS);
+            const row = new Array(COLS).fill(9); // 9 = garbage marker
+            row[hole] = 0;
+            board.push(row);
+        }
+        // If the current piece now overlaps garbage, push it up.
+        if (collide(board, player)) {
+            player.pos.y--;
+        }
+    }
+
+    // Expose hooks for the React multiplayer layer.
+    window.__nfAddGarbage = (count) => { pendingGarbage += Math.max(0, count | 0); };
+    window.__nfResetGarbage = () => { pendingGarbage = 0; };
+    window.__nfGetBoard = () => board.map(row => row.slice());
+    window.__nfRestart = () => restartGame();
+
+    // Patch resetPlayer to apply garbage before spawning the next piece.
+    const _origResetPlayer = resetPlayer;
+    resetPlayer = function() {
+        applyGarbage();
+        _origResetPlayer();
+    };
 })();
 `;

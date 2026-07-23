@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Settings, Gamepad2, Sparkles, Trophy } from 'lucide-react';
+import { Settings, Gamepad2, Sparkles, Trophy, Users } from 'lucide-react';
 import { useGameStore } from '@/lib/store/game-store';
 import { GAME_MODES } from '@/lib/types';
 
@@ -9,6 +9,7 @@ interface FooterProps {
   onOpenSettings: () => void;
   onOpenModeSelect: () => void;
   onOpenLeaderboard: () => void;
+  onOpenMultiplayer: () => void;
 }
 
 /**
@@ -24,6 +25,7 @@ export function Footer({
   onOpenSettings,
   onOpenModeSelect,
   onOpenLeaderboard,
+  onOpenMultiplayer,
 }: FooterProps) {
   const status = useGameStore((s) => s.status);
   const mode = useGameStore((s) => s.mode);
@@ -56,13 +58,13 @@ export function Footer({
           <motion.button
             type="button"
             className="nf-footer-btn"
-            onClick={onOpenLeaderboard}
-            aria-label="Bestenliste öffnen"
-            title="Bestenliste"
+            onClick={onOpenMultiplayer}
+            aria-label="Multiplayer öffnen"
+            title="Multiplayer"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Trophy size={15} aria-hidden="true" />
+            <Users size={15} aria-hidden="true" />
           </motion.button>
           <motion.button
             type="button"

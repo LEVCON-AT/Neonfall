@@ -20,6 +20,7 @@ import { SettingsDialog } from './dialogs/SettingsDialog';
 import { GameModeDialog } from './dialogs/GameModeDialog';
 import { LeaderboardDialog } from './dialogs/LeaderboardDialog';
 import { NameInputDialog } from './dialogs/NameInputDialog';
+import { MultiplayerDialog } from './dialogs/MultiplayerDialog';
 
 /**
  * Supplemental CSS layered on top of GAME_CSS and SHELL_CSS.
@@ -236,6 +237,113 @@ body.nf-playing::after { animation-play-state: paused !important; }
   color: #34d399;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
+}
+
+/* ===== Sprint 5c: Multiplayer Dialog ===== */
+.nf-mp-dialog { max-width: 380px !important; }
+.nf-mp-content { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 8px 0; }
+.nf-mp-create-btn {
+  width: 100%;
+  background: linear-gradient(90deg, rgba(244,114,182,0.2), rgba(167,139,250,0.2)) !important;
+  border: 1px solid rgba(244,114,182,0.4) !important;
+  color: #f472b6 !important;
+  font-weight: 600;
+  font-size: 1.05em !important;
+  height: 48px !important;
+  gap: 8px;
+}
+.nf-mp-create-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, rgba(244,114,182,0.3), rgba(167,139,250,0.3)) !important;
+}
+.nf-mp-divider {
+  width: 100%;
+  text-align: center;
+  color: #6b6b8a;
+  font-size: 0.75em;
+  position: relative;
+  margin: 4px 0;
+}
+.nf-mp-divider::before, .nf-mp-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 24px);
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+}
+.nf-mp-divider::before { left: 0; }
+.nf-mp-divider::after { right: 0; }
+.nf-mp-join { display: flex; gap: 8px; width: 100%; }
+.nf-mp-code-input {
+  flex: 1;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 1.3em !important;
+  font-weight: 700 !important;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(244,114,182,0.3) !important;
+  color: #f472b6 !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+}
+.nf-mp-code-input:focus {
+  border-color: rgba(244,114,182,0.6) !important;
+  box-shadow: 0 0 0 2px rgba(244,114,182,0.15) !important;
+}
+.nf-mp-code-input::placeholder { color: #4a4a6a !important; letter-spacing: 2px; }
+.nf-mp-waiting { gap: 10px; }
+.nf-mp-spinner { color: #f472b6; }
+.nf-mp-waiting-label { color: #c7c7f0; font-size: 0.9em; }
+.nf-mp-room-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.2em;
+  font-weight: 700;
+  letter-spacing: 8px;
+  background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding: 8px 16px;
+  border: 1px solid rgba(244,114,182,0.2);
+  border-radius: 12px;
+}
+.nf-mp-copy-btn { color: #9ca3ff !important; gap: 6px; }
+.nf-mp-leave-btn { color: #fb7185 !important; gap: 6px; margin-top: 4px; }
+.nf-mp-playing { gap: 10px; }
+.nf-mp-vs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.nf-mp-vs-label { font-size: 0.6em; letter-spacing: 2px; color: #9ca3ff; }
+.nf-mp-vs-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #f472b6; font-size: 1.1em; }
+.nf-mp-opponent-canvas {
+  border: 1px solid rgba(244,114,182,0.2);
+  border-radius: 8px;
+  background: #08080f;
+}
+.nf-mp-result { gap: 8px; padding: 16px 0; }
+.nf-mp-result-icon { display: flex; justify-content: center; margin-bottom: 4px; }
+.nf-mp-win { color: #fbbf24; filter: drop-shadow(0 0 12px rgba(251,191,36,0.4)); }
+.nf-mp-lose { color: #fb7185; filter: drop-shadow(0 0 12px rgba(251,113,133,0.3)); }
+.nf-mp-result-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.6em;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.nf-mp-win + .nf-mp-result-text { color: #fbbf24; }
+.nf-mp-result-sub { color: #9ca3ff; font-size: 0.8em; }
+.nf-mp-result-actions { display: flex; gap: 8px; margin-top: 8px; }
+.nf-mp-revanche-btn {
+  background: linear-gradient(90deg, rgba(34,211,238,0.2), rgba(244,114,182,0.2)) !important;
+  border: 1px solid rgba(34,211,238,0.4) !important;
+  color: #22d3ee !important;
+  font-weight: 600;
+  gap: 6px;
 }
 
 /* ===== Footer (fixed, glass, hidden during active play) ===== */
@@ -816,6 +924,7 @@ export function NeonfallApp() {
   const [modeDialogOpen, setModeDialogOpen] = useState(false);
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [nameInputOpen, setNameInputOpen] = useState(false);
+  const [multiplayerOpen, setMultiplayerOpen] = useState(false);
 
   const initRef = useRef(false);
 
@@ -1233,6 +1342,7 @@ export function NeonfallApp() {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenModeSelect={() => setModeDialogOpen(true)}
         onOpenLeaderboard={() => setLeaderboardOpen(true)}
+        onOpenMultiplayer={() => setMultiplayerOpen(true)}
       />
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
@@ -1246,6 +1356,7 @@ export function NeonfallApp() {
         initialMode={mode}
       />
       <NameInputDialog open={nameInputOpen} onOpenChange={setNameInputOpen} />
+      <MultiplayerDialog open={multiplayerOpen} onOpenChange={setMultiplayerOpen} />
 
       <Toaster position="top-center" closeButton richColors />
     </>
