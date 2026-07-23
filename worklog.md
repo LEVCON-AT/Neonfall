@@ -599,3 +599,36 @@ Stage Summary:
 - Settings-Dialog jetzt schlank: 3 Tabs, 4 funktionale Einstellungen, 0 tote UI
 - Persist-Migration v1→v2 sichert localStorage-Kompatibilität (alte Keys werden stillschweigend gedroppt)
 - Nächster Schritt (S2.3, nach Nutzer-Go): Top-Bar-Konsolidierung & 360px-Layout
+
+---
+Task ID: S2.3
+Agent: Main Agent (Z.ai Code)
+Task: Sprint 2.3 — Top-Bar-Konsolidierung & 360px-Layout
+
+Work Log:
+- IST-Analyse via agent-browser (360x780 viewport):
+  - Oben links: #info-btn (IIFE, x=8) + #nf-stats-btn (shell, x=50) — beide 34px, safe-area aware
+  - Oben rechts: #pause-btn (IIFE, x=276) + #mute-btn (IIFE, x=318) — beide 34px, safe-area aware
+  - Top-Bar: x=20, w=320 (4 stat boxes SCORE/BEST/LEVEL/LINES)
+  - BUG GEFUNDEN: #nf-music-btn und #nf-mp-btn bei x=171 (viewport center), y=162/186 — dead DOM nodes ohne CSS-Positionierung, schwebten über dem Spielfeld!
+  - Shell-Recherche: initShell() hat KEINE Referenz auf nf-music-btn/nf-mp-btn (nur nf-stats-btn + nf-online-dot werden genutzt). Music läuft über #nf-music-bar (separate Komponente), Multiplayer war nie im Monolith deployed.
+- ControlButtons.tsx aufgeräumt:
+  - #nf-music-btn entfernt (dead node, kein Shell-Handler, überlappte Spielfeld)
+  - #nf-mp-btn entfernt (dead node, kein Shell-Handler, überlappte Spielfeld)
+  - Imports reduziert: nur noch BarChart3 (vorher BarChart3 + Users + Music)
+  - Kommentar dokumentiert S2.3-Cleanup
+  - Übrig: 4 funktionale Top-Buttons (info/stats/pause/mute) + online-dot
+- Safe-Area: bereits vorhanden via env(safe-area-inset-*) in IIFE-CSS (info/pause/mute) + Shell-CSS (stats). Keine Änderung nötig.
+- Verifikation via agent-browser auf 3 Viewports:
+  - 360px (360x780): musicBtn=false, mpBtn=false ✅. info x=8/right=42, stats x=50/right=84, pause x=276/right=310, mute x=318/right=352, topbar x=20/right=340. Alle innerhalb viewport. Screenshot s2-07-360px.png
+  - 390px (iPhone 14, 390x844): musicBtn=false, mpBtn=false ✅. info x=8, mute right=382, topbar x=35/right=355. Screenshot s2-08-390px.png
+  - 768px (tablet, 768x1024): musicBtn=false, mpBtn=false ✅. topbar x=164/right=604/w=440 (IIFE @media min-width:700px greift, max-width:440px). Screenshot s2-09-768px.png
+  - dev.log: keine Errors
+
+Stage Summary:
+- Bug fix: 2 dead DOM nodes entfernt die über dem Spielfeld schwebten (nf-music-btn, nf-mp-btn)
+- Top-Bar jetzt clean: 4 funktionale Buttons (info/stats/pause/mute) + online-dot
+- Safe-Area-Insets bereits in IIFE + Shell CSS vorhanden (env() für top/left/right)
+- 360px/390px/768px alle verifiziert — keine Kollisionen, keine toten Nodes
+- IIFE (neonfall-content.ts) NICHT angetastet — byte-identisch
+- Sprint 2 komplett: S2.1 (Haptik+Hint live) + S2.2 (Dead-Settings entfernt) + S2.3 (Dead-Buttons entfernt + Layout clean)

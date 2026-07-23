@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Users, Music } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 
 /**
  * Inline SVG strings for the game-controlled buttons.
@@ -22,13 +22,21 @@ const GAME_SVG = {
 } as const;
 
 /**
- * The four fixed-position top-bar control buttons plus the online indicator.
+ * The top-bar control buttons plus the online indicator.
+ *
+ * Layout (top of viewport, safe-area aware):
+ *   top-left:  #info-btn (IIFE) → #nf-stats-btn (shell)
+ *   top-right: #pause-btn (IIFE) → #mute-btn (IIFE)
+ *   below #nf-stats-btn: #nf-online-dot (status indicator)
  *
  * - #info-btn, #pause-btn, #mute-btn → game-controlled (raw SVG, IIFE owns them)
- * - #nf-music-btn, #nf-stats-btn, #nf-mp-btn → shell-controlled (lucide icons)
+ * - #nf-stats-btn → shell-controlled (lucide icon, opens stats panel via initShell)
  * - #nf-online-dot → status indicator (no icon, just a coloured dot)
  *
- * The shell wires up click handlers on the nf-* buttons in `initShell()`.
+ * S2.3 cleanup: removed #nf-music-btn and #nf-mp-btn — they were dead DOM
+ * nodes with no CSS positioning and no shell click-handler, floating over the
+ * game field at viewport center. Music is controlled via #nf-music-bar; the
+ * multiplayer button was never wired in the current shell.
  */
 export function ControlButtons() {
   return (
@@ -52,15 +60,9 @@ export function ControlButtons() {
         dangerouslySetInnerHTML={{ __html: GAME_SVG.volOn }}
       />
 
-      {/* Shell-controlled buttons (lucide icons, wired by initShell) */}
-      <button id="nf-music-btn" aria-label="Musik-Player" title="Musik">
-        <Music size={18} aria-hidden="true" />
-      </button>
+      {/* Shell-controlled button (lucide icon, wired by initShell) */}
       <button id="nf-stats-btn" aria-label="Statistik öffnen" title="Statistik">
         <BarChart3 size={18} aria-hidden="true" />
-      </button>
-      <button id="nf-mp-btn" aria-label="Multiplayer" title="Multiplayer">
-        <Users size={18} aria-hidden="true" />
       </button>
       <div id="nf-online-dot" aria-hidden="true" title="Online" />
     </>
