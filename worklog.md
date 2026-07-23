@@ -1133,3 +1133,35 @@ Stage Summary:
 - T5: Ubuntu-Setup via deploy.sh (全自动: Node.js + Bun + nginx + certbot + UFW + fail2ban)
 - LEVCON-AT/official bleibt zu 100% unberührt
 - 0 lint errors, HTTP 200, keine console errors
+
+---
+Task ID: S5c-PortCheck
+Agent: Main Agent (Z.ai Code)
+Task: Port-Check Skript + Auto-Port-Detection im deploy.sh
+
+Work Log:
+- deploy/scripts/port-check.sh erstellt — eigenständiges Diagnose-Skript das:
+  1. Alle lauschenden TCP-Ports auflistet (mit Prozessnamen)
+  2. Relevante Ports prüft (80, 443, 3000-3010)
+  3. Laufende systemd-Services zeigt (levcon, neonfall, nginx, etc.)
+  4. Konfigurierte nginx-Sites + deren Ports zeigt
+  5. Empfehlung für freie Neonfall-Ports gibt
+  6. Zusammenfassung mit Anzahl belegter Ports/Services
+- deploy.sh erweitert mit Auto-Port-Detection:
+  - find_free_port() Funktion sucht freien Port im Bereich 3005-3020
+  - Prüft 3003 (Next.js) und 3004 (Multiplayer)
+  - Falls belegt: sucht automatisch nächsten freien Port
+  - Passt .env, systemd-service, nginx-config und index.ts automatisch an
+  - Falls kein Port für Multiplayer frei: deaktiviert MP graceful
+- sed-Ersetzungen für dynamische Port-Anpassung:
+  - .env: PORT="$NEXTJS_PORT"
+  - neonfall.service: Environment="PORT=$NEXTJS_PORT"
+  - neonfall.levcon.ai.conf: server 127.0.0.1:$NEXTJS_PORT
+  - index.ts: const PORT = $MP_PORT (für multiplayer)
+- Nutzer kann vorab port-check.sh ausführen um IST-Stand zu sehen
+
+Stage Summary:
+- port-check.sh: Diagnose-Tool für VPS (verändert nichts, gibt nur Empfehlungen)
+- deploy.sh: Auto-Detection nimmt freie Ports, passt alle Configs an
+- Keine hardcoded Port-Konflikte mehr mit levcon.ai (3002) oder anderen Services
+- 0 lint errors, HTTP 200

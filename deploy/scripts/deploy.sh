@@ -43,6 +43,62 @@ fi
 echo "OS: $(uname -a)"
 echo "Hostname: $(hostname)"
 
+# ── 0.5. PORT-AUTO-DETECTION ───────────────────────────────────
+echo -e "\n${YELLOW}[0.5] Port-Belegung prüfen...${NC}"
+
+# Default-Ports
+NEXTJS_PORT=3003
+MP_PORT=3004
+
+# Prüfe ob Default-Ports frei sind, sonst nächste freie finden
+find_free_port() {
+    local start=$1
+    local end=$2
+    for port in $(seq $start $end); do
+        if ! ss -tln 2>/dev/null | grep -q ":$port "; then
+            echo "$port"
+            return
+        fi
+    done
+    echo ""
+}
+
+# Prüfe 3003
+if ss -tln 2>/dev/null | grep -q ":3003 "; then
+    echo -e "  Port 3003 belegt — suche Alternative..."
+    NEW_PORT=$(find_free_port 3005 3020)
+    if [ -n "$NEW_PORT" ]; then
+        NEXTJS_PORT=$NEW_PORT
+        echo -e "  ${GREEN}✓ Next.js Port: $NEXTJS_PORT${NC}"
+    else
+        echo -e "${RED}  ✗ Kein freier Port im Bereich 3005-3020 gefunden!${NC}"
+        exit 1
+    fi
+else
+    echo -e "  Port 3003: ${GREEN}frei${NC} (Next.js)"
+fi
+
+# Prüfe 3004
+if ss -tln 2>/dev/null | grep -q ":3004 "; then
+    echo -e "  Port 3004 belegt — suche Alternative..."
+    NEW_PORT=$(find_free_port 3005 3020)
+    # Stelle sicher dass MP_PORT != NEXTJS_PORT
+    while [ "$NEW_PORT" = "$NEXTJS_PORT" ] && [ -n "$NEW_PORT" ]; do
+        NEW_PORT=$(find_free_port $((NEW_PORT + 1)) 3020)
+    done
+    if [ -n "$NEW_PORT" ]; then
+        MP_PORT=$NEW_PORT
+        echo -e "  ${GREEN}✓ Multiplayer Port: $MP_PORT${NC}"
+    else
+        echo -e "${YELLOW}  ⚠ Kein freier Port für Multiplayer — deaktiviere MP${NC}"
+        MP_PORT=""
+    fi
+else
+    echo -e "  Port 3004: ${GREEN}frei${NC} (Multiplayer)"
+fi
+
+echo -e "  ${CYAN}Verwendete Ports: Next.js=$NEXTJS_PORT, Multiplayer=$MP_PORT${NC}"
+
 # ── 1. SYSTEM UPDATE & PACKAGES ────────────────────────────────
 echo -e "\n${YELLOW}[1] System update & packages...${NC}"
 
@@ -139,7 +195,7 @@ VPS_DB_URL="file:/var/www/neonfall/db/neonfall.db"
 if [ ! -f ".env" ]; then
     cat > .env << EOF
 DATABASE_URL="$VPS_DB_URL"
-PORT="3003"
+PORT="$NEXTJS_PORT"
 NODE_ENV="production"
 NEXT_PUBLIC_SITE_URL="https://neonfall.levcon.ai"
 EOF
@@ -157,11 +213,11 @@ else
     echo "  ✓ DATABASE_URL hinzugefügt: $VPS_DB_URL"
 fi
 
-# PORT sicherstellen
+# PORT sicherstellen (auto-detected)
 if grep -q "^PORT=" .env; then
-    sed -i "s|^PORT=.*|PORT=\"3003\"|" .env
+    sed -i "s|^PORT=.*|PORT=\"$NEXTJS_PORT\"|" .env
 else
-    echo "PORT=\"3003\"" >> .env
+    echo "PORT=\"$NEXTJS_PORT\"" >> .env
 fi
 
 chmod 600 .env
@@ -239,7 +295,13 @@ echo -e "\n${YELLOW}[16] Nginx configuration...${NC}"
 
 mkdir -p /var/www/letsencrypt
 
+# nginx config kopieren und Port anpassen (falls nicht 3003)
 cp deploy/nginx/neonfall.levcon.ai.conf /etc/nginx/sites-available/neonfall.levcon.ai
+if [ "$NEXTJS_PORT" != "3003" ]; then
+    sed -i "s|server 127.0.0.1:3003;|server 127.0.0.1:$NEXTJS_PORT;|g" /etc/nginx/sites-available/neonfall.levcon.ai
+    sed -i "s|127.0.0.1:3003|127.0.0.1:$NEXTJS_PORT|g" /etc/nginx/sites-available/neonfall.levcon.ai
+    echo "  ✓ nginx Port auf $NEXTJS_PORT angepasst"
+fi
 ln -sf /etc/nginx/sites-available/neonfall.levcon.ai /etc/nginx/sites-enabled/neonfall.levcon.ai
 
 # Default site entfernen (nur wenn neonfall die einzige site ist)
@@ -267,11 +329,33 @@ chmod +x /etc/letsencrypt/renewal-hooks/post/reload-nginx-neonfall.sh
 # ── 18. SYSTEMD SERVICES ───────────────────────────────────────
 echo -e "\n${YELLOW}[18] Systemd services...${NC}"
 
+# Next.js service kopieren und Port anpassen (falls nicht 3003)
 cp deploy/systemd/neonfall.service /etc/systemd/system/neonfall.service
-cp deploy/systemd/neonfall-multiplayer.service /etc/systemd/system/neonfall-multiplayer.service
+if [ "$NEXTJS_PORT" != "3003" ]; then
+    sed -i "s|Environment=\"PORT=3003\"|Environment=\"PORT=$NEXTJS_PORT\"|" /etc/systemd/system/neonfall.service
+    echo "  ✓ neonfall.service Port auf $NEXTJS_PORT angepasst"
+fi
+
+# Multiplayer service (nur wenn Port gefunden wurde)
+if [ -n "$MP_PORT" ]; then
+    cp deploy/systemd/neonfall-multiplayer.service /etc/systemd/system/neonfall-multiplayer.service
+    # Multiplayer port ist in index.ts hardcoded als 3004 — falls abweichend, anpassen
+    if [ "$MP_PORT" != "3004" ]; then
+        # Ersetze im index.ts die Port-Konstante
+        sed -i "s|const PORT = 3004|const PORT = $MP_PORT|" /var/www/neonfall/mini-services/multiplayer/index.ts
+        echo "  ✓ multiplayer Port auf $MP_PORT angepasst (in index.ts)"
+    fi
+    HAS_MP=true
+else
+    echo -e "${YELLOW}  ⚠ Multiplayer deaktiviert (kein freier Port)${NC}"
+    HAS_MP=false
+fi
+
 systemctl daemon-reload
 systemctl enable neonfall
-systemctl enable neonfall-multiplayer
+if [ "$HAS_MP" = true ]; then
+    systemctl enable neonfall-multiplayer
+fi
 
 # ── 19. START SERVICES ─────────────────────────────────────────
 echo -e "\n${YELLOW}[19] Start services...${NC}"
@@ -282,14 +366,18 @@ sleep 1
 
 # Zombie-Prozesse killen
 if command -v fuser &> /dev/null; then
-    fuser -k 3003/tcp 2>/dev/null || true
-    fuser -k 3004/tcp 2>/dev/null || true
+    fuser -k $NEXTJS_PORT/tcp 2>/dev/null || true
+    if [ -n "$MP_PORT" ]; then
+        fuser -k $MP_PORT/tcp 2>/dev/null || true
+    fi
 fi
 sleep 1
 
 systemctl restart nginx
 systemctl restart neonfall
-systemctl restart neonfall-multiplayer
+if [ "$HAS_MP" = true ]; then
+    systemctl restart neonfall-multiplayer
+fi
 sleep 3
 
 # Verify Next.js läuft
@@ -308,7 +396,8 @@ else
 fi
 
 # Verify ports
-for port in 3003 3004; do
+for port in $NEXTJS_PORT ${MP_PORT:-}; do
+    [ -z "$port" ] && continue
     if ss -tln | grep -q ":$port"; then
         echo "  ✓ Port $port lauscht"
     else
@@ -341,7 +430,12 @@ systemctl status nginx --no-pager | head -5
 
 echo -e "\n${YELLOW}URLs:${NC}"
 echo "  https://neonfall.levcon.ai"
-echo "  Multiplayer: Port 3004 (intern), via XTransformPort erreichbar"
+echo "  Next.js:     Port $NEXTJS_PORT"
+if [ -n "$MP_PORT" ]; then
+    echo "  Multiplayer: Port $MP_PORT (via XTransformPort erreichbar)"
+else
+    echo "  Multiplayer: deaktiviert (kein freier Port)"
+fi
 
 echo -e "\n${YELLOW}Logs:${NC}"
 echo "  Next.js:     journalctl -u neonfall -f"
