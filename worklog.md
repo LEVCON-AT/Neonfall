@@ -503,3 +503,43 @@ aber der Gradient + die animierten Blobs füllen die gesamte Bildschirmfläche.
 - SW-Cache-Version auf v6 hochgezählt.
 
 
+
+---
+Task ID: RESTORE
+Agent: Main Agent (Z.ai Code)
+Task: Verlorene React-Modernisierung aus /tmp/my-project-Snapshot zurückkopieren, verdrahten, verifizieren, committen, zu GitHub pushen
+
+Work Log:
+- Forensische Analyse: /home/z/my-project war auf git HEAD (Jul 22 14:13, VOR Modernisierung) zurückgesetzt worden. Die moderne Version lag als PolarFS-Snapshot unter /tmp/my-project/ (mtime Jul 22 20:01-22:54) intakt vor — inkl. src/components/neonfall/, src/lib/{types,store,api}/, providers.tsx, api/{leaderboard,scores}/, mini-services/multiplayer/, analysis-shots/s1-*.png + s2-*.png.
+- Diskrepanz aufgeklärt: Worklog (60KB, committed) überlebte den Reset und beschrieb Sprints 1-6 + S2.1 als erledigt, aber die modernen Code-Dateien waren weg. Eigene S2.1-"Verifikation" mit agent-browser lieferte stale Service-Worker-Cache aus — frischer curl zeigte Monolith (0× "Einstellungen", 1× "Feedback-Stärke").
+- Dateien kopiert: src/components/neonfall/ (8 Dateien + dialogs/), src/lib/{types.ts, store/, api/}, src/app/providers.tsx, src/app/api/{leaderboard,scores}/route.ts, mini-services/multiplayer/, analysis-shots/.
+- Deps installiert: socket.io-client (4.8.3) im Hauptprojekt, socket.io (4.8.3) im multiplayer mini-service.
+- Verdrahtung durchgeführt:
+  - src/app/page.tsx → 3 Zeilen (import + render NeonfallApp)
+  - src/app/layout.tsx → Providers-Wrapper + suppressHydrationWarning am <html>
+  - public/sw.js → CACHE_VERSION von v6 auf v8-restore gebumpt
+  - prisma/schema.prisma → Player + Score models ergänzt, db:push + db:generate ausgeführt
+- Verifikation via agent-browser (Server-Start + Browser in einem Bash-Befehl):
+  - HTTP 200, 0 lint errors (1 pre-existing font-Warnung)
+  - Footer ✅, Settings-Button ✅, Mode-Button ✅, __nfGetMode=function ✅, Canvas 280px ✅
+  - Settings-Dialog: 4 Tabs (Audio/Feedback/Anzeige/Steuerung) ✅
+  - Feedback-Tab: Haptics-Switch + Rattle-Slider ✅
+  - Anzeige-Tab: Hint-Switch + Ghost-Switch ✅
+  - Keine Console-Errors, dev.log sauber
+  - Screenshots: analysis-shots/restore-01-idle.png, restore-02-settings.png, restore-03-mode.png
+- Git commit: 54 Dateien, +3260/-268 Zeilen. Commit-Message dokumentiert Architektur + Verifikation.
+- GitHub-Push-Versuch:
+  - ssh-keygen nicht verfügbar → Python cryptography genutzt, um Ed25519-SSH-Key zu erzeugen
+  - Public Key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHHLJw4cF02PUJK+m/LypwBQFs5P0V6wWXxdXhQKqfNC neonfall-sandbox
+  - ABER: ssh-Client fehlt komplett in Sandbox → SSH-Push nicht möglich
+  - HTTPS ohne Credentials → 401 (erwartet)
+  - Fallback: git bundle erstellt (neonfall-restore.bundle, 54MB, complete history, verified)
+
+Stage Summary:
+- Restore erfolgreich: moderne React-Architektur läuft auf Port 3000, verifiziert via agent-browser
+- Git commit lokal (Schutz vor nächstem Sandbox-Reset)
+- GitHub-Push blockiert durch fehlende SSH-Clients + fehlende HTTPS-Credentials in Sandbox
+- Zwei Optionen für Nutzer:
+  A) Personal Access Token (PAT) mit repo-scope bereitstellen → ich pushe per HTTPS
+  B) git bundle (neonfall-restore.bundle, 54MB) selbst pushen:
+     `git clone neonfall-restore.bundle neonfall && cd neonfall && git remote add origin https://github.com/LEVCON-AT/Neonfall.git && git push -u origin main`
