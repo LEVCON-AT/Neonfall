@@ -19,6 +19,7 @@ import { ShellOverlays } from './ShellOverlays';
 import { SettingsDialog } from './dialogs/SettingsDialog';
 import { GameModeDialog } from './dialogs/GameModeDialog';
 import { LeaderboardDialog } from './dialogs/LeaderboardDialog';
+import { NameInputDialog } from './dialogs/NameInputDialog';
 
 /**
  * Supplemental CSS layered on top of GAME_CSS and SHELL_CSS.
@@ -148,6 +149,93 @@ body.nf-playing::after { animation-play-state: paused !important; }
   0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(244,114,182,0)); }
   20% { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(244,114,182,0.7)); }
   100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(244,114,182,0)); }
+}
+
+/* ===== Sprint 5b: Name-Input Dialog (post-game-over score submission) ===== */
+.nf-name-input-dialog { max-width: 380px !important; }
+.nf-name-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.nf-name-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+}
+.nf-name-stat-label {
+  font-size: 0.6em;
+  letter-spacing: 1.5px;
+  color: #9ca3ff;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.nf-name-stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.05em;
+  font-weight: 700;
+  color: #e8e8f5;
+}
+.nf-name-stat-score {
+  background: linear-gradient(90deg, #22d3ee, #f472b6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: 1.2em;
+}
+.nf-name-stat-mode {
+  font-size: 0.8em;
+  color: #22d3ee;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.nf-name-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.nf-name-input {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(34,211,238,0.3) !important;
+  color: #e8e8f5 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 1em !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+}
+.nf-name-input:focus {
+  border-color: rgba(34,211,238,0.6) !important;
+  box-shadow: 0 0 0 2px rgba(34,211,238,0.15) !important;
+}
+.nf-name-input::placeholder { color: #6b6b8a !important; }
+.nf-name-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.nf-name-submit-btn {
+  background: linear-gradient(90deg, rgba(34,211,238,0.2), rgba(167,139,250,0.2)) !important;
+  border: 1px solid rgba(34,211,238,0.4) !important;
+  color: #22d3ee !important;
+  font-weight: 600;
+}
+.nf-name-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, rgba(34,211,238,0.3), rgba(167,139,250,0.3)) !important;
+}
+.nf-name-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  color: #34d399;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
 }
 
 /* ===== Footer (fixed, glass, hidden during active play) ===== */
@@ -727,6 +815,7 @@ export function NeonfallApp() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [modeDialogOpen, setModeDialogOpen] = useState(false);
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [nameInputOpen, setNameInputOpen] = useState(false);
 
   const initRef = useRef(false);
 
@@ -980,6 +1069,17 @@ export function NeonfallApp() {
     if (typeof document !== 'undefined') {
       document.body.classList.toggle('nf-playing', status === 'playing');
     }
+    // Sprint 5b: when the game transitions to 'gameover' (and the player
+    // actually played — score > 0), open the NameInputDialog so they can
+    // submit their score to the leaderboard. Skip if score is 0 (player
+    // game-over'd immediately without scoring) to avoid nagging.
+    if (status === 'gameover' && prev !== 'gameover') {
+      const finalScore = readInt('score');
+      if (finalScore > 0) {
+        // Small delay so the IIFE's game-over screen renders first.
+        setTimeout(() => setNameInputOpen(true), 600);
+      }
+    }
   }, [status]);
 
   // ===== Effect H: keyboard shortcuts for the new React-controlled dialogs.
@@ -1145,6 +1245,7 @@ export function NeonfallApp() {
         onOpenChange={setLeaderboardOpen}
         initialMode={mode}
       />
+      <NameInputDialog open={nameInputOpen} onOpenChange={setNameInputOpen} />
 
       <Toaster position="top-center" closeButton richColors />
     </>

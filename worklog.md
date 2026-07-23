@@ -883,3 +883,39 @@ Stage Summary:
 - Spielgefühl: etwas schwerer wegen 5-Zellen-Pentominoes, aber 12 Spalten geben mehr Platz
 - Canvas-Breite 288px passt auf 360px Mobile (vorher 280px)
 - IIFE-Constraint wurde für P1 vom Nutzer explizit gelockert (rechtliche Notwendigkeit)
+
+---
+Task ID: S5c-NameInput
+Agent: Main Agent (Z.ai Code)
+Task: Name-Input Flow nach Game-Over (Score mit Namen in Leaderboard eintragen)
+
+Work Log:
+- NameInputDialog.tsx erstellt: React-Dialog der nach Game-Over erscheint
+  - Zeigt Final-Stats: Score (groß, gradient), Linien, Level, Modus
+  - Input-Feld für Namen (maxLength 16, auto-gefüllt mit letztem Namen aus localStorage)
+  - "Eintragen" Button → POST /api/scores via useSubmitScore hook
+  - "Überspringen" Button → Dialog schließen ohne Eintragung
+  - Success-State mit Check-Icon + Toast-Bestätigung
+  - Auto-Focus auf Input nach 100ms (Dialog-Animation)
+  - Loading-State mit Spinner während Submit
+  - Error-Toast bei Fehlschlag
+- CSS in NEONFALL_APP_CSS: .nf-name-input-dialog, .nf-name-stats (2×2 grid), .nf-name-stat, .nf-name-form, .nf-name-input (neon-styled), .nf-name-submit-btn (gradient), .nf-name-success
+- NeonfallApp.tsx Integration:
+  - Import NameInputDialog
+  - nameInputOpen state
+  - Effect C (status transitions): bei 'gameover' (wenn score>0) → setNameInputOpen(true) nach 600ms Verzögerung (IIFE game-over screen zuerst rendern lassen)
+  - NameInputDialog im JSX gerendert
+- Lint-Fix: setState in Effect → refactored mit prevOpenRef + requestAnimationFrame
+- Verifikation via agent-browser:
+  - Game-Over mit Score 7777 erzwungen → NameInputDialog erscheint nach 600ms ✅
+  - Stats angezeigt: "7.777" Score, "12" Linien, "4" Level ✅
+  - Name "CleanTest" eingegeben → Submit → Toast "Score eingetragen!" ✅
+  - API bestätigt: CleanTest - 7777 auf Rank 4 ✅
+  - Screenshot lb-02-name-dialog-forced.png
+
+Stage Summary:
+- Name-Input Flow komplett: Game-Over → Dialog → Name eingeben → Score in Leaderboard
+- Schließt die Lücke aus S5 (Name-Dialog entfernt, kein Weg Score einzureichen)
+- Persistiert Namen in localStorage (auto-fill beim nächsten Mal)
+- Score>0 Bedingung verhindert Nerving bei sofortigem Game-Over
+- 0 lint errors, HTTP 200, keine console errors
