@@ -180,7 +180,9 @@ if [ -d "neonfall" ]; then
     git reset --hard origin/main
     git clean -fd -e .env
 else
-    git clone https://github.com/LEVCON-AT/Neonfall.git neonfall
+    # SSH statt HTTPS — nutzt den in ~/.ssh/config hinterlegten Key.
+    # Funktioniert für private + public Repos ohne Passwort-Prompt.
+    git clone git@github.com:LEVCON-AT/Neonfall.git neonfall
     cd neonfall
 fi
 
