@@ -766,3 +766,78 @@ Stage Summary:
 - Verifikation: HTTP 200, 0 lint errors, 0 console errors
 - Screenshots: s5-01-settings, s5-02-mode, s5-03-leaderboard, s5-04/05/06-music
 - Sprints 1-5 komplett
+
+---
+Task ID: S5b
+Agent: Main Agent (Z.ai Code)
+Task: Sprint 5b — Musik-Bug fix + Music-Overlay UX-Redesign + Backlog-Audit
+
+Work Log:
+
+### P2 — Musik-Bug gefixt (keine Musik hörbar)
+- Ursache: startMusic() in neonfall-shell.ts erstellt AudioContext aber ruft NICHT mCtx.resume() auf. Auf Mobile (besonders iOS) bleibt AudioContext im "suspended" state selbst nach User-Gesture. SFX funktionierten weil der IIFE audioCtx.resume() separat aufruft, aber der Shell-Music-Player nicht.
+- Fix: mCtx.resume() in startMusic() nach AudioContext-Erstellung hinzugefügt (Zeile 1137).
+- Verifikation: Music-Bar erscheint, Track wird geladen, AudioContext state="running".
+
+### P5 — Music-Overlay UX-Redesign
+- Alte UX: Music-Bar bottom-centered, auto-show bei startMusic, long-press/dblclick togglet .collapsed (kleiner Pill). Überlagerte Steuerelemente.
+- Neue UX (reveal-on-demand):
+  - Default: Music-Bar hidden (opacity:0, pointer-events:none, translateY:-6px)
+  - Long-press (450ms) oder double-click auf mute-btn: showMusicBar() fügt .show class hinzu
+  - Position: top:46px right:8px (direkt unter mute-btn, top-right)
+  - Auto-hide nach 4 Sekunden (musicHideTimer)
+  - Click außerhalb (document click listener, capture phase): hideMusicBar()
+  - Escape key: hideMusicBar()
+  - startMusic() fügt NICHT mehr .show hinzu — Bar bleibt hidden bis User fragt
+- CSS überarbeitet: Position von bottom-center → top-right (unter mute-btn), Neon-Styling (rgba(10,10,20,0.88) bg, cyan border), box-shadow, blur(16px) saturate(160%)
+- .collapsed rules entfernt (nicht mehr benötigt)
+- Verifikation: 
+  - Nach mousedown: show=false, opacity=0 ✅ (nicht auto-show)
+  - Nach dblclick: show=true, opacity=0.95, top=46px, right=8px ✅
+  - Nach Escape: show=false ✅
+  - Screenshot p5-03-music-revealed.png
+
+### P3 — Backlog-Audit
+Worklog-Audit zeigt:
+- S1-S5 alle erledigt
+- 2 Bugs in S5 gefixt (Name-Dialog, SW-Cache)
+- S5b: Musik-Bug + Music-Overlay gefixt
+- Offene Punkte für nächste Sprints:
+  1. Multiplayer-Service (mini-services/multiplayer/) läuft nicht — nie gestartet/getestet
+  2. Touch-Controls ungetestet (S4 nur Keyboard)
+  3. Leaderboard Name-Input Flow fehlt (nach Bug-1-Fix in S5)
+  4. Blöcke rechtlich (P1 — wartet auf Nutzer-Entscheidung: Pentomino-Formen)
+  5. Mode-spezifische Game-Over-Screens
+  6. Stat-Pulse bei Ultra-Countdown <30s
+  7. Achievement-System UI
+  8. Daily Challenge
+  9. Profil-Seite
+  10. Sound-Einstellungen wiederbeleben (AudioContext-Hook)
+
+### P1 — Blöcke rechtlich (zur Nutzer-Entscheidung)
+IST: 7 Standard-Tetrominos (I,J,L,O,S,T,Z) auf 10×20 Grid mit 7-Bag-Randomizer.
+Rechtliche Lage: Tetris Holding LLC v. Xio (2012) — "look & feel" Kombination geschützt.
+Optionen: A) IIFE ändern + Pentomino-Formen, B) CSS-Overlay, C) Paralleler Modus.
+Wartet auf Nutzer-Go.
+
+### P4 — Testliste (für nächste QA-Runde)
+1. Musik hörbar auf Mobile (iOS/Android) nach erstem Tap
+2. Music-Bar erscheint NICHT automatisch beim Spielstart
+3. Long-press mute-btn (450ms) → Music-Bar erscheint unter mute-btn
+4. Double-click mute-btn → Music-Bar erscheint
+5. Music-Bar auto-hide nach 4s
+6. Click außerhalb Music-Bar → sofort weg
+7. Escape → Music-Bar weg
+8. 16 Tracks abspielbar (prev/next buttons)
+9. Track-Namen erscheinen in Music-Bar
+10. Musik pausiert bei Game-Pause
+11. Musik stumm bei Mute
+12. Keine Console-Errors
+
+Stage Summary:
+- P2: Musik-Bug gefixt (AudioContext.resume() in startMusic)
+- P5: Music-Overlay reveal-on-demand (long-press/dblclick, unter mute-btn, auto-hide, escape)
+- P3: Backlog-Audit erstellt
+- P1: wartet auf Nutzer-Entscheidung (Pentomino-Formen)
+- P4: Testliste erstellt
+- 0 lint errors, HTTP 200, keine console errors

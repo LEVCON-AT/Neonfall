@@ -564,45 +564,45 @@ export const SHELL_CSS = `
 /* ===== Music crossfade player (8-track playlist) ===== */
 #nf-music-bar {
     position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 4px);
+    /* Positioned under the mute button (top-right). The mute button sits at
+       right: max(8px, safe-area-right), top: max(8px, safe-area-top), 34px
+       tall. We anchor below it, right-aligned. */
+    top: calc(max(8px, env(safe-area-inset-top)) + 38px);
+    right: max(8px, env(safe-area-inset-right));
+    transform: translateX(0);
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 20px;
+    background: rgba(10,10,20,0.88);
+    border: 1px solid rgba(34,211,238,0.25);
+    border-radius: 14px;
     padding: 6px 10px 6px 8px;
     z-index: 48;
     color: #c7c7f0;
     font-family: 'Space Grotesk', sans-serif;
     font-size: 0.72em;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    max-width: calc(100% - 96px);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    max-width: calc(100vw - 16px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 16px rgba(34,211,238,0.08);
     opacity: 0;
     pointer-events: none;
-    transition: opacity .3s, bottom .3s;
+    transform: translateY(-6px);
+    transition: opacity .25s ease, transform .25s ease;
 }
-#nf-music-bar.show { opacity: 0.92; pointer-events: auto; }
-#nf-music-bar.hidden-by-game { opacity: 0 !important; pointer-events: none !important; }
-/* When the install banner is visible, shift the music bar up so they don't overlap. */
-#nf-music-bar.shift-up {
-    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 76px);
+/* S5: The music bar is now reveal-on-demand. It only shows after a long-press
+   or double-click on the mute button, and auto-hides after 4s or when focus
+   leaves (click outside / Escape). This keeps it from overlaying game
+   controls during play. The .show class is toggled by the new reveal logic. */
+#nf-music-bar.show {
+    opacity: 0.95;
+    pointer-events: auto;
+    transform: translateY(0);
 }
-/* Collapsed state: shrinks to just a tiny pill with an equalizer icon. */
-#nf-music-bar.collapsed {
-    padding: 6px 10px;
-    gap: 0;
-}
-#nf-music-bar.collapsed .nf-music-btn,
-#nf-music-bar.collapsed .nf-music-info {
-    display: none;
-}
-#nf-music-bar.collapsed .nf-music-bars {
-    margin: 0;
-}
+#nf-music-bar.hidden-by-game { opacity: 0 !important; pointer-events: none !important; transform: translateY(-6px) !important; }
+/* Collapsed state removed in S5 — the bar is now reveal-on-demand, so there
+   is no need for a separate collapsed pill. The old .collapsed rules are
+   gone; the bar simply shows or hides via .show. */
 /* Pulse hint on the mute button when a long-press / dblclk would toggle the
    player — a subtle ring draws attention to the gesture. */
 #mute-btn.nf-hint-pulse {
@@ -1129,7 +1129,15 @@ export function initShell() {
       mVol.gain.value = mPaused ? 0 : 1;
       mVol.connect(mMaster);
     } catch { return; }
-    musicBar?.classList.add('show');
+    // Mobile (especially iOS) keeps AudioContext suspended even after a user
+    // gesture unless we explicitly resume it. Without this, the music bar
+    // appears but no sound plays — SFX still work because the game's own
+    // audioCtx.resume() is called separately. This was the root cause of
+    // "I hear sound effects but no music" reports.
+    if (mCtx.state === 'suspended') mCtx.resume().catch(() => {});
+    // S5: do NOT auto-show the music bar here. It is reveal-on-demand only
+    // (long-press / double-click on the mute button). The music plays in the
+    // background; the bar stays hidden until the user explicitly asks for it.
     curIdx = Math.floor(Math.random() * TRACKS.length); // start on a random track
     playTrack(curIdx, 1.5);
     // preload the next track in the background
@@ -1176,37 +1184,43 @@ export function initShell() {
   (document.getElementById('nf-music-next') as HTMLButtonElement | null)
     ?.addEventListener('click', (e) => { e.stopPropagation(); skipMusic(1); });
 
-  // ============ Collapse / expand the music bar ============
-  // Toggle via: long-press on the mute button (mobile) OR double-click (desktop).
-  // A single click on mute still toggles audio mute (the game's own handler).
-  // The collapse state persists in localStorage so it survives reloads.
-  const COLLAPSE_KEY = 'nf_music_collapsed';
-  function isCollapsed() { try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; } }
-  function applyCollapse() { musicBar?.classList.toggle('collapsed', isCollapsed()); }
-  function toggleCollapse() {
-    try { localStorage.setItem(COLLAPSE_KEY, isCollapsed() ? '0' : '1'); } catch {}
-    applyCollapse();
+  // ============ Music bar reveal-on-demand (S5 redesign) ============
+  // The bar is hidden by default and only appears when the user long-presses
+  // or double-clicks the mute button. It auto-hides after 4s, or immediately
+  // on click-outside / Escape. This keeps it from overlaying game controls.
+  let musicHideTimer: any = null;
+  function showMusicBar() {
+    if (!musicBar) return;
+    musicBar.classList.add('show');
+    if (musicHideTimer) clearTimeout(musicHideTimer);
+    musicHideTimer = setTimeout(() => {
+      musicBar.classList.remove('show');
+    }, 4000);
   }
-  applyCollapse();
+  function hideMusicBar() {
+    if (!musicBar) return;
+    musicBar.classList.remove('show');
+    if (musicHideTimer) { clearTimeout(musicHideTimer); musicHideTimer = null; }
+  }
 
   const muteBtnEl = document.getElementById('mute-btn');
   if (muteBtnEl) {
-    // Long-press (mobile / touch): 450 ms hold → toggle collapse.
+    // Long-press (mobile / touch): 450 ms hold → reveal music bar.
     let lpTimer: any = null;
     let lpFired = false;
     muteBtnEl.addEventListener('touchstart', () => {
       lpFired = false;
-      lpTimer = setTimeout(() => { lpFired = true; toggleCollapse(); }, 450);
+      lpTimer = setTimeout(() => { lpFired = true; showMusicBar(); }, 450);
     }, { passive: true });
     const cancelLP = () => { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } };
     muteBtnEl.addEventListener('touchend', cancelLP);
     muteBtnEl.addEventListener('touchmove', cancelLP);
     muteBtnEl.addEventListener('touchcancel', cancelLP);
-    // Prevent the game's click-mute from firing right after a long-press toggle.
+    // Prevent the game's click-mute from firing right after a long-press reveal.
     muteBtnEl.addEventListener('click', (e) => { if (lpFired) { e.preventDefault(); e.stopPropagation(); lpFired = false; } }, true);
 
-    // Double-click (desktop / mouse): toggle collapse.
-    muteBtnEl.addEventListener('dblclick', (e) => { e.preventDefault(); e.stopPropagation(); toggleCollapse(); });
+    // Double-click (desktop / mouse): reveal music bar.
+    muteBtnEl.addEventListener('dblclick', (e) => { e.preventDefault(); e.stopPropagation(); showMusicBar(); });
 
     // One-time hint pulse so users discover the gesture.
     setTimeout(() => {
@@ -1217,6 +1231,21 @@ export function initShell() {
       }
     }, 2500);
   }
+
+  // Click outside the music bar (or outside the mute button) hides it.
+  document.addEventListener('click', (e) => {
+    if (!musicBar?.classList.contains('show')) return;
+    const target = e.target as Node;
+    if (musicBar.contains(target)) return;
+    if (muteBtnEl?.contains(target)) return;
+    hideMusicBar();
+  }, true);
+  // Escape hides the music bar.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && musicBar?.classList.contains('show')) {
+      hideMusicBar();
+    }
+  });
 
   // Start music on first user interaction (same triggers as the game's initAudio)
   function tryStartMusic() { if (!mStarted) startMusic(); }

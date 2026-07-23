@@ -765,7 +765,7 @@ export function NeonfallApp() {
     // are best-effort — never let them white-screen the game.
     try {
       initShell();
-    } catch {
+    } catch (e) {
       /* shell is best-effort */
     }
   }, []);
