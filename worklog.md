@@ -1067,3 +1067,69 @@ Stage Summary:
 - Keine Überlappung mit Stat-Boxen mehr
 - upload/ bereinigt (keine pasted_images mehr)
 - 0 lint errors, HTTP 200
+
+---
+Task ID: S5c-ShareFlash-Deploy
+Agent: Main Agent (Z.ai Code)
+Task: Share-Button entfernen + Flash-Overlay reduzieren + Deployment-Workflow für neonfall.levcon.ai
+
+Work Log:
+
+### T1 — Share-Button entfernt
+- Effect I (Share-Button injection) aus NeonfallApp.tsx komplett entfernt
+- #nf-share-btn CSS aus NEONFALL_APP_CSS gelöscht
+- Verifikation: shareBtn=false ✅, restartBtn noch da ✅
+- Screenshot s5c-no-share.png
+
+### T2 — Flash-Overlay bei Hard Drop reduziert
+- Bug: Bei schnellem Hard Drop überlagerte zu viel weiß das Spielfeld
+- Fix in neonfall-content.ts:
+  - flash() max opacity: 0.85 → 0.25 (nur noch zarter weißer Tint)
+  - flash() transition: 300ms → 180ms (schneller ausgeblendet)
+  - impact() flash formula: (0.12 + i*0.65) → (0.04 + i*0.12) (viel schwächerer Peak)
+- Bei Hard Drop intensity=1.3: peak war 0.85 (85% weiß!), jetzt 0.196 (~20% — subtiler Tint)
+
+### T3+T4 — Deployment-Workflow für neonfall.levcon.ai
+- LEVCON-AT/official Workflow analysiert (GitHub Actions + SSH + vps-update.sh)
+- Für Neonfall angepasst (LEVCON-AT/official bleibt unberührt!):
+  - .github/workflows/deploy.yml — GitHub Actions Workflow (push→deploy)
+  - deploy/nginx/neonfall.levcon.ai.conf — nginx config (Port 3003, WebSocket Support, CSP mit ws/wss)
+  - deploy/systemd/neonfall.service — Next.js Service (Port 3003)
+  - deploy/systemd/neonfall-multiplayer.service — socket.io Service (Port 3004)
+  - deploy/scripts/deploy.sh — Initial-Setup Skript (installiert alles: Node.js, Bun, nginx, certbot, UFW, fail2ban)
+  - deploy/scripts/vps-update.sh — Update-Skript (git pull, build, restart)
+  - deploy/DEPLOYMENT.md — Vollständige Doku (Architektur, Setup, Wartung, Troubleshooting)
+
+### T5 — Ubuntu-Setup
+- deploy/scripts/deploy.sh installiert automatisch:
+  - apt packages: curl, wget, git, nginx, certbot, sqlite3, build-essential, ufw, fail2ban, unattended-upgrades
+  - Node.js 20 LTS (via nodesource)
+  - Bun (via bun.sh installer)
+  - Firewall (UFW: allow ssh/80/443)
+  - Fail2ban (SSH-Brute-Force-Schutz)
+  - Auto-Security-Updates
+  - SSL via Let's Encrypt (certbot --standalone)
+  - Auto-Renewal (certbot.timer + reload-nginx hook)
+  - DB-Backup-Cron (täglich 03:00, 30 Tage retention)
+- deploy/DEPLOYMENT.md dokumentiert alle Schritte + manuelle Wartung
+
+### Port-Belegung (wichtig!)
+- 3000: Dev (Sandbox)
+- 3001: levcon.at (coming-soon)
+- 3002: levcon.ai (official)
+- 3003: neonfall.levcon.ai (Next.js) ← NEON
+- 3004: neonfall.levcon.ai (Multiplayer socket.io) ← NEON
+
+### GitHub Secrets (vom Nutzer zu konfigurieren)
+- VPS_HOST: VPS-IP
+- VPS_USER: root (oder deploy-User)
+- VPS_SSH_KEY: private SSH-Key
+- VPS_PORT: 22 (oder abweichend)
+
+Stage Summary:
+- T1: Share-Button entfernt (niemand teilt Tetris-Scores)
+- T2: Flash-Overlay von 85% → 25% max opacity reduziert (subtiler Tint statt blinding white)
+- T3+T4: Kompletter Deployment-Workflow für neonfall.levcon.ai (GitHub Actions + nginx + systemd + SSL)
+- T5: Ubuntu-Setup via deploy.sh (全自动: Node.js + Bun + nginx + certbot + UFW + fail2ban)
+- LEVCON-AT/official bleibt zu 100% unberührt
+- 0 lint errors, HTTP 200, keine console errors

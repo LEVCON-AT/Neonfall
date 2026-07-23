@@ -704,28 +704,8 @@ body.nf-playing::after { animation-play-state: paused !important; }
 }
 .nf-mode-hud-time { font-size: 1.05em; min-width: 42px; }
 
-/* ===== Game-over share button (added by React into the IIFE's overlay) ===== */
-#nf-share-btn {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  padding: 9px 14px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.85em;
-  font-weight: 600;
-  letter-spacing: 1px;
-  color: #0a0a14;
-  background: linear-gradient(90deg, #22d3ee, #a78bfa);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: transform .1s, box-shadow .15s, opacity .15s;
-  box-shadow: 0 4px 14px rgba(34,211,238,0.25);
-}
-#nf-share-btn:hover { box-shadow: 0 6px 22px rgba(34,211,238,0.4); transform: translateY(-1px); }
-#nf-share-btn:active { transform: translateY(0) scale(0.97); }
-#nf-share-btn:disabled { opacity: 0.5; cursor: default; }
-#nf-share-btn .nf-share-icon { vertical-align: -3px; margin-right: 6px; }
+/* S5c: Share button CSS removed — the button itself was removed (Effect I).
+   Nobody shares Tetris scores and it was too prominent on game-over. */
 
 /* ===== React Bestenliste (TanStack Query + shadcn Dialog) ===== */
 .nf-leaderboard-dialog { max-width: 460px !important; }
@@ -1232,54 +1212,9 @@ export function NeonfallApp() {
     return () => window.removeEventListener('keydown', onKey);
   }, [settingsOpen, modeDialogOpen, leaderboardOpen]);
 
-  // ===== Effect I: inject a "Teilen" (Share) button into the IIFE's
-  //       game-over overlay. The button reads live state at click time so it
-  //       never needs rebinding — it always reflects the current score/mode. =====
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const goScreen = document.getElementById('game-over-screen');
-    if (!goScreen) return;
-
-    // Idempotent: skip if already injected (React StrictMode / re-renders).
-    if (document.getElementById('nf-share-btn')) return;
-
-    const btn = document.createElement('button');
-    btn.id = 'nf-share-btn';
-    btn.type = 'button';
-    btn.innerHTML = `<svg class="nf-share-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>ERGEBNIS TEILEN`;
-
-    btn.addEventListener('click', async () => {
-      const scoreEl = document.getElementById('final-score');
-      const scoreText = scoreEl?.textContent ?? 'Score: 0';
-      const lines = readInt('lines');
-      const level = readInt('level');
-      const modeLabel =
-        GAME_MODES[useGameStore.getState().mode]?.label ?? 'Marathon';
-
-      const shareText = `NEONFALL · ${modeLabel}\n${scoreText} · ${lines} Linien · Level ${level}\nKannst du mich schlagen?`;
-
-      try {
-        if (navigator.share) {
-          await navigator.share({ title: 'NEONFALL', text: shareText });
-        } else {
-          await navigator.clipboard.writeText(shareText);
-          toast.success('In die Zwischenablage kopiert!', {
-            description: 'Teile deinen NEONFALL-Score mit Freund:innen.',
-          });
-        }
-      } catch {
-        /* user cancelled share — noop */
-      }
-    });
-
-    // Insert after the restart-button.
-    const restart = document.getElementById('restart-button');
-    if (restart?.parentElement) {
-      restart.parentElement.insertBefore(btn, restart.nextSibling);
-    } else {
-      goScreen.appendChild(btn);
-    }
-  }, []);
+  // ===== Effect I: REMOVED in S5c. The "ERGEBNIS TEILEN" (Share) button was
+  //       too prominent and nobody actually shares Tetris scores. The IIFE's
+  //       own restart-button is sufficient on the game-over screen. =====
 
   // ===== Effect J: Haptics — vibrate the device when lines are cleared.
   //       The game IIFE dispatches `nf-lines-cleared` with `detail.cleared`

@@ -1,0 +1,50 @@
+# ═══════════════════════════════════════════════════════════════
+#  NEONFALL — SYSTEMD SERVICE (Multiplayer socket.io)
+#  Pfad auf VPS: /etc/systemd/system/neonfall-multiplayer.service
+# ═══════════════════════════════════════════════════════════════
+#
+#  Startet den socket.io Backend für 1v1 Multiplayer matches.
+#  Läuft auf Port 3004, wird von nginx via XTransformPort geroutet.
+
+[Unit]
+Description=Neonfall Multiplayer Service (socket.io, port 3004)
+Documentation=https://github.com/LEVCON-AT/Neonfall
+After=network.target neonfall.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/neonfall/mini-services/multiplayer
+Environment="NODE_ENV=production"
+
+# Start socket.io backend via bun
+ExecStart=/usr/local/bin/bun run /var/www/neonfall/mini-services/multiplayer/index.ts
+
+# Restart Logic
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=neonfall-mp
+
+# Resource Limits
+MemoryMax=256M
+CPUQuota=40%
+
+# Security Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ReadWritePaths=/var/www/neonfall/mini-services/multiplayer
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
