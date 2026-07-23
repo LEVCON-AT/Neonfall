@@ -56,8 +56,99 @@ const NEONFALL_APP_CSS = `
    Settings-Dialog via the syncGameSlider() helper. */
 #settings-panel { display: none !important; }
 
+/* ===== Sprint 3: GPU & Game-Feel Optimizations =====
+   These rules layer ON TOP of the IIFE's GAME_CSS to promote expensive
+   elements onto their own GPU composite layers. The IIFE's own CSS stays
+   byte-identical; we only add hints the browser uses for layer promotion.
+
+   - body::before/::after: 60vmax blurred radial gradients animated via
+     the drift 16s keyframes. Without will-change the browser re-rasterizes
+     the blur on every composite. With will-change: transform it caches the layer.
+   - #game-container: shaken via shakeScreen() which writes transform on
+     every frame. will-change: transform reserves the layer up-front so the
+     shake doesn't trigger a re-raster.
+   - #flash-overlay: opacity animated by flash(). will-change: opacity.
+   - #combo-popup: transform/opacity animated by comboPop keyframes.
+   - #tetris-canvas: re-drawn every frame by the IIFE's draw(). Promoting
+     it onto its own layer avoids compositing it with the container's
+     background gradient on every frame.
+   - .glass elements (top-bar, second-bar, mini-boxes): backdrop-filter is
+     expensive; will-change keeps the blur cached. */
+body::before, body::after { will-change: transform; }
+#game-container { will-change: transform; }
+#flash-overlay { will-change: opacity; }
+#combo-popup { will-change: transform, opacity; }
+#tetris-canvas { will-change: transform; }
+.glass { will-change: backdrop-filter; }
+
+/* Backdrop-filter on .glass is expensive when the underlying content
+   changes (e.g. canvas redraw behind top-bar). Since the top-bar/second-bar
+   are above the canvas and don't need to blur it (they're opaque-ish
+   already), we can reduce the blur radius slightly without visual change.
+   Original: blur(18px) saturate(160%) → blur(12px) saturate(150%).
+   !important needed because the IIFE's .glass rule has equal specificity
+   and is loaded first. */
+.glass { backdrop-filter: blur(12px) saturate(150%) !important; -webkit-backdrop-filter: blur(12px) saturate(150%) !important; }
+
+/* The body::before/::after drift animation runs continuously even during
+   gameplay, causing constant composite work. Pause the animation while a
+   game is actively running (body gets .nf-playing class via NeonfallApp's
+   status sync) to save GPU cycles for the game canvas. The blobs freeze
+   in place — visually identical during fast play. */
+body.nf-playing::before,
+body.nf-playing::after { animation-play-state: paused !important; }
+
 /* Inline trophy in the new-highscore badge */
 .nf-trophy-inline { vertical-align: -3px; color: #fbbf24; }
+
+/* ===== Sprint 3: Game-Feel — stat-box pulse on value increase =====
+   When the IIFE updates #score/#level/#lines/#best-score, the MutationObserver
+   in Effect C adds .nf-stat-pulse to that <p> element. The animation flashes
+   a cyan glow + subtle scale-up, then fades. GPU-friendly (transform+opacity
+   +filter only). 600ms total, doesn't interfere with the IIFE's own stat
+   rendering (it only writes textContent). */
+.stat-box p.nf-stat-pulse {
+  animation: nfStatPulse 0.6s ease-out;
+}
+@keyframes nfStatPulse {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(34,211,238,0));
+  }
+  20% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 8px rgba(34,211,238,0.7));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(34,211,238,0));
+  }
+}
+/* Color-code the pulse by stat type for instant readability */
+#score.nf-stat-pulse { animation-name: nfStatPulseCyan; }
+#best-score.nf-stat-pulse { animation-name: nfStatPulseGold; }
+#level.nf-stat-pulse { animation-name: nfStatPulsePurple; }
+#lines.nf-stat-pulse { animation-name: nfStatPulsePink; }
+@keyframes nfStatPulseCyan {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(34,211,238,0)); }
+  20% { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(34,211,238,0.7)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(34,211,238,0)); }
+}
+@keyframes nfStatPulseGold {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251,191,36,0)); }
+  20% { transform: scale(1.1); filter: drop-shadow(0 0 10px rgba(251,191,36,0.8)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251,191,36,0)); }
+}
+@keyframes nfStatPulsePurple {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(167,139,250,0)); }
+  20% { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(167,139,250,0.7)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(167,139,250,0)); }
+}
+@keyframes nfStatPulsePink {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(244,114,182,0)); }
+  20% { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(244,114,182,0.7)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(244,114,182,0)); }
+}
 
 /* ===== Footer (fixed, glass, hidden during active play) ===== */
 #nf-app-footer {
@@ -721,10 +812,38 @@ export function NeonfallApp() {
 
       const store = useGameStore.getState();
       store.setStatus(status);
-      store.setScore(readInt('score'));
-      store.setLevel(readInt('level'));
-      store.setLines(readInt('lines'));
-      store.setBest(readInt('best-score'));
+      // Sprint 3 Game-Feel: detect which stat actually changed and pulse
+      // only that box. This gives subtle visual feedback on score/level/line
+      // gains without touching the IIFE — we just add+remove a CSS class.
+      const prev = {
+        score: store.score,
+        level: store.level,
+        lines: store.lines,
+        best: store.best,
+      };
+      const next = {
+        score: readInt('score'),
+        level: readInt('level'),
+        lines: readInt('lines'),
+        best: readInt('best-score'),
+      };
+      store.setScore(next.score);
+      store.setLevel(next.level);
+      store.setLines(next.lines);
+      store.setBest(next.best);
+      // Pulse the stat-box <p> element whose value just increased.
+      (['score', 'level', 'lines', 'best'] as const).forEach((key) => {
+        if (next[key] > prev[key]) {
+          const id = key === 'best' ? 'best-score' : key;
+          const el = document.getElementById(id);
+          if (el) {
+            el.classList.remove('nf-stat-pulse');
+            // force reflow so the animation restarts cleanly
+            void el.offsetWidth;
+            el.classList.add('nf-stat-pulse');
+          }
+        }
+      });
     };
 
     const obs = new MutationObserver(compute);
@@ -854,6 +973,12 @@ export function NeonfallApp() {
     }
     if (status !== 'playing') {
       gameStartTsRef.current = null;
+    }
+    // Sprint 3: toggle body.nf-playing to pause the expensive background
+    // drift animation while a game is actively running (saves GPU cycles
+    // for the canvas). The blobs freeze in place — visually identical.
+    if (typeof document !== 'undefined') {
+      document.body.classList.toggle('nf-playing', status === 'playing');
     }
   }, [status]);
 

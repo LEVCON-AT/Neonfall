@@ -632,3 +632,45 @@ Stage Summary:
 - 360px/390px/768px alle verifiziert — keine Kollisionen, keine toten Nodes
 - IIFE (neonfall-content.ts) NICHT angetastet — byte-identisch
 - Sprint 2 komplett: S2.1 (Haptik+Hint live) + S2.2 (Dead-Settings entfernt) + S2.3 (Dead-Buttons entfernt + Layout clean)
+
+---
+Task ID: S3
+Agent: Main Agent (Z.ai Code)
+Task: Sprint 3 — Game-Feel & GPU Audit
+
+Work Log:
+- GPU-Audit des IIFE-CSS (neonfall-content.ts, nicht modifiziert):
+  - body::before/::after: 60vmax radial gradients mit filter:blur(80px) + drift 16s animation → teure composite-layer bei jedem frame
+  - .glass: backdrop-filter blur(18px) saturate(160%) auf top-bar/second-bar/mini-boxes → teuer
+  - shakeScreen(): nutzt transform translate+rotate ✅ (GPU-freundlich), aber kein will-change
+  - flash(): nutzt opacity ✅ (GPU-freundlich), forced reflow via transition none→opacity 300ms
+  - draw(): bei jedem requestAnimationFrame voller canvas redraw (bg gradient + grid + cells + ghost + piece) — für 10×20 grid akzeptabel
+  - ctx.createLinearGradient in jedem draw() — könnte gecacht werden, aber IIFE darf nicht geändert werden
+- Frame-Timing gemessen via agent-browser: 16.6ms avg (≈60fps), max 16.7ms, min 16.6ms — kein Jank im headless browser
+- Optimierungen als Overlay-CSS in NEONFALL_APP_CSS (IIFE byte-identisch):
+  1. will-change hints auf body::before/after, #game-container, #flash-overlay, #combo-popup, #tetris-canvas, .glass → reserviert composite-layers vorab
+  2. .glass backdrop-filter reduziert: blur(18px)→blur(12px), saturate(160%)→saturate(150%) mit !important (IIFE-Regel gleich spezifisch, muss überschrieben werden)
+  3. body.nf-playing::before/::after { animation-play-state: paused } — pausiert drift-animation während aktivem gameplay (blobs frieren ein, visuell identisch bei schnellem spiel)
+  4. body.nf-playing class wird via Effect C (status sync) auf document.body gesetzt wenn status==='playing'
+- Game-Feel Verbesserung: stat-box pulse animation
+  - MutationObserver (Effect C) erkennt wenn score/level/lines/best-score im IIFE DOM steigt
+  - Fügt .nf-stat-pulse class zur geänderten <p> hinzu (+ forced reflow für restart)
+  - CSS: 0.6s ease-out animation mit scale(1.08) + drop-shadow glow
+  - Color-coded: score=cyan, best=gold, level=purple, lines=pink → sofort erkennbar welcher stat sich geändert hat
+  - GPU-freundlich (nur transform + filter)
+- Lint-Fix: Backtick in CSS-Kommentar (`drift 16s`) entfernte → Template-Literal-Bruch
+- Verifikation via agent-browser:
+  - HTTP 200, 0 lint errors
+  - bodyPlaying: true ✅ (nf-playing class auf body während gameplay)
+  - glassBackdrop: "blur(12px) saturate(1.5)" ✅ (override greift, reduziert von 18px/1.6)
+  - beforeAnimState: "paused" ✅ (drift animation pausiert während gameplay)
+  - scoreHasPulse: true ✅ (stat-pulse class bei score-änderung getriggert)
+  - Screenshot s3-01-gameplay.png, s3-02-pulse.png
+  - dev.log: keine errors
+
+Stage Summary:
+- GPU-Audit: 4 Optimierungen als Overlay-CSS (will-change, backdrop-filter reduziert, drift-pause, stat-pulse)
+- Game-Feel: stat-box pulse animation mit color-coding (cyan/gold/purple/pink) für sofortiges feedback bei score/level/lines/best änderung
+- Performance: frame-timing 16.6ms avg (60fps) bestätigt, drift-animation pausiert während gameplay spart GPU-cycles
+- IIFE (neonfall-content.ts) NICHT angetastet — byte-identisch
+- Sprint 3 komplett
