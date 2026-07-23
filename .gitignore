@@ -52,3 +52,14 @@ prompt
 server.log
 # Skills directory
 /skills/
+# Restore artifacts (large binary bundles)
+neonfall-restore.bundle
+*.bundle
+
+# dev/server logs
+dev.log
+server.log
+
+# mini-service runtime
+mini-services/*/service.pid
+mini-services/*/node_modules/
