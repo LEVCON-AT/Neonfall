@@ -435,8 +435,16 @@ body.nf-playing::after { animation-play-state: paused !important; }
 .nf-footer-btn:active { transform: scale(0.92); }
 
 /* ===== shadcn Dialog neon override ===== */
+/* S5c: Dialog-Overlay (Backdrop) verstärkt — statt das Spielfeld nach links
+   zu verschieben (scrollbar-gutter Effekt), überblenden wir es mit einem
+   dunklen, stark geblurrten Overlay. Das Spielfeld bleibt an Ort und Stelle. */
+[data-slot="dialog-overlay"] {
+  background: rgba(6,6,14,0.78) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
 .nf-dialog-neon {
-  background: rgba(14,14,26,0.94) !important;
+  background: rgba(14,14,26,0.96) !important;
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid rgba(34,211,238,0.25) !important;

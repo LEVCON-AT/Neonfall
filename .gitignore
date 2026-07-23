@@ -63,3 +63,4 @@ server.log
 # mini-service runtime
 mini-services/*/service.pid
 mini-services/*/node_modules/
+upload/pasted_image_*

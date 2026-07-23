@@ -550,7 +550,7 @@ Agent: Main Agent (Z.ai Code)
 Task: Restore zu GitHub (LEVCON-AT/Neonfall) pushen
 
 Work Log:
-- PAT (ghp_...) vom Nutzer erhalten, remote URL temporär mit token gesetzt
+- PAT vom Nutzer erhalten, remote URL temporär mit token gesetzt
 - git ls-remote: Repo erreichbar (leer, fresh)
 - git push -u origin main: erfolgreich, aber GitHub warnte vor 53MB neonfall-restore.bundle
 - Cleanup: git rm --cached neonfall-restore.bundle, .gitignore ergänzt (bundle, dev.log, server.log, mini-service pid/node_modules), commit, force-push
@@ -1165,3 +1165,49 @@ Stage Summary:
 - deploy.sh: Auto-Detection nimmt freie Ports, passt alle Configs an
 - Keine hardcoded Port-Konflikte mehr mit levcon.ai (3002) oder anderen Services
 - 0 lint errors, HTTP 200
+
+---
+Task ID: S5c-Final4
+Agent: Main Agent (Z.ai Code)
+Task: 4 Bug-Fixes + Projektkontext-Dokument
+
+Work Log:
+
+### Bug 1 — SFX nicht hörbar (nur Musik)
+- Ursache: initAudio() wurde nicht bei gameContainer.click aufgerufen, nur bei keydown/touchstart. Wenn Nutzer nur klickt (keine Taste), bleibt IIFE-AudioContext suspended → SFX unhörbar, Shell-Musik (eigener AudioContext) hörbar.
+- Fix: initAudio() bei gameContainer.addEventListener('click') hinzugefügt.
+
+### Bug 2 — "X in Kreis" hinter Multiplayer-Dialog
+- Ursache: Legacy #nf-mp-modal in ShellOverlays.tsx war ein totes DOM-Element (Shell hat keine Show/Hide-Logik dafür, React MultiplayerDialog ist die echte UI). shadcn [role=dialog] default display:block → immer sichtbar, zeigte X-Close-Button.
+- Fix: #nf-mp-modal komplett aus ShellOverlays.tsx entfernt.
+- Verifikation: mpModal=false ✅
+
+### Bug 3 — "Tippen zum Start" überlagert Game-Over
+- Ursache: triggerGameOver() fügt gameOverScreen.classList.add('visible') hinzu aber entfernt nicht startPromptEl.classList.remove('visible'). Wenn start-prompt noch sichtbar ist (z.B. nach Hint-Close), überlappt es den Game-Over-Screen.
+- Fix: startPromptEl.classList.remove('visible') in triggerGameOver() hinzugefügt.
+- Verifikation: startPromptVisible=false bei Game-Over ✅
+
+### Bug 4 — Einstellungen verschieben Spielfeld nach links
+- Ursache: shadcn Dialog-Overlay war nur bg-black/50 (50% transparent) — Spielfeld darunter sichtbar, scrollbar-gutter Effekt verschob Layout.
+- Fix: [data-slot="dialog-overlay"] CSS hinzugefügt: background rgba(6,6,14,0.78) + backdrop-filter blur(14px) saturate(140%). Spielfeld wird jetzt sauber überblendet statt verschoben.
+- Verifikation: overlayBg=rgba(6,6,14,0.78), overlayBlur=blur(14px) ✅
+
+### Projektkontext-Dokument
+- PROJECT-CONTEXT.md erstellt (vollständige Doku für neue Sitzung):
+  1. Projekt-Übersicht
+  2. Technologie-Stack
+  3. Architektur (mit IIFE-Preservation-Regel + React-IIFE-Bridge)
+  4. Ports & Services
+  5. Sprint-Historie (S1-S5c-final)
+  6. Deployment (Voraussetzungen, Initial-Setup, Auto-Deploy, Wartung)
+  7. Bekannte Issues & Design-Entscheidungen
+  8. File-Struktur
+  9. Entwicklung in dieser Sandbox (Dev-Server, Lint, Commit, Agent-Browser)
+  10. Offene Aufgaben
+  11. Quick-Reference (Hooks, Events, Keybinds, Store, DB-Schema)
+  12. Lessons Learned
+
+Stage Summary:
+- 4 Bugs gefixt: SFX (initAudio), MP-Modal entfernt, Start-Prompt bei Game-Over entfernt, Dialog-Blur verstärkt
+- PROJECT-CONTEXT.md erstellt — ermöglicht nahtlosen Sitzungs-Wechsel
+- 0 lint errors, HTTP 200, alle 4 Bugs via agent-browser verifiziert

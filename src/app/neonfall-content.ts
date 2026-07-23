@@ -1036,6 +1036,9 @@ export const GAME_SCRIPT = `
         finalHighscoreEl.textContent = 'Best: ' + highscore;
         newHighscoreBadge.style.display = isNewHighscore ? 'block' : 'none';
         gameOverScreen.classList.add('visible');
+        // S5c: start-prompt entfernen falls noch sichtbar (überlappte sonst
+        //   den Game-Over-Screen mit "Tippen zum Start").
+        startPromptEl.classList.remove('visible');
         if (animationId) cancelAnimationFrame(animationId);
         playGameOverSound();
     }
@@ -1523,6 +1526,7 @@ export const GAME_SCRIPT = `
     });
 
     gameContainer.addEventListener('click', () => {
+        initAudio();
         if (!hintVisible && !gameStarted && !isPaused) startGame();
     });
 

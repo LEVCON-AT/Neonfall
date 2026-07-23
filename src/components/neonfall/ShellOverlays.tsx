@@ -38,22 +38,10 @@ export function ShellOverlays() {
           Score submission now happens via the React LeaderboardDialog which
           has its own name-input flow. The dead DOM node is gone. */}
 
-      {/* Multiplayer lobby — shell fills #nf-mp-content via innerHTML */}
-      <div id="nf-mp-modal" role="dialog" aria-modal="true" aria-label="Multiplayer">
-        <div id="nf-mp-card">
-          <div className="nf-mp-header">
-            <div className="nf-mp-title">MULTIPLAYER</div>
-            <button
-              className="nf-stats-close"
-              id="nf-mp-close"
-              aria-label="Schließen"
-            >
-              <X size={14} aria-hidden="true" />
-            </button>
-          </div>
-          <div id="nf-mp-content"></div>
-        </div>
-      </div>
+      {/* S5c: Legacy Shell Multiplayer-Modal entfernt — die echte Multiplayer-
+          Logik ist jetzt im React MultiplayerDialog (dialogs/MultiplayerDialog.tsx).
+          #nf-mp-modal war ein totes DOM-Element das immer sichtbar war (shadcn
+          [role=dialog] default display:block) und das "X in Kreis" zeigte. */}
 
       {/* iOS install instructions */}
       <div
