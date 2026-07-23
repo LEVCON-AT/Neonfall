@@ -1043,3 +1043,27 @@ Stage Summary:
 - S6.3 Achievements: 12 definiert, UI im Stats-Panel vorhanden
 - S6.4 Desktop MP: Dialog 520px, Opponent-Canvas 180×300, side-by-side Layout
 - 0 lint errors, HTTP 200, keine console errors
+
+---
+Task ID: S5c-AchToastFix
+Agent: Main Agent (Z.ai Code)
+Task: Achievement-Toast Position fixen + pasted_images löschen
+
+Work Log:
+- Nutzer-Screenshot (upload/pasted_image_1784832484854.png) via VLM analysiert
+- Bug gefunden: #nf-ach-toast (Achievement "ERFOLG FREIGESCHALTET / Erstes Spiel") überlappte die BEST/LEVEL Stat-Boxen im Top-Bar
+- Ursache: Toast war bei top:46px (unter Top-Buttons) + left:50% zentriert → mittige Stat-Boxen verdeckt
+- Fix in neonfall-shell.ts:
+  - top: 46px → 92px (unter dem ~80px hohen Top-Bar)
+  - left: 50% → max(8px, safe-area-left) (links statt zentriert)
+  - transform: translateX(-50%) → translateX(0) beim .show
+  - Toast slidet jetzt von links rein statt von oben
+- Verifikation: achToastTop=100px, achToastLeft=8px — keine Überlappung mehr ✅
+- 14 pasted_image_*.png Dateien aus upload/ gelöscht (wie vom Nutzer gewünscht)
+- Screenshot s5c-ach-toast-fixed.png
+
+Stage Summary:
+- Achievement-Toast positioniert jetzt links unter dem Top-Bar (statt zentriert darüber)
+- Keine Überlappung mit Stat-Boxen mehr
+- upload/ bereinigt (keine pasted_images mehr)
+- 0 lint errors, HTTP 200

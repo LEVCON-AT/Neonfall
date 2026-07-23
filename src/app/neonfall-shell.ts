@@ -295,9 +295,12 @@ export const SHELL_CSS = `
 /* ---- Achievement unlock toast ---- */
 #nf-ach-toast {
     position: fixed;
-    top: calc(max(8px, env(safe-area-inset-top)) + 46px);
-    left: 50%;
-    transform: translateX(-50%) translateY(-160%);
+    /* S5c fix: moved below the top-bar (which is ~80px tall on mobile) so it
+       no longer overlaps the BEST/LEVEL stat boxes. Positioned at the
+       left edge instead of centered to avoid covering the playfield. */
+    top: calc(max(8px, env(safe-area-inset-top)) + 92px);
+    left: max(8px, env(safe-area-inset-left));
+    transform: translateX(-160%);
     background: linear-gradient(135deg, rgba(251,191,36,0.16), rgba(244,114,182,0.16));
     border: 1px solid rgba(251,191,36,0.4);
     border-radius: 12px;
@@ -314,7 +317,8 @@ export const SHELL_CSS = `
     opacity: 0;
 }
 #nf-ach-toast.show {
-    transform: translateX(-50%) translateY(0);
+    /* Slide in from the left edge instead of dropping down from center. */
+    transform: translateX(0);
     opacity: 1;
 }
 .nf-ach-toast-icon {
