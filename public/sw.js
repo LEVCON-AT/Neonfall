@@ -1,7 +1,7 @@
 // NEONFALL Service Worker
 // Provides offline support (caches app shell + music) and the installability signal.
 
-const CACHE_VERSION = 'neonfall-v8-restore';
+const CACHE_VERSION = 'neonfall-v9-s5-audio-bugfix';
 const PRECACHE_URLS = [
   '/',
   '/neonfall-music.mp3',
@@ -18,6 +18,14 @@ const PRECACHE_URLS = [
   '/music/track-6-neon-pixel-rush-alt.mp3',
   '/music/track-7-block-rush.mp3',
   '/music/track-8-block-rush-alt.mp3',
+  '/music/track-9-block-rush-ii.mp3',
+  '/music/track-10-block-rush-iii.mp3',
+  '/music/track-11-block-rush-iv.mp3',
+  '/music/track-12-block-rush-v.mp3',
+  '/music/track-13-neon-block-rush.mp3',
+  '/music/track-14-neon-block-rush-alt.mp3',
+  '/music/track-15-neon-pulse-ii.mp3',
+  '/music/track-16-neon-pulse-iii.mp3',
 ];
 
 // --- INSTALL: precache the app shell + music so the game runs offline ---
@@ -63,6 +71,22 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
+
+  // API requests (e.g. /api/leaderboard, /api/scores): NEVER cache — always
+  // network-first, no store. This was a bug in S4 where the SW served stale
+  // leaderboard data from cache. API responses are inherently dynamic.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      (async () => {
+        try {
+          return await fetch(req);
+        } catch (e) {
+          return Response.error();
+        }
+      })()
+    );
+    return;
+  }
 
   // Navigation requests (the HTML page): network-first, fall back to cached "/".
   if (req.mode === 'navigate') {

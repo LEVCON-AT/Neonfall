@@ -718,3 +718,51 @@ Stage Summary:
 - BUG gefunden: Name-Dialog nach Game-Over nicht schließbar (S5-Prio)
 - BUG gefunden: Service-Worker cached API-Responses (S5-Prio)
 - dev.log: keine Errors, 0 lint-errors
+
+---
+Task ID: S5
+Agent: Main Agent (Z.ai Code)
+Task: Sprint 5 — Bug Fixes (Name-Dialog, SW-Cache) + 8 neue Audio-Files
+
+Work Log:
+
+### 8 neue Audio-Files integriert
+- Upload gefunden: 8 neue MP3s (alle 23.07. 15:01) in upload/:
+  Block Rush (2)-(5).mp3, Neon Block Rush.mp3 + (1).mp3, Neon Pulse (2)-(3).mp3
+- Kopiert nach public/music/ als track-9 bis track-16 mit beschreibenden Namen
+- TRACKS-Array in neonfall-shell.ts von 8 auf 16 Einträge erweitert, fancy Namen:
+  9 Avalanche, 10 Thunderfall, 11 Momentum Shift, 12 Overdrive,
+  13 Neon Storm, 14 Electric Rain, 15 Heartbeat Sync, 16 Voltage Surge
+- PRECACHE_URLS in sw.js um 8 neue Tracks erweitert (offline-fähig)
+- Verifikation: alle 8 neuen Tracks liefern HTTP 200, Music-Bar wiring korrekt
+  (AudioContext braucht User-Gesture — im Headless-Test nicht startbar, kein Bug)
+
+### BUG 1 gefixt: Name-Dialog nicht schließbar
+- Ursache: #nf-name-modal in ShellOverlays.tsx hatte KEINE Show/Hide-Logik im
+  Shell (initShell() referenziert nf-name-modal/nf-name-skip/nf-name-submit
+  nirgends). shadcn's [role=dialog] Default ist display:block → Dialog war
+  IMMER sichtbar und blockierte S/G/L-Shortcuts.
+- Fix: #nf-name-modal komplett aus ShellOverlays.tsx entfernt. Score-Submission
+  läuft über React LeaderboardDialog (eigener Name-Input-Flow).
+- Verifikation: nameModal=false ✅, 4 Dialoge statt 6 ✅, S/G/L-Shortcuts
+  funktionieren (Settings öffnet mit 3 Tabs, Leaderboard mit 4 Rows) ✅
+
+### BUG 2 gefixt: Service-Worker cached API-Responses
+- Ursache: sw.js fetch-Handler cached alle same-origin GET-Requests cache-first
+  (Zeile 86-110) — das betraf /api/leaderboard Responses. Stale Daten wurden
+  aus Cache ausgeliefert statt frisch vom Server.
+- Fix: Neuer fetch-Handler-Branch VOR dem same-origin-Branch: alle /api/*
+  Requests werden NIEMALS gecached — immer network-first, kein store.
+- CACHE_VERSION von v8-restore auf v9-s5-audio-bugfix gebumpt (forciert
+  SW-Update bei allen Nutzern, alte Caches werden gelöscht)
+- Verifikation: Browser-fetch /api/leaderboard liefert 4 Scores direkt vom
+  Server, cacheControl=null ✅
+
+Stage Summary:
+- 8 neue Audio-Files mit fancy Namen integriert (16 Tracks total)
+- BUG 1 gefixt: Name-Dialog entfernt (war immer sichtbar, blockierte Shortcuts)
+- BUG 2 gefixt: SW cached keine API-Responses mehr (stale leaderboard behoben)
+- SW-Cache-Version v9 forciert Update bei allen Nutzern
+- Verifikation: HTTP 200, 0 lint errors, 0 console errors
+- Screenshots: s5-01-settings, s5-02-mode, s5-03-leaderboard, s5-04/05/06-music
+- Sprints 1-5 komplett

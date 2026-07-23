@@ -1009,19 +1009,27 @@ export function initShell() {
   window.addEventListener('resize', updateRotateHint);
   window.addEventListener('orientationchange', updateRotateHint);
 
-  // ============ MUSIC CROSSFADE PLAYER (8 tracks) ============
+  // ============ MUSIC CROSSFADE PLAYER (16 tracks) ============
   // The game's own neonfall-music.mp3 is now a silent stub; this player provides
   // the real soundtrack with seamless 3 s crossfades between 8 tracks. It runs on
   // a separate AudioContext and syncs with the game's pause/mute/visibility.
   const TRACKS = [
-    { file: '/music/track-1-neon-pulse.mp3',        name: 'Pulse Drive' },
-    { file: '/music/track-2-neon-pulse-alt.mp3',    name: 'Static Bloom' },
-    { file: '/music/track-3-neon-pixel-run.mp3',    name: 'Pixel Drift' },
-    { file: '/music/track-4-neon-pixel-run-alt.mp3',name: 'Bitstream' },
-    { file: '/music/track-5-neon-pixel-rush.mp3',   name: 'Grid Runner' },
-    { file: '/music/track-6-neon-pixel-rush-alt.mp3',name: 'Circuit Breaker' },
-    { file: '/music/track-7-block-rush.mp3',        name: 'Cascade' },
-    { file: '/music/track-8-block-rush-alt.mp3',    name: 'Freefall' },
+    { file: '/music/track-1-neon-pulse.mp3',          name: 'Pulse Drive' },
+    { file: '/music/track-2-neon-pulse-alt.mp3',      name: 'Static Bloom' },
+    { file: '/music/track-3-neon-pixel-run.mp3',      name: 'Pixel Drift' },
+    { file: '/music/track-4-neon-pixel-run-alt.mp3',  name: 'Bitstream' },
+    { file: '/music/track-5-neon-pixel-rush.mp3',     name: 'Grid Runner' },
+    { file: '/music/track-6-neon-pixel-rush-alt.mp3', name: 'Circuit Breaker' },
+    { file: '/music/track-7-block-rush.mp3',          name: 'Cascade' },
+    { file: '/music/track-8-block-rush-alt.mp3',      name: 'Freefall' },
+    { file: '/music/track-9-block-rush-ii.mp3',       name: 'Avalanche' },
+    { file: '/music/track-10-block-rush-iii.mp3',     name: 'Thunderfall' },
+    { file: '/music/track-11-block-rush-iv.mp3',      name: 'Momentum Shift' },
+    { file: '/music/track-12-block-rush-v.mp3',       name: 'Overdrive' },
+    { file: '/music/track-13-neon-block-rush.mp3',    name: 'Neon Storm' },
+    { file: '/music/track-14-neon-block-rush-alt.mp3',name: 'Electric Rain' },
+    { file: '/music/track-15-neon-pulse-ii.mp3',      name: 'Heartbeat Sync' },
+    { file: '/music/track-16-neon-pulse-iii.mp3',     name: 'Voltage Surge' },
   ];
   const FADE_DUR = 3.0;          // seconds of crossfade between tracks
   const MUSIC_VOL = 0.5;         // target music volume (matches game's musicGain)

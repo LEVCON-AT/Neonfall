@@ -32,41 +32,11 @@ export function ShellOverlays() {
         <div id="nf-stats-card"></div>
       </div>
 
-      {/* Name-input modal — shell toggles .show and reads the form values */}
-      <div id="nf-name-modal" role="dialog" aria-modal="true" aria-label="Namen eingeben">
-        <div id="nf-name-card">
-          <h2>Highscore eintragen</h2>
-          <p className="nf-name-sub">
-            Gib einen Namen ein, um deinen Score in der Bestenliste zu verewigen.
-          </p>
-          <form id="nf-name-form">
-            <input
-              id="nf-name-input"
-              type="text"
-              maxLength={16}
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              placeholder="Dein Name"
-              aria-label="Spielername"
-            />
-            <div className="nf-name-score-row">
-              <span className="nf-name-score-label">Score</span>
-              <span className="nf-name-score-value" id="nf-name-score-value">
-                0
-              </span>
-            </div>
-            <div className="nf-name-actions">
-              <button type="button" className="nf-btn-ghost" id="nf-name-skip">
-                Überspringen
-              </button>
-              <button type="submit" className="nf-btn-primary" id="nf-name-submit">
-                Eintragen
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
+      {/* Name-input modal — REMOVED in S5: the shell never wired up show/hide
+          logic for #nf-name-modal, so it was always visible (shadcn's
+          [role=dialog] default is display:block) and blocked S/G/L shortcuts.
+          Score submission now happens via the React LeaderboardDialog which
+          has its own name-input flow. The dead DOM node is gone. */}
 
       {/* Multiplayer lobby — shell fills #nf-mp-content via innerHTML */}
       <div id="nf-mp-modal" role="dialog" aria-modal="true" aria-label="Multiplayer">
