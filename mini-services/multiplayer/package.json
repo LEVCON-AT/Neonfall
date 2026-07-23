@@ -1,0 +1,16 @@
+{
+  "name": "neonfall-multiplayer",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Socket.io multiplayer backend for NEONFALL — a Tetris-style falling-block game.",
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}
