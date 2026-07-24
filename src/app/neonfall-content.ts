@@ -160,10 +160,15 @@ export const GAME_CSS = `
 
     #tetris-canvas {
         display: block;
+        /* S5c: aspect-ratio statt height:100% + width:auto. Letzteres
+           führte zu vertikal gestreckten Blöcken wenn der Container höher
+           als die Canvas-Auflösung war. Mit aspect-ratio bleiben die Blöcke
+           immer quadratisch, egal wie groß der Container ist. */
+        aspect-ratio: 12 / 20;
         height: 100%;
-        width: auto;
         max-width: 100%;
         max-height: 100%;
+        object-fit: contain;
         border-radius: 10px;
         touch-action: none;
     }
