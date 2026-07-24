@@ -54,7 +54,22 @@ fi
 # ── 2. GIT PULL ────────────────────────────────────────────────
 echo -e "\n${YELLOW}[2] Git pull...${NC}"
 
-git fetch origin main
+# Prüfe ob remote URL SSH nutzt (sonst schlägt fetch bei private repos fehl)
+REMOTE_URL=$(git remote get-url origin 2>/dev/null)
+echo "  Remote URL: $REMOTE_URL"
+
+if [[ "$REMOTE_URL" == https://* ]]; then
+    echo -e "${YELLOW}  ⚠ HTTPS remote URL erkannt. Falls das Repo private ist:${NC}"
+    echo -e "${YELLOW}    git remote set-url origin git@github.com:LEVCON-AT/Neonfall.git${NC}"
+    echo -e "${YELLOW}    (Setze voraus: SSH-Key für GitHub auf VPS konfiguriert)${NC}"
+fi
+
+git fetch origin main || {
+    echo -e "${RED}  ✗ git fetch fehlgeschlagen!${NC}"
+    echo -e "${YELLOW}    Prüfe: SSH-Key für GitHub in ~/.ssh/config${NC}"
+    echo -e "${YELLOW}    Test:  ssh -T git@github.com${NC}"
+    exit 1
+}
 git reset --hard origin/main
 git clean -fd -e .env -e .env.local -e .env.production
 
