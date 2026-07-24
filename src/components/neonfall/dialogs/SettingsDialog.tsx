@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -56,20 +56,16 @@ const KEYBINDS: { keys: string[]; action: string }[] = [
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const s = useSettingsStore();
-  // Track whether the sliders have been pushed to the IIFE at least once so
-  // we don't fight the IIFE's own initial render.
-  const didSync = useRef(false);
 
   // Whenever the dialog opens, push the persisted rattle/impact values into
   // the IIFE's sliders so the in-game behaviour matches the saved settings.
   useEffect(() => {
     if (!open) return;
-    didSync.current = true;
     syncGameSlider('rattle-slider', s.rattleStrength);
     syncGameSlider('impact-slider', s.impactStrength);
     // Only re-sync when the dialog (re)opens — the per-slider onValueChange
     // handlers keep the IIFE in sync during live edits.
-  }, [open]);
+  }, [open, s.rattleStrength, s.impactStrength]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
