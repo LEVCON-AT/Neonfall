@@ -19,7 +19,7 @@ export const GAME_CSS = `
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 44px 8px 6px;
+        padding: 38px 8px 6px;
         gap: 6px;
         z-index: 1;
     }
@@ -52,6 +52,12 @@ export const GAME_CSS = `
         background-clip: text;
         color: transparent;
         flex: 0 0 auto;
+        position: fixed;
+        top: max(8px, env(safe-area-inset-top));
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 20;
+        opacity: 0.6;
     }
 
     .glass {
@@ -68,7 +74,7 @@ export const GAME_CSS = `
         align-items: stretch;
         justify-content: center;
         width: 100%;
-        max-width: 360px;
+        max-width: 318px;  /* = canvas(300px) + container padding(8+8) + border(1+1) = 318px */
         gap: 6px;
         flex: 0 0 auto;
     }
@@ -512,7 +518,6 @@ export const GAME_CSS = `
     @media (min-width: 700px) {
         html, body { touch-action: auto; }
         h1#title { font-size: 1.4em; }
-        #top-bar, #second-bar, #game-container { max-width: 480px; }
         .stat-box p { font-size: 1.3em; }
         .mini-box h3, .stat-box h3 { font-size: 0.65em; }
         #hint-content { max-width: 560px; }
