@@ -146,8 +146,8 @@ export const GAME_CSS = `
         position: relative;
         flex: 0 1 auto;
         min-height: 0;
-        width: 100%;
-        max-width: 360px;
+        width: fit-content;
+        max-width: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
