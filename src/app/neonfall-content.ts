@@ -146,7 +146,10 @@ export const GAME_CSS = `
 
     #game-container {
         position: relative;
-        flex: 1 1 auto;
+        /* S7.5b: flex-shrink statt flex:1 — Container soll sich an den
+           Canvas anpassen, nicht den gesamten vertikalen Raum ausfüllen.
+           Verhindert gestreckten Container mit leerem Raum unten. */
+        flex: 0 1 auto;
         min-height: 0;
         width: 100%;
         max-width: 360px;

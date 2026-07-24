@@ -1,19 +1,22 @@
 export const NEONFALL_APP_CSS = `
 /* S7.5b: Logo — replaced text with neon block icon to avoid duplicate
    "NEONFALL" on mobile (PWA app name + in-app title). The h1 keeps
-   sr-only text for accessibility. */
+   sr-only text for accessibility. S7.5b-fix: gradient statt solid cyan,
+   damit es mit dem Bild-Logo (icon-512.png) und den App-Gradients harmoniert. */
 h1#title {
   display: flex !important;
   align-items: center;
   gap: 0;
-  background: none !important;
-  -webkit-background-clip: initial !important;
-  background-clip: initial !important;
-  color: #22d3ee !important;
+  background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
 }
 .nf-logo-icon {
-  filter: drop-shadow(0 0 6px rgba(34,211,238,0.6))
-          drop-shadow(0 0 12px rgba(167,139,250,0.3));
+  /* SVG inherits color from parent — use currentColor with gradient via fill */
+  fill: url(#nf-logo-gradient);
+  filter: drop-shadow(0 0 6px rgba(34,211,238,0.5))
+          drop-shadow(0 0 10px rgba(244,114,182,0.3));
 }
 .sr-only {
   position: absolute;

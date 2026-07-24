@@ -64,9 +64,16 @@ export function NeonfallApp() {
 
       <h1 id="title" aria-label="NEONFALL">
         <svg className="nf-logo-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <rect x="2" y="2" width="8" height="8" rx="2" fill="currentColor" opacity="0.9" />
-          <rect x="12" y="8" width="8" height="8" rx="2" fill="currentColor" opacity="0.7" />
-          <rect x="7" y="14" width="8" height="8" rx="2" fill="currentColor" opacity="0.5" />
+          <defs>
+            <linearGradient id="nf-logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#22d3ee" />
+              <stop offset="50%" stopColor="#a78bfa" />
+              <stop offset="100%" stopColor="#f472b6" />
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="8" height="8" rx="2" fill="url(#nf-logo-gradient)" opacity="0.95" />
+          <rect x="12" y="8" width="8" height="8" rx="2" fill="url(#nf-logo-gradient)" opacity="0.75" />
+          <rect x="7" y="14" width="8" height="8" rx="2" fill="url(#nf-logo-gradient)" opacity="0.55" />
         </svg>
         <span className="sr-only">NEONFALL</span>
       </h1>
