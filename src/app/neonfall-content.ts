@@ -720,6 +720,29 @@ export const GAME_SCRIPT = `
     let animationId = null;
     let comboCount = -1;
 
+    // S7.2: pendingGarbage + applyGarbage hier definiert (vor resetPlayer),
+    //   damit der TDZ (temporal dead zone) Fehler vermieden wird. Früher am
+    //   IIFE-Ende definiert + resetPlayer monkey-patched — das crashte beim
+    //   initialen restartGame() weil pendingGarbage noch nicht initialisiert war.
+    let pendingGarbage = 0;
+    function applyGarbage() {
+        if (pendingGarbage <= 0) return;
+        const n = Math.min(pendingGarbage, ROWS - 2);
+        pendingGarbage = 0;
+        // Random hole column for each garbage row.
+        for (let i = 0; i < n; i++) {
+            board.shift(); // remove top row
+            const hole = Math.floor(Math.random() * COLS);
+            const row = new Array(COLS).fill(9); // 9 = garbage marker
+            row[hole] = 0;
+            board.push(row);
+        }
+        // If the current piece now overlaps garbage, push it up.
+        if (collide(board, player)) {
+            player.pos.y--;
+        }
+    }
+
     let player = { matrix: null, color: null, pos: { x: 0, y: 0 } };
     let nextPiece = { matrix: null, color: null, type: null };
     let heldType = null;
@@ -1000,6 +1023,10 @@ export const GAME_SCRIPT = `
     }
 
     function resetPlayer() {
+        // S5c/S7.2: applyGarbage() direkt hier einbauen statt Monkey-Patching.
+        //   Wird vor dem Spawn des nächsten Steins aufgerufen — wenn der Gegner
+        //   garbage geschickt hat, werden die Reihen unten eingefügt.
+        applyGarbage();
         player = createPiece(nextPiece.type);
         nextPiece = createPiece(randomType());
         drawNext();
@@ -1631,27 +1658,10 @@ export const GAME_SCRIPT = `
         hintVisible = true;
     }
 
-    // ===== S5c: Multiplayer hooks =====
-    // Garbage queue: lines sent by the opponent that get applied (with a hole)
-    // at the bottom of the board when the next piece spawns.
-    let pendingGarbage = 0;
-    function applyGarbage() {
-        if (pendingGarbage <= 0) return;
-        const n = Math.min(pendingGarbage, ROWS - 2);
-        pendingGarbage = 0;
-        // Random hole column for each garbage row.
-        for (let i = 0; i < n; i++) {
-            board.shift(); // remove top row
-            const hole = Math.floor(Math.random() * COLS);
-            const row = new Array(COLS).fill(9); // 9 = garbage marker
-            row[hole] = 0;
-            board.push(row);
-        }
-        // If the current piece now overlaps garbage, push it up.
-        if (collide(board, player)) {
-            player.pos.y--;
-        }
-    }
+    // ===== S5c/S7.2: Multiplayer hooks =====
+    // pendingGarbage + applyGarbage sind jetzt oben (bei den anderen State-
+    // variablen) definiert, nicht mehr hier. Das verhindert TDZ-Fehler beim
+    // initialen restartGame().
 
     // Expose hooks for the React multiplayer layer.
     window.__nfAddGarbage = (count) => { pendingGarbage += Math.max(0, count | 0); };
@@ -1659,11 +1669,7 @@ export const GAME_SCRIPT = `
     window.__nfGetBoard = () => board.map(row => row.slice());
     window.__nfRestart = () => restartGame();
 
-    // Patch resetPlayer to apply garbage before spawning the next piece.
-    const _origResetPlayer = resetPlayer;
-    resetPlayer = function() {
-        applyGarbage();
-        _origResetPlayer();
-    };
+    // S7.2: Monkey-Patch entfernt — applyGarbage() ist jetzt direkt in
+    //   resetPlayer() eingebaut (oben). Sauberer als Function-Overriding.
 })();
 `;
