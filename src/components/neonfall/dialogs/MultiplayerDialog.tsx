@@ -48,6 +48,16 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
   const socketRef = useRef<Socket | null>(null);
   const opponentCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  // S7.4: mpStateRef tracks the current MP state for socket event guards.
+  //   Socket events fire asynchronously and may arrive after the user has
+  //   already left the 'playing' state (e.g. clicked "Aufgeben" or closed
+  //   the dialog). Without this ref, stale events would corrupt the UI.
+  const mpStateRef = useRef<MPState>('lobby');
+  const updateMpState = useCallback((next: MPState) => {
+    mpStateRef.current = next;
+    setMpState(next);
+  }, []);
+
   // Connect to socket.io when dialog opens, disconnect on close.
   useEffect(() => {
     if (!open) return;
@@ -65,58 +75,70 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
       toast.error('Verbindung fehlgeschlagen', {
         description: 'Multiplayer-Service nicht erreichbar. Bitte später erneut versuchen.',
       });
-      setMpState('lobby');
+      updateMpState('lobby');
     });
 
     sock.on('connect_timeout', () => {
       toast.error('Zeitüberschreitung', {
         description: 'Multiplayer-Service nicht erreichbar.',
       });
-      setMpState('lobby');
+      updateMpState('lobby');
     });
 
     sock.on('opponent:joined', (data: { playerName: string }) => {
       setOpponentName(data.playerName);
-      setMpState('playing');
+      updateMpState('playing');
       try { window.__nfRestart?.(); } catch {}
     });
 
     sock.on('opponent:garbage', (data: { count: number }) => {
+      // S7.4: Only apply garbage if we're actually playing.
+      if (mpStateRef.current !== 'playing') return;
       try { window.__nfAddGarbage?.(data.count); } catch {}
     });
 
     sock.on('opponent:board', (data: { board: number[][] }) => {
+      // S7.4: Only update board preview if we're still playing.
+      if (mpStateRef.current !== 'playing') return;
       setOpponentBoard(data.board);
     });
 
     sock.on('opponent:win', () => {
+      // S7.4: Only process win if we're still playing.
+      if (mpStateRef.current !== 'playing') return;
       setResult('win');
-      setMpState('result');
+      updateMpState('result');
     });
 
     sock.on('opponent:left', () => {
+      // S7.4: Only show "left" toast if we were in an active match.
+      if (mpStateRef.current === 'lobby') return;
       toast.error('Gegner hat verlassen', { description: 'Das Match wurde abgebrochen.' });
-      setMpState('lobby');
+      updateMpState('lobby');
       setRoomCode('');
       setOpponentName('');
     });
 
     sock.on('opponent:restart', () => {
+      // S7.4: Only restart if we're in result state (waiting for revanche).
+      if (mpStateRef.current !== 'result') return;
       try { window.__nfRestart?.(); } catch {}
-      setMpState('playing');
+      updateMpState('playing');
       setResult(null);
     });
 
     sock.on('error', (msg: string) => {
       toast.error('Multiplayer-Fehler', { description: msg });
-      setMpState('lobby');
+      updateMpState('lobby');
     });
 
     return () => {
       sock.disconnect();
       socketRef.current = null;
+      // S7.4: Reset state ref on cleanup so stale events are ignored.
+      mpStateRef.current = 'lobby';
     };
-  }, [open]);
+  }, [open, updateMpState]);
 
   // Listen for line clears → send garbage to opponent.
   useEffect(() => {
@@ -158,8 +180,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
     const observer = new MutationObserver(() => {
       if (goEl.classList.contains('visible')) {
         socketRef.current?.emit('game:over');
-        setResult('lose');
-        setMpState('result');
+        updateMpState('result');
       }
     });
     observer.observe(goEl, { attributes: true, attributeFilter: ['class'] });
@@ -196,7 +217,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
     socketRef.current.emit('room:create', { playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
       if (res.ok && res.roomId) {
         setRoomCode(res.roomId);
-        setMpState('waiting');
+        updateMpState('waiting');
       } else {
         toast.error('Fehler beim Erstellen', { description: res.error || 'Unbekannter Fehler.' });
       }
@@ -213,7 +234,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
     socketRef.current?.emit('room:join', { roomId: code, playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
       if (res.ok && res.roomId) {
         setRoomCode(res.roomId);
-        setMpState('playing');
+        updateMpState('playing');
         try { window.__nfRestart?.(); } catch {}
       } else {
         toast.error('Beitreten fehlgeschlagen', { description: res.error || 'Unbekannter Fehler.' });
@@ -223,7 +244,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
 
   const handleLeave = useCallback(() => {
     socketRef.current?.emit('room:leave');
-    setMpState('lobby');
+    updateMpState('lobby');
     setRoomCode('');
     setOpponentName('');
     setResult(null);
@@ -232,7 +253,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
   const handleRevanche = useCallback(() => {
     socketRef.current?.emit('game:restart');
     try { window.__nfRestart?.(); } catch {}
-    setMpState('playing');
+    updateMpState('playing');
     setResult(null);
   }, []);
 
