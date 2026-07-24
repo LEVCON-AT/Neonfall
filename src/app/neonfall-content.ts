@@ -18,6 +18,7 @@ export const GAME_CSS = `
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
         padding: 44px 8px 6px;
         gap: 6px;
         z-index: 1;
@@ -143,7 +144,7 @@ export const GAME_CSS = `
 
     #game-container {
         position: relative;
-        flex: 1 1 auto;
+        flex: 0 1 auto;
         min-height: 0;
         width: 100%;
         max-width: 360px;
@@ -164,7 +165,7 @@ export const GAME_CSS = `
         width: auto;
         max-width: 100%;
         max-height: 100%;
-        aspect-ratio: 12 / 20;
+        aspect-ratio: 12 / 24;
         object-fit: contain;
         border-radius: 10px;
         touch-action: none;
@@ -650,7 +651,7 @@ export const GAME_SCRIPT = `
     //   Tetris-Standard 10×20). Combined mit den zusätzlichen Pentomino-Formen
     //   ergibt das eine deutliche Abhebung vom Tetris "look & feel".
     const COLS = 12;
-    const ROWS = 20;
+    const ROWS = 24;
     // BLOCK_SIZE von 28→24 reduziert, damit 12 Spalten auf Mobile (360px)
     //   noch bequem passen: 12×24=288px Canvas-Breite (vorher 10×28=280px).
     const BLOCK_SIZE = 24;
