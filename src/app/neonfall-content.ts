@@ -146,13 +146,15 @@ export const GAME_CSS = `
 
     #game-container {
         position: relative;
-        /* S7.5b: flex-shrink statt flex:1 — Container soll sich an den
-           Canvas anpassen, nicht den gesamten vertikalen Raum ausfüllen.
-           Verhindert gestreckten Container mit leerem Raum unten. */
+        /* S7.5b: Container passt sich an Canvas an, begrenzt durch Viewport.
+           height: fit-content lässt den Container nur so groß werden wie
+           der Canvas braucht. max-height verhindert Overflow auf Desktop. */
         flex: 0 1 auto;
+        height: fit-content;
         min-height: 0;
         width: 100%;
         max-width: 360px;
+        max-height: calc(100vh - 180px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -235,7 +237,12 @@ export const GAME_CSS = `
     }
     #hint-overlay b { color: #a78bfa; }
     #hint-overlay.hidden { opacity: 0; pointer-events: none; }
-    #hint-content { max-width: 480px; }
+    #hint-content {
+        max-width: 480px;
+        /* S7.5b: Hint-Inhalt zentriert, nicht gestreckt. Bei zu viel Inhalt
+           scrollt das Overlay (overflow-y: auto auf #hint-overlay). */
+        margin: auto;
+    }
     #hint-content p { margin: 0 0 8px; }
     .hint-col { text-align: left; margin-bottom: 10px; }
     .hint-col h3 {
