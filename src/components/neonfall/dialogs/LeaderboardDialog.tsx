@@ -43,7 +43,7 @@ export function LeaderboardDialog({
       <DialogContent className="nf-dialog-neon nf-leaderboard-dialog">
         <DialogHeader>
           <DialogTitle className="nf-dialog-title">
-            <Trophy size={16} aria-hidden="true" style={{ verticalAlign: -3, marginRight: 6, color: '#fbbf24' }} />
+            <Trophy size={16} aria-hidden="true" className="nf-dialog-title-icon nf-dialog-title-icon-gold" />
             Bestenliste
           </DialogTitle>
           <DialogDescription className="nf-dialog-desc">

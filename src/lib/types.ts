@@ -101,3 +101,34 @@ export const GAME_MODES: Record<
     goal: 'Ohne Ende',
   },
 };
+
+// ═══════════════════════════════════════════════════════════════
+// Global Window interface augmentation (S7.3)
+// ═══════════════════════════════════════════════════════════════
+// The IIFE in neonfall-content.ts exposes several hooks on window for the
+// React layer to call. Previously each call site used `as unknown as { ... }`
+// casts — now they're typed globally here.
+
+declare global {
+  interface Window {
+    /** Returns the currently selected game mode ('marathon'|'sprint'|'ultra'|'zen'). */
+    __nfGetMode?: () => string;
+    /** Adds garbage rows (from multiplayer opponent) to the pending queue. */
+    __nfAddGarbage?: (count: number) => void;
+    /** Resets the pending garbage queue to zero. */
+    __nfResetGarbage?: () => void;
+    /** Returns a deep copy of the current board (2D number array). */
+    __nfGetBoard?: () => number[][];
+    /** Restarts the game (new board, new piece, reset score). */
+    __nfRestart?: () => void;
+    /** Internal: guards against double-init of the legacy shell. */
+    __nfShellInit?: boolean;
+    /** iOS Safari webkitAudioContext fallback. */
+    webkitAudioContext?: typeof AudioContext;
+  }
+
+  interface Navigator {
+    /** iOS Safari standalone mode (PWA launched from home screen). */
+    standalone?: boolean;
+  }
+}

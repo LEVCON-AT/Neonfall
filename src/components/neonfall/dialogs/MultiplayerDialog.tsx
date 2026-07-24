@@ -51,17 +51,38 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
   // Connect to socket.io when dialog opens, disconnect on close.
   useEffect(() => {
     if (!open) return;
-    const sock = io('/?XTransformPort=3004', { transports: ['websocket', 'polling'] });
+    const sock = io('/?XTransformPort=3004', {
+      transports: ['websocket', 'polling'],
+      timeout: 5000,
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000,
+    });
     socketRef.current = sock;
+
+    // S7.7: Connection error handling — show toast if socket can't connect.
+    sock.on('connect_error', (err: Error) => {
+      toast.error('Verbindung fehlgeschlagen', {
+        description: 'Multiplayer-Service nicht erreichbar. Bitte später erneut versuchen.',
+      });
+      setMpState('lobby');
+    });
+
+    sock.on('connect_timeout', () => {
+      toast.error('Zeitüberschreitung', {
+        description: 'Multiplayer-Service nicht erreichbar.',
+      });
+      setMpState('lobby');
+    });
 
     sock.on('opponent:joined', (data: { playerName: string }) => {
       setOpponentName(data.playerName);
       setMpState('playing');
-      try { (window as unknown as { __nfRestart?: () => void }).__nfRestart?.(); } catch {}
+      try { window.__nfRestart?.(); } catch {}
     });
 
     sock.on('opponent:garbage', (data: { count: number }) => {
-      try { (window as unknown as { __nfAddGarbage?: (n: number) => void }).__nfAddGarbage?.(data.count); } catch {}
+      try { window.__nfAddGarbage?.(data.count); } catch {}
     });
 
     sock.on('opponent:board', (data: { board: number[][] }) => {
@@ -81,7 +102,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
     });
 
     sock.on('opponent:restart', () => {
-      try { (window as unknown as { __nfRestart?: () => void }).__nfRestart?.(); } catch {}
+      try { window.__nfRestart?.(); } catch {}
       setMpState('playing');
       setResult(null);
     });
@@ -121,7 +142,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
       if (now - lastSend < 100) return; // throttle to 10fps
       lastSend = now;
       try {
-        const board = (window as unknown as { __nfGetBoard?: () => number[][] }).__nfGetBoard?.();
+        const board = window.__nfGetBoard?.();
         if (board) socketRef.current?.emit('game:board', { board });
       } catch {}
     };
@@ -168,7 +189,11 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
 
   const handleCreateRoom = useCallback(() => {
     const name = localStorage.getItem('neonfall_player_name') || 'Player';
-    socketRef.current?.emit('room:create', { playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
+    if (!socketRef.current) {
+      toast.error('Nicht verbunden', { description: 'Multiplayer-Service noch nicht bereit. Bitte erneut versuchen.' });
+      return;
+    }
+    socketRef.current.emit('room:create', { playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
       if (res.ok && res.roomId) {
         setRoomCode(res.roomId);
         setMpState('waiting');
@@ -188,11 +213,8 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
     socketRef.current?.emit('room:join', { roomId: code, playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
       if (res.ok && res.roomId) {
         setRoomCode(res.roomId);
-        // Don't set mpState to 'playing' here — wait for the host's opponent:joined event.
-        // Actually the join callback just confirms we joined; the host gets opponent:joined.
-        // We need to know the opponent's name — query it or just set a placeholder.
         setMpState('playing');
-        try { (window as unknown as { __nfRestart?: () => void }).__nfRestart?.(); } catch {}
+        try { window.__nfRestart?.(); } catch {}
       } else {
         toast.error('Beitreten fehlgeschlagen', { description: res.error || 'Unbekannter Fehler.' });
       }
@@ -209,7 +231,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
 
   const handleRevanche = useCallback(() => {
     socketRef.current?.emit('game:restart');
-    try { (window as unknown as { __nfRestart?: () => void }).__nfRestart?.(); } catch {}
+    try { window.__nfRestart?.(); } catch {}
     setMpState('playing');
     setResult(null);
   }, []);
@@ -226,7 +248,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
       <DialogContent className="nf-dialog-neon nf-mp-dialog">
         <DialogHeader>
           <DialogTitle className="nf-dialog-title">
-            <Users size={16} aria-hidden="true" style={{ verticalAlign: -3, marginRight: 6, color: '#f472b6' }} />
+            <Users size={16} aria-hidden="true" className="nf-dialog-title-icon nf-dialog-title-icon-pink" />
             Multiplayer
           </DialogTitle>
           <DialogDescription className="nf-dialog-desc">

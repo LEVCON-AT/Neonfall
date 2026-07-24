@@ -108,7 +108,7 @@ export function NameInputDialog({ open, onOpenChange }: NameInputDialogProps) {
       <DialogContent className="nf-dialog-neon nf-name-input-dialog">
         <DialogHeader>
           <DialogTitle className="nf-dialog-title">
-            <Trophy size={16} aria-hidden="true" style={{ verticalAlign: -3, marginRight: 6, color: '#fbbf24' }} />
+            <Trophy size={16} aria-hidden="true" className="nf-dialog-title-icon nf-dialog-title-icon-gold" />
             {submitted ? 'Eingetragen!' : 'Score eintragen'}
           </DialogTitle>
           <DialogDescription className="nf-dialog-desc">

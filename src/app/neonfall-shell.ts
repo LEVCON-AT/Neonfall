@@ -677,8 +677,8 @@ export const SHELL_CSS = `
 `;
 
 export function initShell() {
-  if ((window as any).__nfShellInit) return;
-  (window as any).__nfShellInit = true;
+  if (window.__nfShellInit) return;
+  window.__nfShellInit = true;
 
   // ============ STATS ============
   interface RecentScore { score: number; lines: number; level: number; date: string }
@@ -1125,7 +1125,7 @@ export function initShell() {
     if (mStarted) return;
     mStarted = true;
     try {
-      mCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      mCtx = new (window.AudioContext || window.webkitAudioContext)();
       mMaster = mCtx.createGain();
       mMaster.gain.value = mMuted ? 0 : 1;
       mMaster.connect(mCtx.destination);
@@ -1328,7 +1328,7 @@ export function initShell() {
 
   function isStandalone(): boolean {
     return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
-      (navigator as any).standalone === true;
+      navigator.standalone === true;
   }
   function isIOS(): boolean {
     const ua = navigator.userAgent;

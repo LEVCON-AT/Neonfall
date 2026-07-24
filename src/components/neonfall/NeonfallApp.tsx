@@ -465,6 +465,13 @@ body.nf-playing::after { animation-play-state: paused !important; }
   letter-spacing: 1px;
   font-size: 1.1em;
 }
+/* S7.9: Dialog-Titel-Icon — statt inline style in jeder Komponente. */
+.nf-dialog-title-icon {
+  vertical-align: -3px;
+  margin-right: 6px;
+}
+.nf-dialog-title-icon-pink { color: #f472b6; }
+.nf-dialog-title-icon-gold { color: #fbbf24; }
 .nf-dialog-desc { color: #9ca3ff !important; font-size: 0.85em; }
 
 /* Settings tabs */
@@ -968,10 +975,10 @@ export function NeonfallApp() {
   // ===== Effect B: expose __nfGetMode so the legacy shell submits the
   //       correct mode per score. Set once after the IIFE has mounted. =====
   useEffect(() => {
-    (window as unknown as { __nfGetMode?: () => string }).__nfGetMode = () =>
+    window.__nfGetMode = () =>
       useGameStore.getState().mode;
     return () => {
-      delete (window as unknown as { __nfGetMode?: () => string }).__nfGetMode;
+      delete window.__nfGetMode;
     };
   }, []);
 
@@ -1109,7 +1116,7 @@ export function NeonfallApp() {
 
       // End the run + revert to marathon for the next game.
       try {
-        (window as unknown as { __nfRestart?: () => void }).__nfRestart?.();
+        window.__nfRestart?.();
       } catch {
         /* noop */
       }
@@ -1146,7 +1153,7 @@ export function NeonfallApp() {
           description: `Finaler Score: ${finalScore.toLocaleString('de-DE')}`,
         });
         try {
-          (window as unknown as { __nfRestart?: () => void }).__nfRestart?.();
+          window.__nfRestart?.();
         } catch {
           /* noop */
         }
