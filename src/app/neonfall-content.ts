@@ -18,9 +18,6 @@ export const GAME_CSS = `
         display: flex;
         flex-direction: column;
         align-items: center;
-        /* S7.5b: App vertikal + horizontal zentriert. Container wächst
-           mit dem Canvas, Rest des Viewports ist leerer Hintergrund. */
-        justify-content: center;
         padding: 44px 8px 6px;
         gap: 6px;
         z-index: 1;
@@ -70,8 +67,7 @@ export const GAME_CSS = `
         align-items: stretch;
         justify-content: center;
         width: 100%;
-        /* S7.5b: max-width entfernt — Top-Bar/Second-Bar passen sich an
-           die Container-Breite an (die vom Canvas bestimmt wird). */
+        max-width: 360px;
         gap: 6px;
         flex: 0 0 auto;
     }
@@ -147,13 +143,10 @@ export const GAME_CSS = `
 
     #game-container {
         position: relative;
-        /* S7.5b: Container umschließt Canvas straff (8px Rand überall).
-           KEIN max-width — Container ist nur so breit wie der Canvas + padding.
-           Auf großen Screens bleibt der Container klein (Canvas-größen),
-           der Rest des Viewports ist leerer Hintergrund (zentriert). */
-        flex: 0 0 auto;
-        width: fit-content;
-        height: fit-content;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        max-width: 360px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -167,16 +160,11 @@ export const GAME_CSS = `
 
     #tetris-canvas {
         display: block;
-        /* S7.5b: Canvas skaliert dynamisch mit der Bildschirmhöhe.
-           Höhe = 100dvh minus Platz für Top-Bar (~80px) + Second-Bar (~70px)
-           + Footer (~50px) + Body-Padding (~50px) = ~220px.
-           Breite berechnet sich automatisch aus aspect-ratio 12:22.
-           max-width verhindert Overflow auf sehr schmalen Screens. */
-        height: calc(100dvh - 220px);
+        height: 100%;
         width: auto;
-        aspect-ratio: 12 / 22;
-        max-width: calc(100vw - 32px);
-        max-height: calc(100dvh - 220px);
+        max-width: 100%;
+        max-height: 100%;
+        aspect-ratio: 12 / 20;
         object-fit: contain;
         border-radius: 10px;
         touch-action: none;
@@ -239,9 +227,8 @@ export const GAME_CSS = `
     #hint-overlay b { color: #a78bfa; }
     #hint-overlay.hidden { opacity: 0; pointer-events: none; }
     #hint-content {
-        /* S7.5b: max-width entfernt — passt sich an Container-Breite an. */
+        max-width: 480px;
         margin: auto;
-        width: 100%;
     }
     #hint-content p { margin: 0 0 8px; }
     .hint-col { text-align: left; margin-bottom: 10px; }
@@ -524,11 +511,10 @@ export const GAME_CSS = `
     @media (min-width: 700px) {
         html, body { touch-action: auto; }
         h1#title { font-size: 1.4em; }
-        /* S7.5b: max-width für game-container entfernt — Canvas bestimmt
-           die Größe, nicht eine fixe px-Grenze. Top-Bar/Second-Bar folgen. */
+        #top-bar, #second-bar, #game-container { max-width: 480px; }
         .stat-box p { font-size: 1.3em; }
         .mini-box h3, .stat-box h3 { font-size: 0.65em; }
-        #hint-content { font-size: 0.85em; }
+        #hint-content { max-width: 560px; }
         #hint-overlay { font-size: 0.85em; }
         .hint-cols-wrap { display: flex; gap: 24px; }
     }
@@ -664,7 +650,7 @@ export const GAME_SCRIPT = `
     //   Tetris-Standard 10×20). Combined mit den zusätzlichen Pentomino-Formen
     //   ergibt das eine deutliche Abhebung vom Tetris "look & feel".
     const COLS = 12;
-    const ROWS = 22;
+    const ROWS = 20;
     // BLOCK_SIZE von 28→24 reduziert, damit 12 Spalten auf Mobile (360px)
     //   noch bequem passen: 12×24=288px Canvas-Breite (vorher 10×28=280px).
     const BLOCK_SIZE = 24;
