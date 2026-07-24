@@ -1,4 +1,30 @@
 export const NEONFALL_APP_CSS = `
+/* S7.5b: Logo — replaced text with neon block icon to avoid duplicate
+   "NEONFALL" on mobile (PWA app name + in-app title). The h1 keeps
+   sr-only text for accessibility. */
+h1#title {
+  display: flex !important;
+  align-items: center;
+  gap: 0;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: #22d3ee !important;
+}
+.nf-logo-icon {
+  filter: drop-shadow(0 0 6px rgba(34,211,238,0.6))
+          drop-shadow(0 0 12px rgba(167,139,250,0.3));
+}
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Inline icons in stat-box headers */
 .stat-box h3 { display: flex; align-items: center; justify-content: center; gap: 3px; }
 .nf-stat-icon { opacity: 0.55; flex-shrink: 0; }

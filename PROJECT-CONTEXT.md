@@ -48,7 +48,13 @@ src/
 │   ├── neonfall-content.ts   ← GAME_CSS + GAME_SCRIPT (IIFE, MODIFIZIERT in P1)
 │   └── neonfall-shell.ts     ← SHELL_CSS + initShell() (Stats, Musik, MP)
 ├── components/neonfall/
-│   ├── NeonfallApp.tsx       ← Root: IIFE-Bootstrap, Effects A-M, CSS
+│   ├── NeonfallApp.tsx       ← Root: 96 Zeilen, nur Hook-Wiring + JSX
+│   ├── neonfall-app.css.ts   ← CSS (843 Zeilen, aus Component extrahiert)
+│   ├── hooks/                ← S7.5 Custom Hooks (Effects extrahiert)
+│   │   ├── useGameBootstrap.ts  (Effects A+B: IIFE injection + __nfGetMode)
+│   │   ├── useGameSync.ts       (Effects C+E: MutationObserver + slider sync)
+│   │   ├── useModeLogic.ts      (Effects F+G+M: Sprint/Ultra/Mode-Game-Over)
+│   │   └── useGameFeel.ts       (Effects H+J+K: shortcuts + haptics + hint)
 │   ├── TopBar/HoldNextBar/ControlButtons/GameCanvas/Footer/ModeHud/ShellOverlays.tsx
 │   └── dialogs/
 │       ├── SettingsDialog.tsx     (3 Tabs: Feedback/Anzeige/Steuerung)
@@ -79,8 +85,12 @@ dokumentiert im Worklog.
 - `stripTypeAnnotations()` entfernt 4 TS-Annotationen vor Injektion
 - `syncGameSlider()` synchronisiert Settings-Store ↔ IIFE-Range-Slider
 - `__nfGetMode()`, `__nfAddGarbage()`, `__nfGetBoard()`, `__nfRestart()` Hooks
+  (S7.3: zentrale `Window` Type-Declaration in `types.ts`, keine `as any` casts mehr)
 - `nf-lines-cleared` + `nf-board-updated` CustomEvents für Multiplayer/Haptics
 - MutationObserver spiegelt IIFE-DOM-State in useGameStore
+- S7.4: `mpStateRef` Guards verhindern veraltete Socket-Events in MultiplayerDialog
+- S7.5: Custom Hooks (`useGameBootstrap`, `useGameSync`, `useModeLogic`, `useGameFeel`)
+  extrahiert aus NeonfallApp.tsx (1366→96 Zeilen)
 
 ---
 
@@ -116,6 +126,11 @@ prüft vorab welche Ports frei sind, `deploy.sh` hat Auto-Detection.
 | S5c | Name-Input Flow, Multiplayer UI + Backend, Achievement-Toast Fix | ✅ |
 | S6 | Touch-Verify, Mode-Game-Over, Desktop MP | ✅ |
 | S5c-final | Share-Button entfernt, Flash reduziert, Deployment-Workflow | ✅ |
+| S7.1-S7.9 | Code-Quality: Dead code, Monkey-Patch, Type-Safety, Race Conditions, Bug fixes, Inline styles | ✅ |
+| S7.5 | NeonfallApp.tsx Refactor: 1366→96 Zeilen, Custom Hooks, CSS extraction | ✅ |
+| S7-nginx | nginx WebSocket-Proxy: map statt if, saubere Routing | ✅ |
+| Code-Review | Vollständiges Review, Canvas-Fix, CODE-REVIEW.md | ✅ |
+| **S8** | **IT-Security-Konzept (geplant)** | ⏳ |
 
 ---
 
@@ -125,6 +140,7 @@ prüft vorab welche Ports frei sind, `deploy.sh` hat Auto-Detection.
 - VPS mit Ubuntu (root-Zugriff)
 - DNS-Eintrag: `neonfall.levcon.ai A → VPS-IP`
 - SSH-Key für GitHub (`~/.ssh/github_deploy` authentifiziert als LEVCON-AT)
+- **Status: LIVE** — neonfall.levcon.ai erreichbar, GitHub Actions Auto-Deploy aktiv
 
 ### Initial-Setup
 ```bash
@@ -362,8 +378,24 @@ model Score { id, playerId, player, score, lines, level, mode, duration, created
 6. **agent-browser** + Dev-Server in EINEM Bash-Befehl (Teardown-Death vermeiden)
 7. **SW-Caching** für API-Routes ausschließen (`/api/*` nie cachen)
 8. **Port-Auto-Detection** verhindert Konflikte mit anderen Services auf VPS
+9. **TDZ (Temporal Dead Zone)** — `let` Variablen vor Funktionen definieren die sie nutzen
+10. **nginx "if is evil"** — `map` Direktiven statt `if` für bedingtes Routing
+11. **GitHub Push Protection** — niemals PATs in Dokumentation schreiben
+12. **Custom Hooks** — große Component-Dateien (>1000 Zeilen) in Hooks aufteilen
 
 ---
 
-*Zuletzt aktualisiert: S5c-final (Share-Button entfernt, Flash reduziert,
-Deployment-Workflow, Port-Check, Bug-Fixes SFX/MP-Modal/Start-Prompt/Dialog-Blur)*
+## 13. IT-Security-Konzept (S8 — geplant)
+
+Siehe `SECURITY-CONCEPT.md` für den vollständigen Plan (32 Punkte in Sprints).
+Aktueller Stand: Plan erstellt, Sprints warten auf GO.
+
+**Wichtige Dokumente:**
+- `PROJECT-CONTEXT.md` — dieses Dokument
+- `CODE-REVIEW.md` — vollständiger Code-Review Report
+- `SECURITY-CONCEPT.md` — IT-Security-Konzept + Sprint-Plan
+- `deploy/DEPLOYMENT.md` — Deployment-Dokumentation
+
+---
+
+*Zuletzt aktualisiert: S7.5 (Custom Hooks Refactor, nginx map fix, Code Review, Security Concept Plan)*

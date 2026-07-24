@@ -62,7 +62,14 @@ export function NeonfallApp() {
       <style dangerouslySetInnerHTML={{ __html: SHELL_CSS }} />
       <style dangerouslySetInnerHTML={{ __html: NEONFALL_APP_CSS }} />
 
-      <h1 id="title">NEONFALL</h1>
+      <h1 id="title" aria-label="NEONFALL">
+        <svg className="nf-logo-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <rect x="2" y="2" width="8" height="8" rx="2" fill="currentColor" opacity="0.9" />
+          <rect x="12" y="8" width="8" height="8" rx="2" fill="currentColor" opacity="0.7" />
+          <rect x="7" y="14" width="8" height="8" rx="2" fill="currentColor" opacity="0.5" />
+        </svg>
+        <span className="sr-only">NEONFALL</span>
+      </h1>
 
       <TopBar />
       <ModeHud />
