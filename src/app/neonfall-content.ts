@@ -18,9 +18,9 @@ export const GAME_CSS = `
         display: flex;
         flex-direction: column;
         align-items: center;
-        /* S7.8: padding-top erhöht von 6px → 44px damit die fixed-Buttons
-           (info/pause/mute/stats, 34px hoch + 8px top) die Top-Bar nicht
-           mehr überlappen. */
+        /* S7.5b: justify-content center → App vertikal zentriert.
+           padding-top bleibt für die fixed Top-Buttons. */
+        justify-content: center;
         padding: 44px 8px 6px;
         gap: 6px;
         z-index: 1;
