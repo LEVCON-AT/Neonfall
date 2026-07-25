@@ -49,6 +49,35 @@ export async function POST(req: NextRequest) {
     }
     const { name, score, lines, level, mode, duration, playerId } = parsed.data;
 
+    // S8.5: Anti-Cheat — server-side score plausibility check.
+    // Reject scores that are physically impossible given the game mechanics.
+    // NEONFALL scoring: points = (linePoints[cleared] * level) + combo bonus
+    // Max realistic: 40 lines at level 20, all tetrises → ~800*20*40 = 640k
+    // We allow generous headroom but reject obvious fakes.
+    const MAX_PLAUSIBLE_SCORE = 2_000_000; // 2M — very generous
+    if (score > MAX_PLAUSIBLE_SCORE) {
+      return NextResponse.json(
+        { error: 'Score ist unrealistisch hoch.' },
+        { status: 422 }
+      );
+    }
+    // Lines-to-score ratio: minimum 100 points per line (level 1, single clear)
+    // If score > lines * 10000, it's suspicious (would need avg 100x multiplier per line)
+    if (lines > 0 && score > lines * 50_000) {
+      return NextResponse.json(
+        { error: 'Score-Linien-Verhältnis ist unrealistisch.' },
+        { status: 422 }
+      );
+    }
+    // Duration plausibility: game must have taken at least some time
+    // Min 1 second per line (very fast), so 40 lines → 40s minimum
+    if (duration > 0 && lines > 0 && duration < lines * 500) {
+      return NextResponse.json(
+        { error: 'Spieldauer ist zu kurz für die Anzahl Linien.' },
+        { status: 422 }
+      );
+    }
+
     // Find or create the player. If a playerId is provided and exists, update
     // their name (unless taken by someone else) + lastSeen. Otherwise create a
     // new player with this name.

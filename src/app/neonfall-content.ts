@@ -588,7 +588,7 @@ export const GAME_HTML = `<h1 id="title">NEONFALL</h1>
                 <input type="checkbox" id="hide-hint-checkbox"> Beim Start nicht mehr anzeigen
             </label>
             <button id="hint-close-button">LOS GEHT'S</button>
-            <small>über das Info-Symbol oben links jederzeit wieder aufrufbar</small>
+            <small>über das Info-Symbol oben links jederzeit wieder aufrufbar · <a href="https://github.com/LEVCON-AT/Neonfall" target="_blank" rel="noopener" style="color:#22d3ee;text-decoration:none">GitHub</a></small>
         </div>
     </div>
     <div id="start-prompt">

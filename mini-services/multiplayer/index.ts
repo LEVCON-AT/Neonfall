@@ -146,10 +146,53 @@ const io = new Server(httpServer, {
   },
   pingTimeout: 60000,
   pingInterval: 25000,
+  // S8.5: WebSocket security hardening
+  maxPayload: 50_000,     // 50KB max per message (board = ~2KB, plenty)
+  connectTimeout: 10_000, // 10s to establish connection
 })
 
+// S8.5: Per-connection rate limiting (max 20 events/sec per socket)
+const perSocketLimits = new Map<string, { count: number; resetAt: number }>()
+const SOCKET_RATE_WINDOW = 1000  // 1 second
+const SOCKET_RATE_MAX = 20       // 20 events per second
+
+function socketRateLimited(socketId: string): boolean {
+  const now = Date.now()
+  const entry = perSocketLimits.get(socketId)
+  if (!entry || now > entry.resetAt) {
+    perSocketLimits.set(socketId, { count: 1, resetAt: now + SOCKET_RATE_WINDOW })
+    return false
+  }
+  entry.count++
+  return entry.count > SOCKET_RATE_MAX
+}
+
+// S8.5: Max concurrent connections (prevents connection flood)
+const MAX_CONNECTIONS = 100
+let activeConnections = 0
+
 io.on('connection', (socket: Socket) => {
-  console.log(`[connect] ${socket.id}`)
+  // S8.5: Connection limit
+  activeConnections++
+  if (activeConnections > MAX_CONNECTIONS) {
+    console.log(`[connect] ${socket.id} REJECTED — too many connections (${activeConnections})`)
+    socket.emit('error', 'Server is full. Please try again later.')
+    socket.disconnect()
+    activeConnections--
+    return
+  }
+
+  console.log(`[connect] ${socket.id} (${activeConnections} active)`)
+
+  // S8.5: Rate-limit middleware — applies to all events
+  socket.use((packet, next) => {
+    if (socketRateLimited(socket.id)) {
+      console.log(`[rate-limit] ${socket.id} rate-limited`)
+      socket.emit('error', 'Too many messages. Slow down.')
+      return
+    }
+    next()
+  })
 
   // -------------------------------------------------------------------------
   // room:create { playerName }
@@ -338,7 +381,9 @@ io.on('connection', (socket: Socket) => {
   socket.on('disconnect', () => {
     try {
       removeSocketFromRoom(io, socket)
-      console.log(`[disconnect] ${socket.id}`)
+      activeConnections--
+      perSocketLimits.delete(socket.id)
+      console.log(`[disconnect] ${socket.id} (${activeConnections} active)`)
     } catch (err) {
       console.error('[disconnect] error', err)
     }
