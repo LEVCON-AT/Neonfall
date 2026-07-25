@@ -7,8 +7,8 @@ h1#title {
   gap: 0;
 }
 .nf-logo-icon {
-  filter: drop-shadow(0 0 6px rgba(34,211,238,0.5))
-          drop-shadow(0 0 10px rgba(244,114,182,0.3));
+  filter: drop-shadow(0 0 4px rgba(34,211,238,0.4))
+          drop-shadow(0 0 8px rgba(244,114,182,0.2));
 }
 .sr-only {
   position: absolute;
