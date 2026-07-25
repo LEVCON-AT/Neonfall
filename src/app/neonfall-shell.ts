@@ -1271,12 +1271,14 @@ export function initShell() {
   }
   // Sync with game-over screen: keep playing (no change), but if the user
   // restarts we just keep the music flowing.
-  // Sync with game mute (#mute-btn textContent 🔇/🔊)
+  // Sync with game mute (#mute-btn data-muted attribute)
   const muteBtn = document.getElementById('mute-btn');
   if (muteBtn) {
     new MutationObserver(() => {
-      setMusicMuted(muteBtn.textContent?.includes('🔇') || false);
-    }).observe(muteBtn, { childList: true, characterData: true, subtree: true });
+      // S7.5b: IIFE uses innerHTML with SVGs now, not textContent emojis.
+      // Check data-muted attribute instead (set by applyMuteState in IIFE).
+      setMusicMuted(muteBtn.getAttribute('data-muted') === '1');
+    }).observe(muteBtn, { attributes: true, attributeFilter: ['data-muted'] });
   }
   // Sync with tab visibility (game silences its audio on hide; do the same)
   document.addEventListener('visibilitychange', () => {
