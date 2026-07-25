@@ -1291,6 +1291,9 @@ export function initShell() {
         mMaster.gain.linearRampToValueAtTime(0, t + 0.05);
       }
     } else if (!mMuted) {
+      // S7.5b: mCtx might be auto-suspended by browser after background.
+      // Resume explicitly before fading in, otherwise no music plays.
+      if (mCtx && mCtx.state === 'suspended') mCtx.resume().catch(() => {});
       if (mMaster && mCtx) {
         const t = mCtx.currentTime;
         mMaster.gain.cancelScheduledValues(t);
