@@ -698,18 +698,18 @@ export function initShell() {
   const RECENT_MAX = 5;
 
   const ACHIEVEMENTS: { id: string; name: string; icon: string }[] = [
-    { id: 'first_game', name: 'Erstes Spiel', icon: '🎮' },
-    { id: 'lines_50', name: '50 Linien', icon: '📏' },
-    { id: 'lines_100', name: '100 Linien', icon: '📊' },
-    { id: 'lines_500', name: '500 Linien', icon: '🏆' },
-    { id: 'score_1k', name: '1.000 Punkte', icon: '⭐' },
-    { id: 'score_5k', name: '5.000 Punkte', icon: '💫' },
-    { id: 'score_20k', name: '20.000 Punkte', icon: '✨' },
-    { id: 'level_5', name: 'Level 5', icon: '📈' },
-    { id: 'level_10', name: 'Level 10', icon: '🚀' },
-    { id: 'games_10', name: '10 Spiele', icon: '🎯' },
-    { id: 'games_50', name: '50 Spiele', icon: '🏅' },
-    { id: 'tetris_4', name: 'Tetris! (4er)', icon: '💎' },
+    { id: 'first_game', name: 'Erstes Spiel', icon: '◆' },
+    { id: 'lines_50', name: '50 Linien', icon: '▣' },
+    { id: 'lines_100', name: '100 Linien', icon: '▣' },
+    { id: 'lines_500', name: '500 Linien', icon: '▣' },
+    { id: 'score_1k', name: '1.000 Punkte', icon: '★' },
+    { id: 'score_5k', name: '5.000 Punkte', icon: '★' },
+    { id: 'score_20k', name: '20.000 Punkte', icon: '★' },
+    { id: 'level_5', name: 'Level 5', icon: '▲' },
+    { id: 'level_10', name: 'Level 10', icon: '▲' },
+    { id: 'games_10', name: '10 Spiele', icon: '●' },
+    { id: 'games_50', name: '50 Spiele', icon: '●' },
+    { id: 'tetris_4', name: 'Tetris! (4er)', icon: '◆' },
   ];
 
   function defaultStats(): Stats {

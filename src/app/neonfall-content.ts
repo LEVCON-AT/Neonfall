@@ -44,13 +44,7 @@ export const GAME_CSS = `
 
     h1#title {
         margin: 0;
-        font-size: 1.05em;
-        font-weight: 700;
-        letter-spacing: 3px;
-        background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+        font-size: 0;
         flex: 0 0 auto;
         position: fixed;
         top: max(8px, env(safe-area-inset-top));
@@ -517,7 +511,7 @@ export const GAME_CSS = `
 
     @media (min-width: 700px) {
         html, body { touch-action: auto; }
-        h1#title { font-size: 1.4em; }
+        h1#title { font-size: 0; }
         .stat-box p { font-size: 1.3em; }
         .mini-box h3, .stat-box h3 { font-size: 0.65em; }
         #hint-content { max-width: 560px; }
@@ -636,7 +630,7 @@ export const GAME_HTML = `<h1 id="title">NEONFALL</h1>
     </div>
     <div id="game-over-screen">
         <h1>GAME OVER</h1>
-        <p id="new-highscore-badge" style="display:none;">🏆 Neuer Highscore!</p>
+        <p id="new-highscore-badge" style="display:none;">Neuer Highscore!</p>
         <p id="final-score">Score: 0</p>
         <p id="final-highscore">Best: 0</p>
         <div class="level-select">
