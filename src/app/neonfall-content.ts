@@ -696,11 +696,12 @@ export const GAME_SCRIPT = `
     const muteBtn = document.getElementById('mute-btn');
     const pauseBtn = document.getElementById('pause-btn');
 
-    // S5b/P1: 7 Standard-Tetrominos + 5 eigene Pentomino-Formen (5 Zellen).
+    // S5b/P1: 7 Standard-Tetrominos + 9 Pentomino-Formen (5 Zellen, inkl. Spiegel).
     //   Pentominoes sind prä-Tetris (Solomon Golomb 1953), öffentliches Gut.
     //   Die Kombination aus 12er-Grid + Pentomino-Mix hebt NEONFALL deutlich
     //   vom Tetris "look & feel" ab (Tetris Holding LLC v. Xio, 2012).
-    //   Pentomino-Auswahl: F, L5, P, T5, Y — gut spielbar, visuell distinkt.
+    //   S7.5b: Spiegelversionen hinzugefügt (F', P', Y', J5) — wie J/L und S/Z
+    //   bei Tetrominos haben chiralen Pentominoes eigene Spiegelvarianten.
     const SHAPES = {
         // --- 7 Tetrominos (4 Zellen) ---
         'I': { shape: [[1, 1, 1, 1]], color: '#22d3ee' },
@@ -710,16 +711,19 @@ export const GAME_SCRIPT = `
         'S': { shape: [[0, 1, 1], [1, 1, 0]], color: '#34d399' },
         'T': { shape: [[0, 1, 0], [1, 1, 1]], color: '#a78bfa' },
         'Z': { shape: [[1, 1, 0], [0, 1, 1]], color: '#fb7185' },
-        // --- 5 Pentominoes (5 Zellen) — eigene Neon-Farben ---
+        // --- 9 Pentominoes (5 Zellen) — inkl. Spiegelvarianten ---
         'F': { shape: [[0, 1, 1], [1, 1, 0], [0, 1, 0]], color: '#06b6d4' },
+        "F'": { shape: [[1, 1, 0], [0, 1, 1], [0, 1, 0]], color: '#0891b2' },
         'P': { shape: [[1, 1], [1, 1], [1, 0]], color: '#ec4899' },
+        "P'": { shape: [[1, 1], [1, 1], [0, 1]], color: '#db2777' },
         'T5': { shape: [[1, 1, 1], [0, 1, 0], [0, 1, 0]], color: '#10b981' },
         'Y': { shape: [[1, 0], [1, 1], [1, 0], [1, 0]], color: '#f59e0b' },
-        'L5': { shape: [[1, 0], [1, 0], [1, 0], [1, 1]], color: '#8b5cf6' }
+        "Y'": { shape: [[0, 1], [1, 1], [0, 1], [0, 1]], color: '#d97706' },
+        'L5': { shape: [[1, 0], [1, 0], [1, 0], [1, 1]], color: '#8b5cf6' },
+        'J5': { shape: [[0, 1], [0, 1], [0, 1], [1, 1]], color: '#7c3aed' }
     };
-    // PIECE_TYPES als Array (nicht String) weil 'T5' und 'L5' 2-Char-Typen sind.
-    //   Ein String.split('') würde sie in einzelne Zeichen zerlegen.
-    const PIECE_TYPES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z', 'F', 'P', 'T5', 'Y', 'L5'];
+    // PIECE_TYPES als Array (nicht String) weil 'T5', 'L5' und 'F'' 2-Char-Typen sind.
+    const PIECE_TYPES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z', 'F', "F'", 'P', "P'", 'T5', 'Y', "Y'", 'L5', 'J5'];
 
     let board = createBoard();
     let score = 0;
