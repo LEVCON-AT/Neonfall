@@ -16,6 +16,9 @@ export function useGameFeel(
   isLeaderboardOpen: boolean,
 ) {
   // J: Haptics — vibrate on line clears.
+  //   Note: navigator.vibrate only works on Android. iOS Safari/PWA does
+  //   not support the Vibration API. The toggle is still useful for Android
+  //   users. No error is thrown on iOS — vibrate() is simply a no-op.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onLines = (e: Event) => {
@@ -23,14 +26,21 @@ export function useGameFeel(
       const cleared = ev.detail?.cleared ?? 0;
       if (cleared < 1) return;
       if (!useSettingsStore.getState().hapticsEnabled) return;
-      if (typeof navigator.vibrate !== 'function') return;
+      // navigator.vibrate is only available on Android Chrome/PWA.
+      // iOS does not support it — the call silently does nothing.
+      const nav = navigator as Navigator & { vibrate?: (p: number | number[]) => boolean };
+      if (typeof nav.vibrate !== 'function') return;
       const patterns: Record<number, number[]> = {
         1: [18],
         2: [18, 35, 18],
         3: [20, 40, 20, 40, 25],
         4: [25, 45, 25, 45, 25, 45, 60],
       };
-      navigator.vibrate(patterns[cleared] ?? patterns[1]);
+      try {
+        nav.vibrate(patterns[cleared] ?? patterns[1]);
+      } catch {
+        /* iOS may throw — silently ignore */
+      }
     };
     window.addEventListener('nf-lines-cleared', onLines as EventListener);
     return () => window.removeEventListener('nf-lines-cleared', onLines as EventListener);

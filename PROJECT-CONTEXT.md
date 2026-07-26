@@ -91,6 +91,9 @@ dokumentiert im Worklog.
 - S7.4: `mpStateRef` Guards verhindern veraltete Socket-Events in MultiplayerDialog
 - S7.5: Custom Hooks (`useGameBootstrap`, `useGameSync`, `useModeLogic`, `useGameFeel`)
   extrahiert aus NeonfallApp.tsx (1366→96 Zeilen)
+- S7.5b: ROWS=24, aspect-ratio 12/24, Emojis→SVGs, IIFE-Buttons innerHTML SVGs
+- S8.5: Anti-Cheat (Score-Plausibilität), WebSocket maxPayload + Rate-Limit
+- S8.13: Pentomino Spiegelversionen (F', P', Y', J5) — 16-Bag Randomizer
 
 ---
 
@@ -130,7 +133,30 @@ prüft vorab welche Ports frei sind, `deploy.sh` hat Auto-Detection.
 | S7.5 | NeonfallApp.tsx Refactor: 1366→96 Zeilen, Custom Hooks, CSS extraction | ✅ |
 | S7-nginx | nginx WebSocket-Proxy: map statt if, saubere Routing | ✅ |
 | Code-Review | Vollständiges Review, Canvas-Fix, CODE-REVIEW.md | ✅ |
-| **S8** | **IT-Security-Konzept (geplant)** | ⏳ |
+| S8.1-S8.15 | IT-Security-Konzept (Architektur, Threat Model, OWASP, Pentest, DSGVO, CI/CD, Backup, Monitoring) | ✅ |
+| S7.5b | Responsive Canvas, 24 Reihen, vertikale Zentrierung | ✅ |
+| S7.5b-fix | Logo gradient, Container fit-content, Emojis→SVGs, PWA Icon | ✅ |
+
+---
+
+## 6. IT-Security-Dokumente (S8)
+
+| Sprint | Dokument | Inhalt |
+|--------|----------|--------|
+| S8.1 | `security/s8.1-architecture-threat-model.md` | Architekturdiagramm, STRIDE, Risiko-Ranking |
+| S8.3 | `security/s8.3-dependency-audit.md` | bun audit, 7 unused deps entfernt |
+| S8.4 | `security/s8.4-api-security.md` | API Security, IIFE-Review, Musik-Bug Fix |
+| S8.5 | `security/s8.5-websocket-anticheat.md` | maxPayload, Rate-Limit, Score-Plausibilität |
+| S8.6 | `security/s8.6-auth-session.md` | Auth-Evaluierung (keine echte Auth nötig) |
+| S8.7 | `security/s8.7-owasp-dast.md` | OWASP Top 10, manueller DAST-Scan |
+| S8.8 | `security/s8.8-loadtest.md` | Load Test 10-500 concurrent |
+| S8.9 | `security/s8.9-monitoring-logging.md` | Structured Logging, Uptime Kuma |
+| S8.10 | `security/s8.10-backup-restore.md` | Backup/Restore Scripts, RTO/RPO |
+| S8.11 | `security/s8.11-datenschutz.md` | DSGVO, Datenschutzerklärung |
+| S8.12 | `security/s8.12-cicd-secrets.md` | CI/CD Quality Gates, Secrets Scan |
+| S8.13 | `security/s8.13-pentest.md` | 15 Angriffsvektoren, 0 kritisch |
+| S8.14 | `security/s8.14-chaos-staging.md` | Chaos Tests, Staging Pipeline Plan |
+| S8.15 | `security/s8.15-final-release-gate.md` | Final Release Gate ✅ |
 
 ---
 
@@ -398,4 +424,4 @@ Aktueller Stand: Plan erstellt, Sprints warten auf GO.
 
 ---
 
-*Zuletzt aktualisiert: S7.5 (Custom Hooks Refactor, nginx map fix, Code Review, Security Concept Plan)*
+*Zuletzt aktualisiert: S8.15 (Security Sprint komplett, Vibration Fix, Pentomino Spiegel, PWA Icon, Projekt-Kontext)*
