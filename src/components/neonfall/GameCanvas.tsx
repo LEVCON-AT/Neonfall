@@ -86,7 +86,10 @@ export function GameCanvas() {
           </label>
           <button id="hint-close-button">LOS GEHT&apos;S</button>
           <small>
-            über das <b>Info</b>-Symbol oben links jederzeit wieder aufrufbar
+            über das <b>Info</b>-Symbol oben links jederzeit wieder aufrufbar ·{' '}
+            <a href="https://github.com/LEVCON-AT/Neonfall" target="_blank" rel="noopener noreferrer" style={{ color: '#22d3ee', textDecoration: 'none' }}>
+              GitHub
+            </a>
           </small>
         </div>
       </motion.div>
