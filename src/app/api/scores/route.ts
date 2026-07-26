@@ -30,9 +30,11 @@ const ScoreSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const start = Date.now();
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     if (rateLimited(ip)) {
+      console.log(JSON.stringify({ ts: new Date().toISOString(), level: 'warn', endpoint: '/api/scores', ip, status: 429, reason: 'rate_limited', duration: Date.now() - start }));
       return NextResponse.json({ error: 'Zu viele Anfragen. Bitte warte einen Moment.' }, { status: 429 });
     }
 
@@ -45,6 +47,7 @@ export async function POST(req: NextRequest) {
 
     const parsed = ScoreSchema.safeParse(body);
     if (!parsed.success) {
+      console.log(JSON.stringify({ ts: new Date().toISOString(), level: 'warn', endpoint: '/api/scores', ip, status: 422, reason: 'validation_failed', duration: Date.now() - start }));
       return NextResponse.json({ error: 'Ungültige Daten.', details: parsed.error.flatten() }, { status: 422 });
     }
     const { name, score, lines, level, mode, duration, playerId } = parsed.data;
@@ -56,22 +59,21 @@ export async function POST(req: NextRequest) {
     // We allow generous headroom but reject obvious fakes.
     const MAX_PLAUSIBLE_SCORE = 2_000_000; // 2M — very generous
     if (score > MAX_PLAUSIBLE_SCORE) {
+      console.log(JSON.stringify({ ts: new Date().toISOString(), level: 'warn', endpoint: '/api/scores', ip, status: 422, reason: 'anti_cheat_score_too_high', score, duration: Date.now() - start }));
       return NextResponse.json(
         { error: 'Score ist unrealistisch hoch.' },
         { status: 422 }
       );
     }
-    // Lines-to-score ratio: minimum 100 points per line (level 1, single clear)
-    // If score > lines * 10000, it's suspicious (would need avg 100x multiplier per line)
     if (lines > 0 && score > lines * 50_000) {
+      console.log(JSON.stringify({ ts: new Date().toISOString(), level: 'warn', endpoint: '/api/scores', ip, status: 422, reason: 'anti_cheat_score_lines_ratio', score, lines, duration: Date.now() - start }));
       return NextResponse.json(
         { error: 'Score-Linien-Verhältnis ist unrealistisch.' },
         { status: 422 }
       );
     }
-    // Duration plausibility: game must have taken at least some time
-    // Min 1 second per line (very fast), so 40 lines → 40s minimum
     if (duration > 0 && lines > 0 && duration < lines * 500) {
+      console.log(JSON.stringify({ ts: new Date().toISOString(), level: 'warn', endpoint: '/api/scores', ip, status: 422, reason: 'anti_cheat_duration', duration, lines, dur_log: Date.now() - start }));
       return NextResponse.json(
         { error: 'Spieldauer ist zu kurz für die Anzahl Linien.' },
         { status: 422 }
@@ -110,9 +112,10 @@ export async function POST(req: NextRequest) {
       data: { playerId: player.id, score, lines, level, mode, duration },
     });
 
+    console.log(JSON.stringify({ ts: new Date().toISOString(), level: 'info', endpoint: '/api/scores', ip, status: 200, name, score, lines, mode, duration: Date.now() - start }));
     return NextResponse.json({ ok: true, playerId: player.id, scoreId: record.id });
   } catch (err) {
-    console.error('[api/scores] POST error:', err);
+    console.error(JSON.stringify({ ts: new Date().toISOString(), level: 'error', endpoint: '/api/scores', error: String(err), duration: Date.now() - start }));
     return NextResponse.json({ error: 'Serverfehler beim Speichern des Scores.' }, { status: 500 });
   }
 }
