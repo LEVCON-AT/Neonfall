@@ -19,7 +19,10 @@ WorkingDirectory=/var/www/neonfall/mini-services/multiplayer
 Environment="NODE_ENV=production"
 
 # Start socket.io backend via bun
+# S8.14: Fallback to node if bun not at /usr/local/bin/bun
 ExecStart=/usr/local/bin/bun run /var/www/neonfall/mini-services/multiplayer/index.ts
+# Fallback (uncomment if bun not available):
+# ExecStart=/usr/bin/node /var/www/neonfall/mini-services/multiplayer/index.ts
 
 # Restart Logic
 Restart=always
