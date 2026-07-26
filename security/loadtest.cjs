@@ -1,3 +1,4 @@
+// eslint-disable no-require-imports
 /**
  * NEONFALL — Load/Stress Test Script
  * 
