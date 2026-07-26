@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datenschutz — NEONFALL</title>
+  <style>
+    body { background: #0a0a14; color: #e8e8f5; font-family: 'Space Grotesk', sans-serif; max-width: 700px; margin: 0 auto; padding: 24px; line-height: 1.7; }
+    h1 { background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    h2 { color: #22d3ee; margin-top: 32px; }
+    a { color: #22d3ee; }
+    code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h1>Datenschutzerklärung</h1>
+  <p><strong>Stand:</strong> Juli 2026</p>
+
+  <h2>1. Überblick</h2>
+  <p>NEONFALL (neonfall.levcon.ai) ist ein Browser-Spiel. Diese Datenschutzerklärung beschreibt, welche Daten wir verarbeiten und welche Rechte Sie haben.</p>
+
+  <h2>2. Verantwortlicher</h2>
+  <p>LEVCON<br>
+  Verantwortlich für den Datenschutz: admin@levcon.at</p>
+
+  <h2>3. Verarbeitete Daten</h2>
+
+  <h3>3.1 Spielername (freiwillig)</h3>
+  <p>Wenn Sie einen Score einreichen, können Sie einen Namen (1-16 Zeichen) eingeben. Dieser wird öffentlich im Leaderboard angezeigt. Die Eingabe ist freiwillig — Sie können auch "Überspringen" wählen.</p>
+  <p><strong>Speicherung:</strong> In der Datenbank auf unserem Server (SQLite) und in Ihrem Browser (localStorage).</p>
+
+  <h3>3.2 Spielstände und Statistiken</h3>
+  <p>Folgende Spieldaten werden bei Score-Einreichung übermittelt und gespeichert:</p>
+  <ul>
+    <li>Score (Punktzahl)</li>
+    <li>Lines (gelöschte Reihen)</li>
+    <li>Level</li>
+    <li>Mode (Marathon, Sprint, Ultra, Zen)</li>
+    <li>Duration (Spieldauer in Sekunden)</li>
+    <li>Player-ID (anonyme ID, automatisch generiert)</li>
+  </ul>
+
+  <h3>3.3 IP-Adresse</h3>
+  <p>Zur Sicherheit (Rate-Limiting, Anti-Cheat) wird Ihre IP-Adresse temporär im Arbeitsspeicher verarbeitet. Sie wird <strong>nicht</strong> in der Datenbank gespeichert.</p>
+
+  <h3>3.4 LocalStorage</h3>
+  <p>Ihr Browser speichert folgende Daten lokal (nicht auf unserem Server):</p>
+  <ul>
+    <li><code>neonfall_player_id</code> — Anonyme Spieler-ID</li>
+    <li><code>neonfall_player_name</code> — Gewählter Spielername</li>
+    <li><code>neonfall_highscore</code> — Bester lokaler Score</li>
+    <li><code>neonfall_hide_hint</code> — Hint-Anzeige-Präferenz</li>
+    <li><code>neonfall-settings</code> — Spieleinstellungen (Rattle, Impact, Haptik, Hint)</li>
+    <li><code>nf_stats</code> — Lokale Spielstatistiken</li>
+    <li><code>nf_music_collapsed</code> — Musikleisten-Präferenz</li>
+  </ul>
+
+  <h3>3.5 Keine Cookies</h3>
+  <p>NEONFALL verwendet <strong>keine Cookies</strong>. Es gibt kein Tracking, keine Analytics, keine Werbe-SDKs.</p>
+
+  <h3>3.6 Keine Personenbeziehbaren Daten</h3>
+  <p>Wir erheben <strong>keine</strong> E-Mail-Adressen, Passwörter, Telefonnummern oder andere personenbeziehbare Daten. Accounts existieren nicht.</p>
+
+  <h2>4. Rechtsgrundlage</h2>
+  <p>Die Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b DSGVO (Vertragsdurchführung — Spiel nutzbar machen) und Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse — Sicherheit, Anti-Cheat).</p>
+
+  <h2>5. Ihre Rechte</h2>
+  <ul>
+    <li><strong>Auskunft (Art. 15 DSGVO):</strong> Sie können jederzeit erfahren, welche Daten von Ihnen gespeichert sind.</li>
+    <li><strong>Löschung (Art. 17 DSGVO):</strong> Sie können die Löschung Ihrer Daten verlangen.</li>
+    <li><strong>Berichtigung (Art. 16 DSGVO):</strong> Sie können die Korrektur falscher Daten verlangen.</li>
+    <li><strong>Datenübertragbarkeit (Art. 20 DSGVO):</strong> Sie können Ihre Daten in einem maschinenlesbaren Format erhalten.</li>
+    <li><strong>Widerspruch (Art. 21 DSGVO):</strong> Sie können der Verarbeitung widersprechen.</li>
+  </ul>
+  <p>Kontakt für Auskünfte und Anträge: <a href="mailto:admin@levcon.at">admin@levcon.at</a></p>
+
+  <h2>6. Datenlöschung</h2>
+  <p>Sie können Ihre Daten jederzeit löschen:</p>
+  <ul>
+    <li><strong>Lokale Daten:</strong> Browser-Einstellungen → LocalStorage für neonfall.levcon.ai löschen</li>
+    <li><strong>Server-Daten:</strong> E-Mail an admin@levcon.at mit Ihrer Player-ID (zu finden in den Browser-Entwicklertools → Application → Local Storage)</li>
+  </ul>
+
+  <h2>7. Auftragsverarbeiter</h2>
+  <ul>
+    <li><strong>Hosting:</strong> VPS-Provider (Server-Infrastruktur)</li>
+    <li><strong>SSL-Zertifikate:</strong> Let's Encrypt (ISRG)</li>
+    <li><strong>Code-Hosting:</strong> GitHub (Microsoft) — nur Source-Code, keine Nutzerdaten</li>
+  </ul>
+
+  <h2>8. Datensicherheit</h2>
+  <ul>
+    <li>TLS-Verschlüsselung (Let's Encrypt)</li>
+    <li>Firewall (UFW — nur Ports 22, 80, 443)</li>
+    <li>Rate-Limiting (Anti-Abuse)</li>
+    <li>Tägliche verschlüsselte Backups</li>
+    <li>systemd Service-Isolation</li>
+  </ul>
+
+  <h2>9. Änderungen</h2>
+  <p>Diese Datenschutzerklärung kann bei Änderungen aktualisiert werden. Die aktuelle Version ist immer unter dieser URL abrufbar.</p>
+
+  <p><a href="/">← Zurück zum Spiel</a></p>
+</body>
+</html>
