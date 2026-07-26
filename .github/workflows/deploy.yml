@@ -35,10 +35,61 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ═══════════════════════════════════════════════════════════════
+  #  QUALITY GATES — müssen alle grün sein bevor deploy läuft
+  # ═══════════════════════════════════════════════════════════════
+  quality:
+    name: Lint + Build + Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint (ESLint)
+        run: bun run lint
+
+      - name: Build (Next.js standalone)
+        run: bun run build
+        env:
+          DATABASE_URL: "file:/tmp/test.db"
+
+      - name: Dependency Audit (critical only)
+        run: |
+          OUTPUT=$(bun audit --prod 2>&1 || true)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "critical:"; then
+            echo "❌ Critical vulnerabilities found!"
+            exit 1
+          fi
+          echo "✅ No critical vulnerabilities"
+
+      - name: Secrets Scan
+        run: |
+          if grep -rE "(ghp_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{48}|AKIA[A-Z0-9]{16})" src/ public/ deploy/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.json" --include="*.md" 2>/dev/null; then
+            echo "❌ Potential secrets found!"
+            exit 1
+          fi
+          echo "✅ No secrets detected"
+
+  # ═══════════════════════════════════════════════════════════════
+  #  DEPLOY — läuft nur wenn quality grün ist
+  # ═══════════════════════════════════════════════════════════════
   deploy:
     name: Deploy to Production VPS
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: quality
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
