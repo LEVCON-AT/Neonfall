@@ -499,11 +499,23 @@ export const GAME_CSS = `
     #new-highscore-badge {
         font-weight: 700;
         letter-spacing: 1px;
+        font-size: 1.05em;
+        margin-bottom: 6px !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    #new-highscore-badge .nf-trophy-inline {
+        filter: drop-shadow(0 0 4px rgba(251,191,36,0.5));
+        flex-shrink: 0;
+    }
+    #new-highscore-badge .nf-highscore-text {
         background: linear-gradient(90deg, #fbbf24, #f472b6);
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
-        margin-bottom: 6px !important;
+        filter: drop-shadow(0 0 8px rgba(251,191,36,0.3));
     }
 
     /* ===== Ab hier: reine Desktop-/Zeigegeräte-Ergänzungen. ===== */

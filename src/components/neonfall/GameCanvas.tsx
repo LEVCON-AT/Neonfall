@@ -156,8 +156,8 @@ export function GameCanvas() {
       <motion.div id="game-over-screen" initial={false}>
         <h1>GAME OVER</h1>
         <p id="new-highscore-badge" style={{ display: 'none' }}>
-          <Trophy size={16} aria-hidden="true" className="nf-trophy-inline" />{' '}
-          Neuer Highscore!
+          <Trophy size={18} aria-hidden="true" className="nf-trophy-inline" style={{ color: '#fbbf24' }} />
+          <span className="nf-highscore-text">Neuer Highscore!</span>
         </p>
         <p id="final-score">Score: 0</p>
         <p id="final-highscore">Best: 0</p>
