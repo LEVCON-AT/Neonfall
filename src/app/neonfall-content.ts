@@ -770,12 +770,9 @@ export const GAME_SCRIPT = `
         }
     }
     let nextPreviewCount = 3;
-    try {
-        const saved = JSON.parse(localStorage.getItem('neonfall-settings') || '{}');
-        if (saved.state && saved.state.nextPreviewCount) {
-            nextPreviewCount = saved.state.nextPreviewCount;
-        }
-    } catch (e) {}
+    // S8.15b-fix: Read preview count AFTER settings store is initialized.
+    // The initial value is 3; React's useGameSync will update it via
+    // window.__nfNextPreview() once the settings are loaded.
     let heldType = null;
     let canHold = true;
     let startLevel = 1;
@@ -786,17 +783,36 @@ export const GAME_SCRIPT = `
     let impactStrength = 1;
 
     function loadHighscore() {
+        // S8.15b-fix: Try API first (global best), fallback to localStorage.
+        // The localStorage value is per-browser; the API value is global.
+        // We show whichever is higher.
         try {
-            const v = localStorage.getItem('neonfall_highscore');
-            highscore = v ? parseInt(v, 10) || 0 : 0;
+            const localV = localStorage.getItem('neonfall_highscore');
+            const localHs = localV ? parseInt(localV, 10) || 0 : 0;
+            highscore = localHs;
+            bestScoreEl.textContent = highscore;
         } catch (e) {
             highscore = 0;
         }
-        bestScoreEl.textContent = highscore;
+        // Async: fetch global best from API and update if higher.
+        fetch('/api/leaderboard?mode=marathon&limit=1')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && data.scores && data.scores[0]) {
+                    const globalBest = data.scores[0].score || 0;
+                    if (globalBest > highscore) {
+                        highscore = globalBest;
+                        bestScoreEl.textContent = highscore;
+                    }
+                }
+            })
+            .catch(() => {});
     }
 
     function saveHighscore() {
-        try { localStorage.setItem('neonfall_highscore', String(highscore)); } catch (e) { /* z.B. im Sandbox-Preview nicht verfuegbar */ }
+        // S8.15b-fix: Save locally AND update display. API submission
+        // happens separately via NameInputDialog (React).
+        try { localStorage.setItem('neonfall_highscore', String(highscore)); } catch (e) {}
     }
 
     function createBoard() {
