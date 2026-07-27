@@ -10,6 +10,7 @@ interface SettingsState extends Settings {
   toggleHaptics: () => void;
   setTheme: (t: Settings['theme']) => void;
   toggleHintOnStart: () => void;
+  setNextPreviewCount: (n: 1 | 2 | 3) => void;
   reset: () => void;
 }
 
@@ -19,6 +20,7 @@ const DEFAULTS: Settings = {
   hapticsEnabled: true,
   theme: 'dark',
   showHintOnStart: true,
+  nextPreviewCount: 3,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -30,6 +32,7 @@ export const useSettingsStore = create<SettingsState>()(
       toggleHaptics: () => set((s) => ({ hapticsEnabled: !s.hapticsEnabled })),
       setTheme: (t) => set({ theme: t }),
       toggleHintOnStart: () => set((s) => ({ showHintOnStart: !s.showHintOnStart })),
+      setNextPreviewCount: (n) => set({ nextPreviewCount: n }),
       reset: () => set(DEFAULTS),
     }),
     {

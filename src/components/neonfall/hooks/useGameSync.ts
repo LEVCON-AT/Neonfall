@@ -103,6 +103,14 @@ export function useGameSync() {
     syncGameSlider('rattle-slider', rattle);
     syncGameSlider('impact-slider', impact);
   }, [rattle, impact]);
+
+  const nextPreviewCount = useSettingsStore((s) => s.nextPreviewCount);
+  useEffect(() => {
+    const w = window as unknown as { __nfNextPreview?: (n: number) => void };
+    if (w.__nfNextPreview) {
+      w.__nfNextPreview(nextPreviewCount);
+    }
+  }, [nextPreviewCount]);
 }
 
 /** Push a 0..2 strength value into one of the IIFE's range sliders. */

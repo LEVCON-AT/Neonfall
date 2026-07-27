@@ -64,6 +64,7 @@ export interface Settings {
   hapticsEnabled: boolean;
   theme: 'dark' | 'light' | 'system';
   showHintOnStart: boolean;
+  nextPreviewCount: 1 | 2 | 3;
 }
 
 export const GAME_MODES: Record<
@@ -121,6 +122,8 @@ declare global {
     __nfGetBoard?: () => number[][];
     /** Restarts the game (new board, new piece, reset score). */
     __nfRestart?: () => void;
+    /** Sets the number of upcoming pieces shown in the next preview (1-3). */
+    __nfNextPreview?: (n: number) => void;
     /** Internal: guards against double-init of the legacy shell. */
     __nfShellInit?: boolean;
     /** iOS Safari webkitAudioContext fallback. */

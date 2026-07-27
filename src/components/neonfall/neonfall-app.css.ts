@@ -526,6 +526,16 @@ body.nf-playing::after { animation-play-state: paused !important; }
 .nf-setting-control [data-slot="slider"] [data-slot="slider-track"] { background: rgba(255,255,255,0.1); }
 .nf-setting-control [data-slot="slider"] [data-slot="slider-range"] { background: linear-gradient(90deg, #22d3ee, #a78bfa); }
 .nf-setting-control [data-slot="slider"] [data-slot="slider-thumb"] { border-color: #22d3ee; background: #0a0a14; }
+
+.nf-preview-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  color: #9ca3ff; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.nf-preview-btn:hover { background: rgba(255,255,255,0.1); color: #c7c7f0; }
+.nf-preview-btn.active { background: rgba(34,211,238,0.15); border-color: rgba(34,211,238,0.4); color: #22d3ee; }
 .nf-setting-value {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.72em;

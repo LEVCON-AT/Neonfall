@@ -565,7 +565,7 @@ export const GAME_HTML = `<h1 id="title">NEONFALL</h1>
     </div>
     <div id="next-box" class="mini-box glass">
         <h3>NEXT</h3>
-        <canvas id="next-canvas" width="46" height="46"></canvas>
+        <canvas id="next-canvas" width="120" height="46"></canvas>
     </div>
 </div>
 
@@ -713,14 +713,14 @@ export const GAME_SCRIPT = `
         'Z': { shape: [[1, 1, 0], [0, 1, 1]], color: '#fb7185' },
         // --- 9 Pentominoes (5 Zellen) — inkl. Spiegelvarianten ---
         'F': { shape: [[0, 1, 1], [1, 1, 0], [0, 1, 0]], color: '#06b6d4' },
-        "F'": { shape: [[1, 1, 0], [0, 1, 1], [0, 1, 0]], color: '#0891b2' },
+        "F'": { shape: [[1, 1, 0], [0, 1, 1], [0, 1, 0]], color: '#0ea5e9' },
         'P': { shape: [[1, 1], [1, 1], [1, 0]], color: '#ec4899' },
-        "P'": { shape: [[1, 1], [1, 1], [0, 1]], color: '#db2777' },
+        "P'": { shape: [[1, 1], [1, 1], [0, 1]], color: '#f43f5e' },
         'T5': { shape: [[1, 1, 1], [0, 1, 0], [0, 1, 0]], color: '#10b981' },
         'Y': { shape: [[1, 0], [1, 1], [1, 0], [1, 0]], color: '#f59e0b' },
-        "Y'": { shape: [[0, 1], [1, 1], [0, 1], [0, 1]], color: '#d97706' },
+        "Y'": { shape: [[0, 1], [1, 1], [0, 1], [0, 1]], color: '#eab308' },
         'L5': { shape: [[1, 0], [1, 0], [1, 0], [1, 1]], color: '#8b5cf6' },
-        'J5': { shape: [[0, 1], [0, 1], [0, 1], [1, 1]], color: '#7c3aed' }
+        'J5': { shape: [[0, 1], [0, 1], [0, 1], [1, 1]], color: '#d946ef' }
     };
     // PIECE_TYPES als Array (nicht String) weil 'T5', 'L5' und 'F'' 2-Char-Typen sind.
     const PIECE_TYPES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z', 'F', "F'", 'P', "P'", 'T5', 'Y', "Y'", 'L5', 'J5'];
@@ -761,6 +761,21 @@ export const GAME_SCRIPT = `
 
     let player = { matrix: null, color: null, pos: { x: 0, y: 0 } };
     let nextPiece = { matrix: null, color: null, type: null };
+    // S8.15b: Next queue — shows up to 3 upcoming pieces.
+    let nextQueue = [];
+    const NEXT_QUEUE_SIZE = 3;
+    function fillNextQueue() {
+        while (nextQueue.length < NEXT_QUEUE_SIZE) {
+            nextQueue.push(randomType());
+        }
+    }
+    let nextPreviewCount = 3;
+    try {
+        const saved = JSON.parse(localStorage.getItem('neonfall-settings') || '{}');
+        if (saved.state && saved.state.nextPreviewCount) {
+            nextPreviewCount = saved.state.nextPreviewCount;
+        }
+    } catch (e) {}
     let heldType = null;
     let canHold = true;
     let startLevel = 1;
@@ -1039,12 +1054,12 @@ export const GAME_SCRIPT = `
     }
 
     function resetPlayer() {
-        // S5c/S7.2: applyGarbage() direkt hier einbauen statt Monkey-Patching.
-        //   Wird vor dem Spawn des nächsten Steins aufgerufen — wenn der Gegner
-        //   garbage geschickt hat, werden die Reihen unten eingefügt.
         applyGarbage();
-        player = createPiece(nextPiece.type);
-        nextPiece = createPiece(randomType());
+        fillNextQueue();
+        const nextType = nextQueue.shift();
+        player = createPiece(nextType);
+        nextPiece = createPiece(nextQueue[0]);
+        fillNextQueue();
         drawNext();
         if (collide(board, player)) triggerGameOver();
     }
@@ -1113,7 +1128,8 @@ export const GAME_SCRIPT = `
         gameOverScreen.classList.remove('visible');
         updateStats();
         drawHold();
-        nextPiece = createPiece(randomType());
+        nextQueue = [];
+        fillNextQueue();
         resetPlayer();
         draw();
         animationId = requestAnimationFrame(update);
@@ -1237,7 +1253,29 @@ export const GAME_SCRIPT = `
         }));
     }
 
-    function drawNext() { drawMiniPreview(nextCtx, nextCanvas, nextPiece.type); }
+    function drawNext() {
+        nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+        const count = Math.min(nextPreviewCount, nextQueue.length);
+        for (let i = count - 1; i >= 0; i--) {
+            const type = nextQueue[i];
+            if (!type) continue;
+            const def = SHAPES[type];
+            const matrix = def.shape;
+            const size = i === 0 ? 9 : i === 1 ? 5 : 4;
+            const pieceW = matrix[0].length * size;
+            const pieceH = matrix.length * size;
+            const centerX = nextCanvas.width - 16 - i * 36;
+            const offsetX = centerX - pieceW / 2;
+            const offsetY = (nextCanvas.height - pieceH) / 2;
+            const opacity = i === 0 ? 1.0 : i === 1 ? 0.45 : 0.25;
+            nextCtx.save();
+            nextCtx.globalAlpha = opacity;
+            matrix.forEach((row, y) => row.forEach((value, x) => {
+                if (value !== 0) drawCell(nextCtx, x + offsetX, y + offsetY, def.color, size, i === 0 ? 5 : 1);
+            }));
+            nextCtx.restore();
+        }
+    }
     function drawHold() {
         drawMiniPreview(holdCtx, holdCanvas, heldType);
         holdBox.classList.toggle('disabled', !canHold);
@@ -1691,6 +1729,10 @@ export const GAME_SCRIPT = `
     window.__nfResetGarbage = () => { pendingGarbage = 0; };
     window.__nfGetBoard = () => board.map(row => row.slice());
     window.__nfRestart = () => restartGame();
+    window.__nfNextPreview = (n) => {
+        nextPreviewCount = Math.max(1, Math.min(3, n | 0));
+        drawNext();
+    };
 
     // S7.2: Monkey-Patch entfernt — applyGarbage() ist jetzt direkt in
     //   resetPlayer() eingebaut (oben). Sauberer als Function-Overriding.

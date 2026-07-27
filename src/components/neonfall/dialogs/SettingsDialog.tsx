@@ -15,9 +15,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
   Vibrate,
-  Gauge,
+  Activity,
+  Zap,
   Lightbulb,
   Keyboard,
+  Eye,
 } from 'lucide-react';
 import { useSettingsStore } from '@/lib/store/settings-store';
 
@@ -96,7 +98,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <TabsContent value="feedback" className="nf-tab-content">
             <div className="nf-setting-row">
               <Label htmlFor="set-rattle" className="nf-setting-label">
-                <Gauge size={14} aria-hidden="true" /> Ratterbewegung
+                <Activity size={14} aria-hidden="true" /> Ratterbewegung
               </Label>
               <div className="nf-setting-control">
                 <Slider
@@ -118,7 +120,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
             <div className="nf-setting-row">
               <Label htmlFor="set-impact" className="nf-setting-label">
-                <Gauge size={14} aria-hidden="true" /> Aufprallstärke
+                <Zap size={14} aria-hidden="true" /> Aufprallstärke
               </Label>
               <div className="nf-setting-control">
                 <Slider
@@ -169,6 +171,31 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             <p className="nf-setting-hint">
               Zeigt das Steuerungs-Hinweis-Overlay beim nächsten Start an.
               Wird beim nächsten Laden wirksam.
+            </p>
+            <div className="nf-setting-row">
+              <Label className="nf-setting-label">
+                <Eye size={14} aria-hidden="true" /> Next-Vorschau
+              </Label>
+              <div className="nf-setting-control">
+                <button
+                  type="button"
+                  className={`nf-preview-btn ${s.nextPreviewCount === 1 ? 'active' : ''}`}
+                  onClick={() => s.setNextPreviewCount(1)}
+                >1</button>
+                <button
+                  type="button"
+                  className={`nf-preview-btn ${s.nextPreviewCount === 2 ? 'active' : ''}`}
+                  onClick={() => s.setNextPreviewCount(2)}
+                >2</button>
+                <button
+                  type="button"
+                  className={`nf-preview-btn ${s.nextPreviewCount === 3 ? 'active' : ''}`}
+                  onClick={() => s.setNextPreviewCount(3)}
+                >3</button>
+              </div>
+            </div>
+            <p className="nf-setting-hint">
+              Anzahl der vorgeschauten Steine in der Next-Box.
             </p>
           </TabsContent>
 
