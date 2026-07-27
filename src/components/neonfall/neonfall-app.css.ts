@@ -1,8 +1,11 @@
 export const NEONFALL_APP_CSS = `
 /* S8.17: Hold-Box takes only the space it needs (46px canvas + padding),
    Next-Box gets the rest. Previously both had flex:1 which made the Next-Box
-   canvas (160px) cramped against the right edge. */
-#hold-box { flex: 0 0 auto !important; min-width: 62px; }
+   canvas (160px) cramped against the right edge.
+   S8.18-P0: Hold-Box min-width 62->80px (more breathing room around the
+   46px hold canvas). The 6px gap between Hold and Next boxes is set on
+   #second-bar (parent) and is NOT changed here. */
+#hold-box { flex: 0 0 auto !important; min-width: 80px; }
 #next-box { flex: 1 1 auto !important; min-width: 0; }
 
 /* S7.5b: Logo — SVG icon only, no text. font-size:0 in IIFE hides any
