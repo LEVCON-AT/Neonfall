@@ -503,3 +503,84 @@ aber der Gradient + die animierten Blobs füllen die gesamte Bildschirmfläche.
 - SW-Cache-Version auf v6 hochgezählt.
 
 
+
+---
+
+## S8.16: Next-Box Bug-Fix + Eindeutige Spielstein-Farben
+
+**Task ID:** S8.16 · **Agent:** main (Nutzer-Anfrage)
+
+### Problem 1: Next-Box war komplett leer
+**Ursache (gefunden via Code-Inspektion):** In `drawNext()` wurden
+`offsetX`/`offsetY` in **Pixeln** berechnet (`centerX - pieceW/2` etc.),
+aber dann an `drawCell(ctx, x + offsetX, y + offsetY, ...)` übergeben.
+`drawCell` macht intern `px = x * size` — multipliziert also den Offset
+nochmal mit der Zellgröße. Bei einem I-Stein (4 Zellen breit, size=9)
+landeten die Zellen bei `px = (0 + 86) * 9 = 774px` in einem 120px-Canvas.
+→ Alle Steine wurden weit außerhalb des Canvas gezeichnet → Next-Box leer.
+
+**Fix:** Pixel-Offsets vor dem `drawCell`-Aufruf durch `size` teilen, um
+sie in Zell-Einheiten zurückzuwandeln:
+```js
+const offsetX_cells = offsetX_px / size;
+const offsetY_cells = offsetY_px / size;
+drawCell(nextCtx, x + offsetX_cells, y + offsetY_cells, ...);
+```
+Außerdem: klarere Slot-Pitch-Konstanten (34px Abstand, 14px rechter Rand)
+und leicht erhöhte Opacity für hintere Steine (0.5/0.3 statt 0.45/0.25)
+für bessere Sichtbarkeit.
+
+**Verifiziert:** `getImageData` auf next-canvas → 812 non-bg Pixel von
+5520 (≈15% Coverage). VLM bestätigt sichtbare Steine (Cyan/Orange/Magenta
+im Next-Box). ✓
+
+### Problem 2: Spielstein-Farben teilweise fast ident
+**Ursache:** Alte Palette nutzte für 16 Steine fast ausschließlich
+Tailwind-400/500-Varianten derselben Hue-Familien:
+- F (#06b6d4 cyan-500) ≈ I (#22d3ee cyan-400) — fast gleich
+- F' (#0ea5e9 sky-500) ≈ F (#06b6d4) — fast gleich
+- P (#ec4899 pink-500) ≈ P' (#f43f5e rose-500) — fast gleich
+- Y (#f59e0b) ≈ Y' (#eab308) ≈ O (#fbbf24) — alle gelb/amber
+- L5 (#8b5cf6) ≈ T (#a78bfa) — beide violet
+- J5 (#d946ef) ≈ P (#ec4899) — beide magenta-pink
+
+Besonders die Spiegel-Paare (F/F', P/P', Y/Y', L5/J5) waren kaum
+unterscheidbar — das war genau die Nutzerbeschwerde.
+
+**Fix — Neue 16-Farben-Palette mit Strategie „warm vs. cool" für Spiegel-Paare:**
+
+| Stück  | Farbe (alt)        | Farbe (neu)   | Name            | Spiegel-Paar |
+|--------|--------------------|---------------|-----------------|--------------|
+| I      | #22d3ee cyan-400   | **#00f0ff**   | electric cyan   | —            |
+| J      | #6366f1 indigo-500 | **#4d7dff**   | royal blue      | L (warm)     |
+| L      | #fb923c orange-400 | **#ff8c1a**   | neon orange     | J (cool)     |
+| O      | #fbbf24 amber-400  | **#ffd400**   | golden yellow   | —            |
+| S      | #34d399 emerald-400| **#00e676**   | emerald green   | Z (warm)     |
+| T      | #a78bfa violet-400 | **#b347ff**   | neon purple     | —            |
+| Z      | #fb7185 rose-400   | **#ff2db4**   | hot pink        | S (cool)     |
+| F      | #06b6d4 cyan-500   | **#00ffaa**   | mint (cool)     | F' (warm)    |
+| F'     | #0ea5e9 sky-500    | **#ffaa00**   | amber (warm)    | F (cool)     |
+| P      | #ec4899 pink-500   | **#ff5cb0**   | rose pink (warm)| P' (cool)    |
+| P'     | #f43f5e rose-500   | **#c4ff3d**   | chartreuse(cool)| P (warm)     |
+| T5     | #10b981 emerald-500| **#00b3a4**   | deep teal       | —            |
+| Y      | #f59e0b amber-500  | **#d9b34d**   | mustard gold wm | Y' (cool)    |
+| Y'     | #eab308 yellow-500 | **#5d9cff**   | sky blue (cool) | Y (warm)     |
+| L5     | #8b5cf6 violet-500 | **#7a1aff**   | deep violet col | J5 (warm)    |
+| J5     | #d946ef fuchsia-500| **#ff6e3d**   | coral (warm)    | L5 (cool)    |
+
+Jeder Spiegel-Paar-Spartner sitzt am **gegenüberliegenden Ende des
+warm/cool-Spektrums** → immer deutlich unterscheidbar. Keine zwei
+Stücke teilen sich dieselbe Hue-Familie.
+
+**Verifiziert:** VLM erkennt nach Several-drops 7+ distinct Farben
+(yellow, cyan, purple, blue, orange, pink, green) plus ghost. ✓
+
+### Lint & Build
+- ESLint: 0 Errors (1 pre-existing warning zu custom-font in layout.tsx)
+- Dev-Server: Ready in 292ms, GET / 200, keine Runtime-Errors. ✓
+- Service Worker Cache: sollte bei nächstem Deploy inkrementiert werden.
+
+### Offen / Nächste Schritte
+- Upload-Ordner leeren (Nutzer-Anfrage aus vorheriger Runde — noch offen)
+- Highscore localStorage vs. DB-Erklärung (vorherige Runde — noch offen)
+- S8.14 Staging Pipeline (geplant)

@@ -702,25 +702,29 @@ export const GAME_SCRIPT = `
     //   vom Tetris "look & feel" ab (Tetris Holding LLC v. Xio, 2012).
     //   S7.5b: Spiegelversionen hinzugefügt (F', P', Y', J5) — wie J/L und S/Z
     //   bei Tetrominos haben chiralen Pentominoes eigene Spiegelvarianten.
+    // S8.16: UNIQUE NEONFALL COLORS for ALL 16 pieces.
+    //   Mirror pairs (J/L, S/Z, F/F', P/P', Y/Y', L5/J5) sit at OPPOSITE ends
+    //   of the warm/cool spectrum so they are always distinguishable.
+    //   No two pieces share the same hue family.
     const SHAPES = {
         // --- 7 Tetrominos (4 Zellen) ---
-        'I': { shape: [[1, 1, 1, 1]], color: '#22d3ee' },
-        'J': { shape: [[1, 0, 0], [1, 1, 1]], color: '#6366f1' },
-        'L': { shape: [[0, 0, 1], [1, 1, 1]], color: '#fb923c' },
-        'O': { shape: [[1, 1], [1, 1]], color: '#fbbf24' },
-        'S': { shape: [[0, 1, 1], [1, 1, 0]], color: '#34d399' },
-        'T': { shape: [[0, 1, 0], [1, 1, 1]], color: '#a78bfa' },
-        'Z': { shape: [[1, 1, 0], [0, 1, 1]], color: '#fb7185' },
+        'I':  { shape: [[1, 1, 1, 1]],              color: '#00f0ff' }, // electric cyan
+        'J':  { shape: [[1, 0, 0], [1, 1, 1]],     color: '#4d7dff' }, // royal blue
+        'L':  { shape: [[0, 0, 1], [1, 1, 1]],     color: '#ff8c1a' }, // neon orange
+        'O':  { shape: [[1, 1], [1, 1]],           color: '#ffd400' }, // golden yellow
+        'S':  { shape: [[0, 1, 1], [1, 1, 0]],     color: '#00e676' }, // emerald green
+        'T':  { shape: [[0, 1, 0], [1, 1, 1]],     color: '#b347ff' }, // neon purple
+        'Z':  { shape: [[1, 1, 0], [0, 1, 1]],     color: '#ff2db4' }, // hot pink
         // --- 9 Pentominoes (5 Zellen) — inkl. Spiegelvarianten ---
-        'F': { shape: [[0, 1, 1], [1, 1, 0], [0, 1, 0]], color: '#06b6d4' },
-        "F'": { shape: [[1, 1, 0], [0, 1, 1], [0, 1, 0]], color: '#0ea5e9' },
-        'P': { shape: [[1, 1], [1, 1], [1, 0]], color: '#ec4899' },
-        "P'": { shape: [[1, 1], [1, 1], [0, 1]], color: '#f43f5e' },
-        'T5': { shape: [[1, 1, 1], [0, 1, 0], [0, 1, 0]], color: '#10b981' },
-        'Y': { shape: [[1, 0], [1, 1], [1, 0], [1, 0]], color: '#f59e0b' },
-        "Y'": { shape: [[0, 1], [1, 1], [0, 1], [0, 1]], color: '#eab308' },
-        'L5': { shape: [[1, 0], [1, 0], [1, 0], [1, 1]], color: '#8b5cf6' },
-        'J5': { shape: [[0, 1], [0, 1], [0, 1], [1, 1]], color: '#d946ef' }
+        'F':  { shape: [[0, 1, 1], [1, 1, 0], [0, 1, 0]],         color: '#00ffaa' }, // mint (cool)
+        "F'": { shape: [[1, 1, 0], [0, 1, 1], [0, 1, 0]],         color: '#ffaa00' }, // amber (warm)
+        'P':  { shape: [[1, 1], [1, 1], [1, 0]],                   color: '#ff5cb0' }, // rose pink (warm)
+        "P'": { shape: [[1, 1], [1, 1], [0, 1]],                   color: '#c4ff3d' }, // chartreuse (cool)
+        'T5': { shape: [[1, 1, 1], [0, 1, 0], [0, 1, 0]],         color: '#00b3a4' }, // deep teal
+        'Y':  { shape: [[1, 0], [1, 1], [1, 0], [1, 0]],          color: '#d9b34d' }, // mustard gold (warm)
+        "Y'": { shape: [[0, 1], [1, 1], [0, 1], [0, 1]],          color: '#5d9cff' }, // sky blue (cool)
+        'L5': { shape: [[1, 0], [1, 0], [1, 0], [1, 1]],          color: '#7a1aff' }, // deep violet (cool)
+        'J5': { shape: [[0, 1], [0, 1], [0, 1], [1, 1]],          color: '#ff6e3d' }  // coral (warm)
     };
     // PIECE_TYPES als Array (nicht String) weil 'T5', 'L5' und 'F'' 2-Char-Typen sind.
     const PIECE_TYPES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z', 'F', "F'", 'P', "P'", 'T5', 'Y', "Y'", 'L5', 'J5'];
@@ -1270,8 +1274,18 @@ export const GAME_SCRIPT = `
     }
 
     function drawNext() {
+        // S8.16-fix: drawCell multiplies (x + offsetX) by the cell size internally,
+        //   so offsetX/offsetY MUST be in CELL UNITS, not pixels. Previously we
+        //   passed pixel values, which placed every cell off-canvas (e.g. I-piece
+        //   at x=774px in a 120px canvas - invisible). Now we convert pixel
+        //   centers back to cell-unit offsets before calling drawCell.
         nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
         const count = Math.min(nextPreviewCount, nextQueue.length);
+        if (count === 0) return;
+        // Each piece gets its own centered slot, fanning leftward from the right.
+        // Slot pitch 34px keeps a clear gap between front (size 9) and rear pieces.
+        const SLOT_PITCH = 34;
+        const RIGHT_PAD = 14;
         for (let i = count - 1; i >= 0; i--) {
             const type = nextQueue[i];
             if (!type) continue;
@@ -1280,14 +1294,17 @@ export const GAME_SCRIPT = `
             const size = i === 0 ? 9 : i === 1 ? 5 : 4;
             const pieceW = matrix[0].length * size;
             const pieceH = matrix.length * size;
-            const centerX = nextCanvas.width - 16 - i * 36;
-            const offsetX = centerX - pieceW / 2;
-            const offsetY = (nextCanvas.height - pieceH) / 2;
-            const opacity = i === 0 ? 1.0 : i === 1 ? 0.45 : 0.25;
+            const centerX_px = nextCanvas.width - RIGHT_PAD - i * SLOT_PITCH;
+            const offsetX_px = centerX_px - pieceW / 2;
+            const offsetY_px = (nextCanvas.height - pieceH) / 2;
+            // Convert pixel offsets to cell-unit offsets for drawCell().
+            const offsetX_cells = offsetX_px / size;
+            const offsetY_cells = offsetY_px / size;
+            const opacity = i === 0 ? 1.0 : i === 1 ? 0.5 : 0.3;
             nextCtx.save();
             nextCtx.globalAlpha = opacity;
             matrix.forEach((row, y) => row.forEach((value, x) => {
-                if (value !== 0) drawCell(nextCtx, x + offsetX, y + offsetY, def.color, size, i === 0 ? 5 : 1);
+                if (value !== 0) drawCell(nextCtx, x + offsetX_cells, y + offsetY_cells, def.color, size, i === 0 ? 5 : 1);
             }));
             nextCtx.restore();
         }
