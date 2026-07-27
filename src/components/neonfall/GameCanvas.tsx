@@ -34,7 +34,10 @@ const START_PROMPT_SVG =
 export function GameCanvas() {
   return (
     <div id="game-container">
-      <canvas id="tetris-canvas"></canvas>
+      {/* S8.17: width/height attributes set explicitly so React's VDOM matches
+          what the IIFE assigns (288=12 cols * 24px, 576=24 rows * 24px).
+          Without this, React warns about attribute mismatch on re-render. */}
+      <canvas id="tetris-canvas" width={288} height={576}></canvas>
       <div id="flash-overlay"></div>
       <div id="combo-popup"></div>
 

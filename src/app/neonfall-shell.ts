@@ -1013,9 +1013,9 @@ export function initShell() {
   window.addEventListener('resize', updateRotateHint);
   window.addEventListener('orientationchange', updateRotateHint);
 
-  // ============ MUSIC CROSSFADE PLAYER (16 tracks) ============
+  // ============ MUSIC CROSSFADE PLAYER (21 tracks) ============
   // The game's own neonfall-music.mp3 is now a silent stub; this player provides
-  // the real soundtrack with seamless 3 s crossfades between 8 tracks. It runs on
+  // the real soundtrack with seamless 3 s crossfades between 21 tracks. It runs on
   // a separate AudioContext and syncs with the game's pause/mute/visibility.
   const TRACKS = [
     { file: '/music/track-1-neon-pulse.mp3',          name: 'Pulse Drive' },
@@ -1030,10 +1030,18 @@ export function initShell() {
     { file: '/music/track-10-block-rush-iii.mp3',     name: 'Thunderfall' },
     { file: '/music/track-11-block-rush-iv.mp3',      name: 'Momentum Shift' },
     { file: '/music/track-12-block-rush-v.mp3',       name: 'Overdrive' },
-    { file: '/music/track-13-neon-block-rush.mp3',    name: 'Neon Storm' },
-    { file: '/music/track-14-neon-block-rush-alt.mp3',name: 'Electric Rain' },
-    { file: '/music/track-15-neon-pulse-ii.mp3',      name: 'Heartbeat Sync' },
-    { file: '/music/track-16-neon-pulse-iii.mp3',     name: 'Voltage Surge' },
+    // S8.17: Fixed file paths to match actual files in public/music/
+    //   (previously pointed to non-existent track-13..16-*.mp3 -> 404 errors).
+    //   Added the missing 5 tracks (17-21) that were uploaded but never listed.
+    { file: '/music/track-13-block-rush-vi.mp3',          name: 'Neon Storm' },
+    { file: '/music/track-14-neon-block-rush.mp3',        name: 'Electric Rain' },
+    { file: '/music/track-15-neon-block-rush-alt.mp3',    name: 'Heartbeat Sync' },
+    { file: '/music/track-16-neon-pulse-ii.mp3',          name: 'Voltage Surge' },
+    { file: '/music/track-17-neon-pulse-iii.mp3',         name: 'Current Drift' },
+    { file: '/music/track-18-neon-pixel-run.mp3',         name: 'Pixel Wave' },
+    { file: '/music/track-19-neon-pixel-run-alt.mp3',     name: 'Bitstorm' },
+    { file: '/music/track-20-neon-pixel-rush.mp3',        name: 'Hyperdrive' },
+    { file: '/music/track-21-neon-pixel-rush-alt.mp3',    name: 'Quantum Leap' },
   ];
   const FADE_DUR = 3.0;          // seconds of crossfade between tracks
   const MUSIC_VOL = 0.5;         // target music volume (matches game's musicGain)

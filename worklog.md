@@ -584,3 +584,105 @@ Stücke teilen sich dieselbe Hue-Familie.
 - Upload-Ordner leeren (Nutzer-Anfrage aus vorheriger Runde — noch offen)
 - Highscore localStorage vs. DB-Erklärung (vorherige Runde — noch offen)
 - S8.14 Staging Pipeline (geplant)
+
+---
+
+## S8.17: Next-Box-Redesign + React-Console-Fehler behoben
+
+**Task ID:** S8.17 · **Agent:** main (Nutzer-Anfrage)
+
+### Problem 1: Next-Box sah aus wie "Hobby-Projekt"
+**Ursachen (via VLM-Analyse identifiziert):**
+1. Canvas zu klein (120×46px) — 3 Steine gequetscht, keine Atemraum
+2. Layout "fan from right" — Front piece ganz rechts, sah unausgewogen aus
+3. Fehlende visuelle Struktur — Pieces schwebten ohne Container/Hintergrund
+4. Spacing ungleichmäßig — "top-heavy" laut VLM
+
+**Fix — Vollständiger Redesign:**
+
+1. **Canvas vergrößert** (HoldNextBar.tsx): 120×46 → **160×52** (+33% Breite, +13% Höhe)
+2. **CSS-Anpassung** (neonfall-app.css.ts):
+   - `#hold-box { flex: 0 0 auto }` — Hold nimmt nur den Platz den es braucht (62px)
+   - `#next-box { flex: 1 1 auto }` — Next bekommt den gesamten Rest
+   - Vorher hatten beide `flex: 1` → Next-Canvas wurde gequetscht
+3. **drawNext() komplett neu** (neonfall-content.ts):
+   - 3 explizite Slots mit berechneten Positionen (kein "fan from right" mehr)
+   - Front slot (x 4-84, 80px breit): size 11, opacity 1.0, glow 8
+   - Mid slot (x 88-120, 32px breit): size 6, opacity 0.50, glow 1
+   - Back slot (x 124-156, 32px breit): size 5, opacity 0.25, glow 0
+   - **Subtle Slot-Hintergründe**: Gerundete Rechtecke mit faint fill+stroke
+     - Front: fillAlpha 0.06, strokeAlpha 0.16 (am deutlichsten)
+     - Mid: fillAlpha 0.035, strokeAlpha 0.08
+     - Back: fillAlpha 0.02, strokeAlpha 0.08 (am subtilsten)
+   - Klare Hierarchie: Front piece groß+bright, hintere dimmer+kleiner
+
+**Verifiziert (VLM):**
+- Vorher: "8/10 aber sieht aus wie Hobby-Projekt, keine klare Struktur"
+- Nachher: **"9/10 Professionalität"** — "polished, modern, highly polished"
+- 3 Stücke klar sichtbar in getrennten Slots ✓
+- Slot-Separatoren sichtbar ✓
+- Layout balanced ✓
+
+### Problem 2: Viele React/Console-Fehler in der Vorschau
+**Ursachen (3 unabhängige Quellen identifiziert):**
+
+1. **Hydration-Mismatch** (Canvas-Width/Height):
+   - React renderte `<canvas id="tetris-canvas">` ohne width/height
+   - IIFE setzte dann `canvas.width = 288; canvas.height = 576`
+   - Bei React-Re-Render: VDOM (keine Attribute) ≠ DOM (Attribute gesetzt) → Warning
+
+2. **Fast-Refresh Runtime-Error** (IIFE Double-Init):
+   - Bei Hot-Reload injizierte useGameBootstrap den IIFE-Script erneut
+   - IIFE versuchte, Event-Listener erneut zu registrieren → Runtime-Error
+   - Next.js: "⚠ Fast Refresh had to perform a full reload due to a runtime error"
+
+3. **404 Errors für Music-Tracks**:
+   - Shell referenzierte `/music/track-13-neon-block-rush.mp3` etc.
+   - Aber tatsächliche Dateien hießen anders (`track-13-block-rush-vi.mp3`)
+   - 4 Tracks (13-16) → 404 in Console
+   - Tracks 17-21 existierten in `public/music/` wurden aber nie in der Liste geführt
+
+**Fixes:**
+
+1. **Canvas-Attribute in React gesetzt** (GameCanvas.tsx):
+   ```jsx
+   <canvas id="tetris-canvas" width={288} height={576}></canvas>
+   ```
+   → Server und Client rendern identisch → keine Hydration-Mismatch
+
+2. **IIFE-Guard gegen Double-Init** (neonfall-content.ts, Zeile 665):
+   ```js
+   if (window.__nfInitialized) return;
+   window.__nfInitialized = true;
+   ```
+   → Hot-Reload überspringt IIFE-Neu-Init → keine Runtime-Errors → keine Fast-Refresh-Warnings
+
+3. **Track-Liste korrigiert** (neonfall-shell.ts):
+   - 4 falsche Dateipfade korrigiert (13-16)
+   - 5 fehlende Tracks hinzugefügt (17-21)
+   - Jetzt 21 Tracks in der Liste (vorher 16, davon 4 broken)
+   → keine 404s mehr in Console
+
+**Verifiziert:**
+- `agent-browser console` nach frischem Load: nur `React DevTools` Info + `[HMR] connected`
+- `agent-browser errors`: leer
+- `dev.log`: keine Warnings, keine Errors, keine 404s, keine Hydration-Mismatches
+- Vorher: "Fast Refresh had to perform a full reload due to a runtime error" (mehrfach)
+- Nachher: saubere Hot-Reloads ohne Warnings
+
+### Lint & Build
+- ESLint: 0 Errors ✓
+- Dev-Server: läuft stabil, GET / 200, keine Runtime-Errors ✓
+
+### Trade-offs / Notizen
+- **IIFE-Guard Trade-off**: Bei Code-Änderungen am IIFE selbst ist ein manueller
+  Page-Reload nötig (statt Hot-Reload). Das ist ein akzeptabler Trade-off für eine
+  saubere Console. Für Production ist das ohnehin irrelevant (kein HMR).
+- **Canvas-Größe**: Next-Canvas jetzt 160×52. Das verändert das Hold/Next-Bar-Layout
+  minimal (Next-Box ist jetzt breiter als Hold-Box). Sieht aber balanced aus, weil
+  Hold nur den Platz nimmt den es braucht.
+
+### Offen / Nächste Schritte
+- Upload-Ordner leeren (noch offen aus vorheriger Runde)
+- Highscore localStorage vs. DB Sync (noch offen)
+- S8.14 Staging Pipeline (geplant)

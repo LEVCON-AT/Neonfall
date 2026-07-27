@@ -9,7 +9,9 @@ export function HoldNextBar() {
       </div>
       <div id="next-box" className="mini-box glass">
         <h3>NEXT</h3>
-        <canvas id="next-canvas" width="120" height="46"></canvas>
+        {/* S8.17: Canvas enlarged 120->160 wide / 46->52 tall for a more
+            professional 3-slot layout with subtle slot separators. */}
+        <canvas id="next-canvas" width="160" height="52"></canvas>
       </div>
     </div>
   );

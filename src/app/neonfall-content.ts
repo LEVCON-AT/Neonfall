@@ -657,6 +657,13 @@ export const GAME_HTML = `<h1 id="title">NEONFALL</h1>
 
 export const GAME_SCRIPT = `
 (function () {
+    // S8.17: Guard against double-init on Fast Refresh / HMR.
+    //   Without this, Next.js dev hot-reload re-runs the IIFE, which tries to
+    //   re-register event listeners and re-fetch elements -> runtime error ->
+    //   "Fast Refresh had to perform a full reload" warning in console.
+    //   The guard short-circuits subsequent invocations cleanly.
+    if (window.__nfInitialized) return;
+    window.__nfInitialized = true;
     // --- KONSTANTEN ---
     // S5b/P1: Grid von 10→12 Spalten erweitert (rechtliche Abhebung vom
     //   Tetris-Standard 10×20). Combined mit den zusätzlichen Pentomino-Formen
@@ -1274,38 +1281,76 @@ export const GAME_SCRIPT = `
     }
 
     function drawNext() {
-        // S8.16-fix: drawCell multiplies (x + offsetX) by the cell size internally,
-        //   so offsetX/offsetY MUST be in CELL UNITS, not pixels. Previously we
-        //   passed pixel values, which placed every cell off-canvas (e.g. I-piece
-        //   at x=774px in a 120px canvas - invisible). Now we convert pixel
-        //   centers back to cell-unit offsets before calling drawCell.
+        // S8.17: Professional 3-slot layout with subtle slot separators.
+        //   Canvas is now 160x52 (enlarged from 120x46 for breathing room).
+        //   - Front piece (i=0): large, leftmost, full opacity + glow
+        //   - Mid piece (i=1): medium, middle, 50% opacity, faint glow
+        //   - Back piece (i=2): small, rightmost, 25% opacity, no glow
+        //   Subtle rounded-rect slot backgrounds give visual structure
+        //   (per VLM feedback: "container indicators make UI look engineered").
         nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-        const count = Math.min(nextPreviewCount, nextQueue.length);
+        var count = Math.min(nextPreviewCount, nextQueue.length);
         if (count === 0) return;
-        // Each piece gets its own centered slot, fanning leftward from the right.
-        // Slot pitch 34px keeps a clear gap between front (size 9) and rear pieces.
-        const SLOT_PITCH = 34;
-        const RIGHT_PAD = 14;
-        for (let i = count - 1; i >= 0; i--) {
-            const type = nextQueue[i];
-            if (!type) continue;
-            const def = SHAPES[type];
-            const matrix = def.shape;
-            const size = i === 0 ? 9 : i === 1 ? 5 : 4;
-            const pieceW = matrix[0].length * size;
-            const pieceH = matrix.length * size;
-            const centerX_px = nextCanvas.width - RIGHT_PAD - i * SLOT_PITCH;
-            const offsetX_px = centerX_px - pieceW / 2;
-            const offsetY_px = (nextCanvas.height - pieceH) / 2;
-            // Convert pixel offsets to cell-unit offsets for drawCell().
-            const offsetX_cells = offsetX_px / size;
-            const offsetY_cells = offsetY_px / size;
-            const opacity = i === 0 ? 1.0 : i === 1 ? 0.5 : 0.3;
+        // 160x52 canvas. Three slots with 4px outer pad, 4px gap between slots:
+        //   Front: x 4..84   = 80px wide, size 11, full opacity, glow 8
+        //   Mid:   x 88..120 = 32px wide, size 6,  50% opacity, glow 1
+        //   Back:  x 124..156= 32px wide, size 5,  25% opacity, glow 0
+        // Max piece (I-piece 4 wide, L5/Y/Y'/J5 4 tall):
+        //   Front: 4*11=44px in 80px slot -> 18px slack. OK.
+        //   Mid:   4*6=24px  in 32px slot -> 4px slack. OK.
+        //   Back:  4*5=20px  in 32px slot -> 6px slack. OK.
+        // Tallest: 4*11=44px in 52px canvas -> 4px pad top/bottom. OK.
+        var slots = [
+            { x0: 4,   x1: 84,  size: 11, opacity: 1.00, glow: 8 },
+            { x0: 88,  x1: 120, size: 6,  opacity: 0.50, glow: 1 },
+            { x0: 124, x1: 156, size: 5,  opacity: 0.25, glow: 0 }
+        ];
+
+        // Subtle slot backgrounds: rounded rects with faint border + fill.
+        // Gives the layout structure without competing with the pieces.
+        for (var s = 0; s < slots.length; s++) {
+            var sl = slots[s];
             nextCtx.save();
-            nextCtx.globalAlpha = opacity;
-            matrix.forEach((row, y) => row.forEach((value, x) => {
-                if (value !== 0) drawCell(nextCtx, x + offsetX_cells, y + offsetY_cells, def.color, size, i === 0 ? 5 : 1);
-            }));
+            var pad = 3;
+            var rx = sl.x0 + pad;
+            var ry = 2;
+            var rw = sl.x1 - sl.x0 - pad * 2;
+            var rh = nextCanvas.height - 4;
+            var r = 4;
+            // Slot fill: brighter for front slot (active focus), dimmer for rear.
+            var fillAlpha = s === 0 ? 0.06 : s === 1 ? 0.035 : 0.02;
+            var strokeAlpha = s === 0 ? 0.16 : 0.08;
+            nextCtx.fillStyle = 'rgba(255,255,255,' + fillAlpha + ')';
+            nextCtx.strokeStyle = 'rgba(255,255,255,' + strokeAlpha + ')';
+            nextCtx.lineWidth = 1;
+            roundedRectPath(nextCtx, rx, ry, rw, rh, r);
+            nextCtx.fill();
+            nextCtx.stroke();
+            nextCtx.restore();
+        }
+
+        // Draw pieces centered in their slots.
+        for (var i = 0; i < count; i++) {
+            var type = nextQueue[i];
+            if (!type) continue;
+            var def = SHAPES[type];
+            var matrix = def.shape;
+            var slot = slots[i];
+            var pieceW = matrix[0].length * slot.size;
+            var pieceH = matrix.length * slot.size;
+            var slotCenterX = (slot.x0 + slot.x1) / 2;
+            var offsetX_px = slotCenterX - pieceW / 2;
+            var offsetY_px = (nextCanvas.height - pieceH) / 2;
+            // Cell-unit conversion (drawCell multiplies internally by size).
+            var offsetX_cells = offsetX_px / slot.size;
+            var offsetY_cells = offsetY_px / slot.size;
+            nextCtx.save();
+            nextCtx.globalAlpha = slot.opacity;
+            matrix.forEach(function (row, y) {
+                row.forEach(function (value, x) {
+                    if (value !== 0) drawCell(nextCtx, x + offsetX_cells, y + offsetY_cells, def.color, slot.size, slot.glow);
+                });
+            });
             nextCtx.restore();
         }
     }
