@@ -30,6 +30,12 @@ export const NEONFALL_APP_CSS = `
   100% { border-color: transparent; transform: scale(1); }
 }
 
+/* S8.19: Hide legacy IIFE overlays — replaced by React shadcn Dialogs.
+   The IIFE still toggles 'hidden'/'visible' classes on these elements
+   (for internal state), but the visual rendering is now done by React.
+   display:none !important ensures the old DOM nodes never show. */
+#hint-overlay { display: none !important; }
+
 /* S7.5b: Logo — SVG icon only, no text. font-size:0 in IIFE hides any
    text remnants. The h1 keeps sr-only text for accessibility. */
 h1#title {
@@ -494,6 +500,117 @@ body.nf-playing::after { animation-play-state: paused !important; }
 .nf-dialog-title-icon-pink { color: #f472b6; }
 .nf-dialog-title-icon-gold { color: #fbbf24; }
 .nf-dialog-desc { color: #9ca3ff !important; font-size: 0.85em; }
+
+/* ===== S8.19: Hint Dialog ===== */
+.nf-hint-dialog { max-width: 420px !important; }
+.nf-hint-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+.nf-hint-section {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.nf-hint-section-title {
+  margin: 0 0 10px;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #22d3ee;
+  text-transform: uppercase;
+}
+.nf-hint-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.nf-hint-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 0.88em;
+  line-height: 1.4;
+}
+.nf-hint-gesture {
+  flex-shrink: 0;
+  min-width: 110px;
+  color: #a78bfa;
+  font-weight: 600;
+}
+.nf-hint-keys {
+  flex-shrink: 0;
+  min-width: 110px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.nf-hint-keys kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  color: #e8e8f5;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+.nf-hint-desc {
+  color: #c7c7f0;
+  flex: 1;
+  min-width: 0;
+}
+.nf-hint-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82em;
+  color: #9ca3ff;
+  cursor: pointer;
+  padding: 8px 0;
+  user-select: none;
+}
+.nf-hint-checkbox {
+  accent-color: #a78bfa;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.nf-hint-close-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #22d3ee, #a78bfa) !important;
+  color: #0a0a14 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.nf-hint-close-btn:active { transform: scale(0.97); }
+.nf-hint-footer {
+  text-align: center;
+  font-size: 0.72em;
+  color: #6b6b8f;
+  margin: 8px 0 0;
+}
+.nf-hint-footer b { color: #9ca3ff; }
+.nf-hint-link { color: #22d3ee; text-decoration: none; }
+.nf-hint-link:hover { text-decoration: underline; }
 
 /* Settings tabs */
 .nf-settings-tabs { width: 100%; }

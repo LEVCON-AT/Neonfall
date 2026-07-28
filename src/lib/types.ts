@@ -124,6 +124,8 @@ declare global {
     __nfRestart?: () => void;
     /** Sets the number of upcoming pieces shown in the next preview (1-3). */
     __nfNextPreview?: (n: number) => void;
+    /** S8.19: Closes the hint overlay (called by React HintDialog on close). */
+    __nfCloseHint?: () => void;
     /** Internal: guards against double-init of the legacy shell. */
     __nfShellInit?: boolean;
     /** iOS Safari webkitAudioContext fallback. */

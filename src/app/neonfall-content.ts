@@ -1902,6 +1902,15 @@ export const GAME_SCRIPT = `
         nextPreviewCount = Math.max(1, Math.min(3, n | 0));
         drawNext();
     };
+    // S8.19: React HintDialog calls this when the user closes the hint.
+    //   Sets hintVisible=false (so gestures work again), adds 'hidden' class
+    //   (so MutationObserver in useGameSync closes the React dialog), and
+    //   shows start-prompt if the game hasn't started yet.
+    window.__nfCloseHint = () => {
+        hintOverlay.classList.add('hidden');
+        hintVisible = false;
+        if (!gameStarted) startPromptEl.classList.add('visible');
+    };
 
     // S7.2: Monkey-Patch entfernt — applyGarbage() ist jetzt direkt in
     //   resetPlayer() eingebaut (oben). Sauberer als Function-Overriding.
