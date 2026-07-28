@@ -8,6 +8,28 @@ export const NEONFALL_APP_CSS = `
 #hold-box { flex: 0 0 auto !important; min-width: 80px; }
 #next-box { flex: 1 1 auto !important; min-width: 0; }
 
+/* S8.18-P1: Next-Box is clickable — cycles preview count 3->2->1->3.
+   A subtle pulse animation gives tactile feedback on each click. */
+#next-box { cursor: pointer; position: relative; }
+#next-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  pointer-events: none;
+  transition: border-color 0.2s;
+}
+#next-box:hover::after { border-color: rgba(34,211,238,0.3); }
+#next-box.nf-next-pulse::after {
+  animation: nf-next-pulse-anim 0.4s ease-out;
+}
+@keyframes nf-next-pulse-anim {
+  0%   { border-color: rgba(34,211,238,0.8); transform: scale(1); }
+  50%  { border-color: rgba(167,139,250,0.5); transform: scale(1.02); }
+  100% { border-color: transparent; transform: scale(1); }
+}
+
 /* S7.5b: Logo — SVG icon only, no text. font-size:0 in IIFE hides any
    text remnants. The h1 keeps sr-only text for accessibility. */
 h1#title {

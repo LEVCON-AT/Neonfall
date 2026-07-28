@@ -105,12 +105,33 @@ export function useGameSync() {
   }, [rattle, impact]);
 
   const nextPreviewCount = useSettingsStore((s) => s.nextPreviewCount);
+  const setNextPreviewCount = useSettingsStore((s) => s.setNextPreviewCount);
   useEffect(() => {
     const w = window as unknown as { __nfNextPreview?: (n: number) => void };
     if (w.__nfNextPreview) {
       w.__nfNextPreview(nextPreviewCount);
     }
   }, [nextPreviewCount]);
+
+  // S8.18-P1: Click on #next-box cycles the preview count 3 -> 2 -> 1 -> 3.
+  //   The existing effect above then syncs the new value to the IIFE via
+  //   window.__nfNextPreview(), which redraws the next-box. A brief CSS pulse
+  //   gives tactile feedback so the click doesn't feel "dead".
+  useEffect(() => {
+    const el = document.getElementById('next-box');
+    if (!el) return;
+    const handler = () => {
+      const cur = useSettingsStore.getState().nextPreviewCount;
+      const next = cur === 3 ? 2 : cur === 2 ? 1 : 3;
+      setNextPreviewCount(next);
+      // Visual pulse feedback.
+      el.classList.remove('nf-next-pulse');
+      void el.offsetWidth;
+      el.classList.add('nf-next-pulse');
+    };
+    el.addEventListener('click', handler);
+    return () => el.removeEventListener('click', handler);
+  }, [setNextPreviewCount]);
 }
 
 /** Push a 0..2 strength value into one of the IIFE's range sliders. */
