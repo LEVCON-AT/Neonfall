@@ -352,17 +352,36 @@ export const GAME_CSS = `
         border-radius: 10px;
         cursor: pointer;
         letter-spacing: 1px;
+        /* S8.18-P4: restart button fills width to prevent overflow.
+           !important on align-self to override parent align-items:center. */
+        width: 100%;
+        max-width: 220px;
+        align-self: stretch !important;
     }
     #game-over-screen button:active { transform: scale(0.96); }
 
     .level-select {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: center;
-        gap: 10px;
+        gap: 6px 10px;
         margin-bottom: 18px;
         font-size: 0.85em;
         color: #c7c7f0;
+        width: 100% !important;
+        max-width: 220px;
+        align-self: stretch !important;
+    }
+    /* S8.18-P4: "Startlevel" label gets its own line; the − value + buttons
+       group together below it. Prevents overflow on narrow screens.
+       Using !important because the original .level-select span rule
+       (inherited from older CSS) sets display:inline. */
+    .level-select span {
+        display: block !important;
+        width: 100% !important;
+        text-align: center;
+        margin-bottom: 2px;
     }
     .level-select b {
         font-family: 'JetBrains Mono', monospace;
@@ -381,6 +400,7 @@ export const GAME_CSS = `
         font-size: 1.1em;
         cursor: pointer;
         line-height: 1;
+        flex-shrink: 0;
     }
     .level-select button:active { transform: scale(0.92); }
 
@@ -476,7 +496,20 @@ export const GAME_CSS = `
         text-align: right;
     }
 
-    #pause-buttons { display: flex; gap: 10px; }
+    /* S8.18-P4: pause-buttons can wrap to vertical stack on narrow screens.
+       Each button flexes to fill available width. !important on align-self
+       to override the parent #pause-overlay's align-items:center. */
+    #pause-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        width: 100% !important;
+        align-self: stretch !important;
+    }
+    #pause-buttons > button {
+        flex: 1 1 auto;
+        min-width: 120px;
+    }
     #pause-overlay button {
         padding: 11px 20px;
         font-size: 0.95em;
@@ -520,6 +553,22 @@ export const GAME_CSS = `
 
     /* ===== Ab hier: reine Desktop-/Zeigegeräte-Ergänzungen. ===== */
     /* Alles oberhalb bleibt fuer Mobile unveraendert. */
+
+    /* S8.18-P4: Very narrow screens (e.g. iPhone SE landscape, small phones).
+       Force all action buttons to full-width vertical stack to prevent any
+       horizontal overflow. */
+    @media (max-width: 340px) {
+        #pause-buttons > button,
+        #game-over-screen button,
+        .level-select {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        .level-select button {
+            width: 36px;
+            height: 36px;
+        }
+    }
 
     @media (min-width: 700px) {
         html, body { touch-action: auto; }
