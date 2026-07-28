@@ -1281,33 +1281,62 @@ export const GAME_SCRIPT = `
     }
 
     function drawNext() {
-        // S8.17: Professional 3-slot layout with subtle slot separators.
-        //   Canvas is now 160x52 (enlarged from 120x46 for breathing room).
-        //   - Front piece (i=0): large, leftmost, full opacity + glow
-        //   - Mid piece (i=1): medium, middle, 50% opacity, faint glow
-        //   - Back piece (i=2): small, rightmost, 25% opacity, no glow
-        //   Subtle rounded-rect slot backgrounds give visual structure
-        //   (per VLM feedback: "container indicators make UI look engineered").
+        // S8.18-P1b: Dynamic slot layout — only draws as many slots as there
+        //   are pieces to show, and centers them across the canvas. Previously
+        //   all 3 slot backgrounds were always drawn, leaving empty "ghost"
+        //   containers when nextPreviewCount was 1 or 2.
+        //
+        //   Slot sizes scale with count:
+        //     count=1: one large slot (size 12), centered
+        //     count=2: front size 11 + mid size 7, distributed across canvas
+        //     count=3: front size 11 + mid size 6 + back size 5 (S8.17 layout)
         nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
         var count = Math.min(nextPreviewCount, nextQueue.length);
         if (count === 0) return;
-        // 160x52 canvas. Three slots with 4px outer pad, 4px gap between slots:
-        //   Front: x 4..84   = 80px wide, size 11, full opacity, glow 8
-        //   Mid:   x 88..120 = 32px wide, size 6,  50% opacity, glow 1
-        //   Back:  x 124..156= 32px wide, size 5,  25% opacity, glow 0
-        // Max piece (I-piece 4 wide, L5/Y/Y'/J5 4 tall):
-        //   Front: 4*11=44px in 80px slot -> 18px slack. OK.
-        //   Mid:   4*6=24px  in 32px slot -> 4px slack. OK.
-        //   Back:  4*5=20px  in 32px slot -> 6px slack. OK.
-        // Tallest: 4*11=44px in 52px canvas -> 4px pad top/bottom. OK.
-        var slots = [
-            { x0: 4,   x1: 84,  size: 11, opacity: 1.00, glow: 8 },
-            { x0: 88,  x1: 120, size: 6,  opacity: 0.50, glow: 1 },
-            { x0: 124, x1: 156, size: 5,  opacity: 0.25, glow: 0 }
-        ];
+
+        // Canvas is 160x52. Outer pad 4px, gap between slots 4px.
+        var CW = nextCanvas.width;   // 160
+        var CH = nextCanvas.height;  // 52
+        var PAD = 4;
+        var GAP = 4;
+
+        // Build slot config based on count. Each entry: { size, opacity, glow }
+        var configs;
+        if (count === 1) {
+            configs = [
+                { size: 12, opacity: 1.00, glow: 8 }
+            ];
+        } else if (count === 2) {
+            configs = [
+                { size: 11, opacity: 1.00, glow: 8 },
+                { size: 7,  opacity: 0.50, glow: 1 }
+            ];
+        } else {
+            configs = [
+                { size: 11, opacity: 1.00, glow: 8 },
+                { size: 6,  opacity: 0.50, glow: 1 },
+                { size: 5,  opacity: 0.25, glow: 0 }
+            ];
+        }
+
+        // Distribute slots across canvas width.
+        // Each slot gets equal width: (CW - 2*PAD - (count-1)*GAP) / count
+        var totalGap = (count - 1) * GAP;
+        var slotW = (CW - 2 * PAD - totalGap) / count;
+        var slots = [];
+        for (var i = 0; i < count; i++) {
+            var x0 = PAD + i * (slotW + GAP);
+            slots.push({
+                x0: x0,
+                x1: x0 + slotW,
+                size: configs[i].size,
+                opacity: configs[i].opacity,
+                glow: configs[i].glow
+            });
+        }
 
         // Subtle slot backgrounds: rounded rects with faint border + fill.
-        // Gives the layout structure without competing with the pieces.
+        // Fill/stroke alpha decreases for rear slots (depth hierarchy).
         for (var s = 0; s < slots.length; s++) {
             var sl = slots[s];
             nextCtx.save();
@@ -1315,9 +1344,8 @@ export const GAME_SCRIPT = `
             var rx = sl.x0 + pad;
             var ry = 2;
             var rw = sl.x1 - sl.x0 - pad * 2;
-            var rh = nextCanvas.height - 4;
+            var rh = CH - 4;
             var r = 4;
-            // Slot fill: brighter for front slot (active focus), dimmer for rear.
             var fillAlpha = s === 0 ? 0.06 : s === 1 ? 0.035 : 0.02;
             var strokeAlpha = s === 0 ? 0.16 : 0.08;
             nextCtx.fillStyle = 'rgba(255,255,255,' + fillAlpha + ')';
@@ -1340,7 +1368,7 @@ export const GAME_SCRIPT = `
             var pieceH = matrix.length * slot.size;
             var slotCenterX = (slot.x0 + slot.x1) / 2;
             var offsetX_px = slotCenterX - pieceW / 2;
-            var offsetY_px = (nextCanvas.height - pieceH) / 2;
+            var offsetY_px = (CH - pieceH) / 2;
             // Cell-unit conversion (drawCell multiplies internally by size).
             var offsetX_cells = offsetX_px / slot.size;
             var offsetY_cells = offsetY_px / slot.size;
