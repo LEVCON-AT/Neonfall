@@ -23,6 +23,7 @@ import { LeaderboardDialog } from './dialogs/LeaderboardDialog';
 import { NameInputDialog } from './dialogs/NameInputDialog';
 import { MultiplayerDialog } from './dialogs/MultiplayerDialog';
 import { HintDialog } from './dialogs/HintDialog';
+import { PauseDialog } from './dialogs/PauseDialog';
 
 /**
  * Root client component for the NEONFALL experience.
@@ -44,6 +45,8 @@ export function NeonfallApp() {
   const mode = useGameStore((s) => s.mode);
   const hintOpen = useGameStore((s) => s.hintOpen);
   const setHintOpen = useGameStore((s) => s.setHintOpen);
+  const pauseOpen = useGameStore((s) => s.pauseOpen);
+  const setPauseOpen = useGameStore((s) => s.setPauseOpen);
 
   // Custom hooks — each encapsulates a group of related effects.
   useGameBootstrap();
@@ -100,6 +103,7 @@ export function NeonfallApp() {
       <NameInputDialog open={nameInputOpen} onOpenChange={setNameInputOpen} />
       <MultiplayerDialog open={multiplayerOpen} onOpenChange={setMultiplayerOpen} />
       <HintDialog open={hintOpen} onOpenChange={setHintOpen} />
+      <PauseDialog open={pauseOpen} onOpenChange={setPauseOpen} />
 
       <Toaster position="top-center" closeButton richColors />
     </>

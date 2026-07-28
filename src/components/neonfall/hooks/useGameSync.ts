@@ -50,8 +50,9 @@ export function useGameSync() {
 
       const store = useGameStore.getState();
       store.setStatus(status);
-      // S8.19: Drive React HintDialog open state from IIFE overlay class.
+      // S8.19: Drive React HintDialog + PauseDialog open state from IIFE overlay classes.
       store.setHintOpen(hintVisible);
+      store.setPauseOpen(pauseVisible);
       // Stat-pulse: detect which stat changed and pulse that box.
       const prev = {
         score: store.score,

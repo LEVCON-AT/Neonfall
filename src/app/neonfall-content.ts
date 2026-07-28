@@ -1911,6 +1911,19 @@ export const GAME_SCRIPT = `
         hintVisible = false;
         if (!gameStarted) startPromptEl.classList.add('visible');
     };
+    // S8.19: React PauseDialog calls these for WEITER / NEUSTART.
+    //   They delegate to the IIFE's internal pause/resume/restart functions
+    //   so audio + game state stays in sync.
+    window.__nfResume = () => { resumeGame(); };
+    window.__nfRestart = () => { restartGame(); };
+    // S8.19: React PauseDialog reads this for the live score display.
+    window.__nfGetScore = () => score;
+    // S8.19: React dialogs read/write startLevel for the level-stepper.
+    window.__nfGetStartLevel = () => startLevel;
+    window.__nfSetStartLevel = (lv) => {
+        startLevel = Math.max(1, Math.min(10, lv | 0));
+        updateLevelSelectDisplays();
+    };
 
     // S7.2: Monkey-Patch entfernt — applyGarbage() ist jetzt direkt in
     //   resetPlayer() eingebaut (oben). Sauberer als Function-Overriding.

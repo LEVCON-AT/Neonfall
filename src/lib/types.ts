@@ -126,6 +126,16 @@ declare global {
     __nfNextPreview?: (n: number) => void;
     /** S8.19: Closes the hint overlay (called by React HintDialog on close). */
     __nfCloseHint?: () => void;
+    /** S8.19: Resumes the game (called by React PauseDialog WEITER button). */
+    __nfResume?: () => void;
+    /** S8.19: Restarts the game (called by React PauseDialog/GameOverDialog NEUSTART button). */
+    __nfRestart?: () => void;
+    /** S8.19: Returns the current score (for React dialog display). */
+    __nfGetScore?: () => number;
+    /** S8.19: Returns the current startLevel (for React dialog level-stepper). */
+    __nfGetStartLevel?: () => number;
+    /** S8.19: Sets the startLevel (1-10) and updates IIFE display elements. */
+    __nfSetStartLevel?: (lv: number) => void;
     /** Internal: guards against double-init of the legacy shell. */
     __nfShellInit?: boolean;
     /** iOS Safari webkitAudioContext fallback. */

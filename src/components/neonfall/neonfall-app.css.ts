@@ -35,6 +35,7 @@ export const NEONFALL_APP_CSS = `
    (for internal state), but the visual rendering is now done by React.
    display:none !important ensures the old DOM nodes never show. */
 #hint-overlay { display: none !important; }
+#pause-overlay { display: none !important; }
 
 /* S7.5b: Logo — SVG icon only, no text. font-size:0 in IIFE hides any
    text remnants. The h1 keeps sr-only text for accessibility. */
@@ -611,6 +612,123 @@ body.nf-playing::after { animation-play-state: paused !important; }
 .nf-hint-footer b { color: #9ca3ff; }
 .nf-hint-link { color: #22d3ee; text-decoration: none; }
 .nf-hint-link:hover { text-decoration: underline; }
+
+/* ===== S8.19: Shared Overlay Components (Pause + Game-Over Dialogs) ===== */
+
+/* Compact level stepper: fixed-size +/- buttons, never stretched.
+   Replaces the old .level-select that got mangled by P4 flex hacks. */
+.nf-level-stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin: 4px 0 12px;
+}
+.nf-level-stepper-label {
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #9ca3ff;
+  text-transform: uppercase;
+}
+.nf-level-stepper-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nf-stepper-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: #e8e8f5;
+  font-size: 1.3em;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+}
+.nf-stepper-btn:hover { background: rgba(255,255,255,0.14); }
+.nf-stepper-btn:active { transform: scale(0.92); }
+.nf-stepper-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.4em;
+  font-weight: 700;
+  color: #e8e8f5;
+  min-width: 1.5em;
+  text-align: center;
+}
+
+/* Action button row: equal-width buttons, side-by-side on desktop,
+   wrap to vertical stack on narrow mobile screens. */
+.nf-pause-actions, .nf-gameover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+.nf-action-btn {
+  flex: 1 1 140px;
+  min-width: 140px;
+  padding: 12px 16px !important;
+  font-size: 0.95em !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+  border: none !important;
+  transition: filter 0.15s, transform 0.1s !important;
+}
+.nf-action-btn:active { transform: scale(0.97); }
+.nf-action-btn:hover { filter: brightness(1.12); }
+.nf-action-btn-primary {
+  background: linear-gradient(90deg, #22d3ee, #a78bfa) !important;
+  color: #0a0a14 !important;
+}
+.nf-action-btn-secondary {
+  background: rgba(255,255,255,0.08) !important;
+  color: #e8e8f5 !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+}
+/* Single-action (e.g. Game-Over NEUSTART): full width */
+.nf-action-btn-single {
+  flex: 1 1 100% !important;
+  min-width: 100% !important;
+}
+
+/* ===== Pause Dialog specific ===== */
+.nf-pause-dialog { max-width: 360px !important; }
+.nf-pause-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 0;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.nf-pause-score-label {
+  font-size: 0.65em;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #9ca3ff;
+}
+.nf-pause-score-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.6em;
+  font-weight: 700;
+  color: #e8e8f5;
+  background: linear-gradient(90deg, #22d3ee, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
 /* Settings tabs */
 .nf-settings-tabs { width: 100%; }
