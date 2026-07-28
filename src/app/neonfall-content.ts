@@ -1116,11 +1116,25 @@ export const GAME_SCRIPT = `
     function triggerGameOver() {
         gameOver = true;
         let isNewHighscore = false;
-        if (score > highscore) {
+        // S8.18-P3: "Neuer Highscore" only if score is strictly greater than
+        //   the current highscore AND score > 0.
+        //   - score > 0: prevents "Neuer Highscore" on a 0-point game (e.g.
+        //     instant game-over with no lines cleared).
+        //   - score > highscore (strict): ties don't count as new record.
+        //   The displayed bestScoreEl may lag behind the async API fetch in
+        //   loadHighscore(), so we also re-read it as a safety net.
+        var displayedBest = parseInt(bestScoreEl.textContent, 10) || 0;
+        var effectiveHighscore = Math.max(highscore, displayedBest);
+        if (score > 0 && score > effectiveHighscore) {
             highscore = score;
             saveHighscore();
             bestScoreEl.textContent = highscore;
             isNewHighscore = true;
+        } else {
+            // Ensure highscore display is correct (in case async fetch
+            // completed and set highscore but bestScoreEl wasn't updated).
+            highscore = Math.max(highscore, effectiveHighscore);
+            bestScoreEl.textContent = highscore;
         }
         finalScoreEl.textContent = 'Score: ' + score;
         finalHighscoreEl.textContent = 'Best: ' + highscore;
