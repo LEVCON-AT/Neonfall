@@ -1118,6 +1118,8 @@ export const GAME_SCRIPT = `
     }
 
     function shakeScreen(intensity, duration) {
+        // S8.22.3: Don't shake if a dialog is open (would shift game behind dialog).
+        if (document.querySelector('[data-slot="dialog-content"]')) return;
         let start = null;
         function animate(ts) {
             if (!start) start = ts;

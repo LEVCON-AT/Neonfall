@@ -4,6 +4,11 @@ export const NEONFALL_APP_CSS = `
 #pause-overlay { display: none !important; }
 #game-over-screen { display: none !important; }
 
+/* S8.22.3: Radix UI Dialog adds padding-right to <body> when a dialog opens
+   to compensate for scrollbar removal. But our body has overflow:hidden
+   (no scrollbar), so the padding shifts the layout sideways. Override it. */
+body { padding-right: 0 !important; }
+
 /* S8.17: Hold-Box takes only the space it needs (46px canvas + padding),
    Next-Box gets the rest. Previously both had flex:1 which made the Next-Box
    canvas (160px) cramped against the right edge.
