@@ -1,0 +1,158 @@
+# ═══════════════════════════════════════════════════════════════
+#  NEONFALL — GITHUB ACTIONS STAGING DEPLOYMENT WORKFLOW
+# ═══════════════════════════════════════════════════════════════
+#
+#  Trigger: Push auf 'staging' branch → Staging Deploy
+#  Manueller Trigger: GitHub UI → Actions → "Deploy Staging" → Run workflow
+#
+#  Staging URL: https://neonfall-staging.levcon.ai (Port 3005)
+#  Production:  https://neonfall.levcon.ai        (Port 3003)
+
+name: Deploy Staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging-neonfall
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    name: Lint + Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install multiplayer dependencies
+        run: |
+          cd mini-services/multiplayer
+          bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Secret scan
+        run: |
+          if grep -rE "(ghp_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{48}|AKIA[A-Z0-9]{16})" src/ public/ deploy/ --include="*.ts" --include="*.tsx" --include="*.js" --include="*.json" --include="*.md" 2>/dev/null; then
+            echo "❌ Secrets detected in code!"
+            exit 1
+          fi
+          echo "✅ No secrets found"
+
+  deploy:
+    name: Deploy to Staging VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+    if: github.ref == 'refs/heads/staging'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify secrets are set
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -e
+          echo "Checking required GitHub Secrets..."
+          if [ -z "$VPS_HOST" ]; then echo "❌ VPS_HOST not set"; exit 1; fi
+          if [ -z "$VPS_USER" ]; then echo "❌ VPS_USER not set"; exit 1; fi
+          if [ -z "$VPS_SSH_KEY" ]; then echo "❌ VPS_SSH_KEY not set"; exit 1; fi
+          echo "✅ All secrets set"
+
+      - name: Setup SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          set -e
+          PORT="${VPS_PORT:-22}"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ ! -s ~/.ssh/deploy_key ]; then echo "❌ SSH key empty"; exit 1; fi
+          ssh-keyscan -p "$PORT" -T 30 "$VPS_HOST" >> ~/.ssh/known_hosts 2>&1 || {
+            echo "❌ ssh-keyscan failed for $VPS_HOST:$PORT"
+            exit 1
+          }
+          ssh -i ~/.ssh/deploy_key -p "$PORT" -o ConnectTimeout=10 -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "echo '✅ SSH connection works'"
+
+      - name: Copy staging update script to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          PORT="${VPS_PORT:-22}"
+          scp -i ~/.ssh/deploy_key -P "$PORT" -o StrictHostKeyChecking=yes \
+            deploy/scripts/vps-update-staging.sh \
+            "$VPS_USER@$VPS_HOST:/tmp/neonfall-staging-update.sh"
+
+      - name: Execute staging update script on VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            chmod +x /tmp/neonfall-staging-update.sh
+            bash /tmp/neonfall-staging-update.sh
+
+      - name: Health Check
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            sleep 5
+            echo "=== Staging Service Status ==="
+            systemctl is-active neonfall-staging || echo "neonfall-staging not found"
+            echo "=== Staging Multiplayer ==="
+            systemctl is-active neonfall-staging-multiplayer || echo "neonfall-staging-multiplayer not found"
+            echo "=== Test local ==="
+            curl -sI http://127.0.0.1:3005/ 2>/dev/null | head -3 || echo "Port 3005 not responding"
+            echo "=== Test external ==="
+            curl -sI https://neonfall-staging.levcon.ai/ 2>/dev/null | head -3 || echo "Staging URL not responding"
+
+      - name: Cleanup
+        if: always()
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            rm -f /tmp/neonfall-staging-update.sh
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Staging deployment failed!"
+          echo ""
+          echo "Check: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          exit 1
