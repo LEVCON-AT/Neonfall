@@ -1,0 +1,46 @@
+# ═══════════════════════════════════════════════════════════════
+#  NEONFALL STAGING — SYSTEMD SERVICE (Multiplayer)
+#  Pfad auf VPS: /etc/systemd/system/neonfall-staging-multiplayer.service
+# ═══════════════════════════════════════════════════════════════
+#
+#  Staging Multiplayer socket.io Backend auf Port 3006.
+#  Production läuft auf Port 3004.
+
+[Unit]
+Description=Neonfall Staging Multiplayer (socket.io, port 3006)
+Documentation=https://github.com/LEVCON-AT/Neonfall
+After=network.target neonfall-staging.service
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/neonfall-staging/mini-services/multiplayer
+Environment="NODE_ENV=production"
+
+ExecStart=/var/www/neonfall-staging/mini-services/multiplayer/start.sh
+
+Restart=always
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=neonfall-staging-mp
+
+MemoryMax=256M
+CPUQuota=40%
+
+NoNewPrivileges=true
+PrivateTmp=true
+ReadWritePaths=/var/www/neonfall-staging/mini-services/multiplayer
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

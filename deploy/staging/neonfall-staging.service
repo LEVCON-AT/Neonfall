@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════════════════════
+#  NEONFALL STAGING — SYSTEMD SERVICE (Next.js)
+#  Pfad auf VPS: /etc/systemd/system/neonfall-staging.service
+# ═══════════════════════════════════════════════════════════════
+#
+#  Staging Next.js Server auf Port 3005.
+#  Production läuft auf Port 3003.
+
+[Unit]
+Description=Neonfall Staging (Next.js, port 3005)
+Documentation=https://github.com/LEVCON-AT/Neonfall
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/neonfall-staging
+Environment="NODE_ENV=production"
+Environment="PORT=3005"
+ExecStart=/usr/local/bin/bun run /var/www/neonfall-staging/.next/standalone/server.js
+
+Restart=always
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=neonfall-staging
+
+MemoryMax=512M
+CPUQuota=50%
+
+NoNewPrivileges=true
+PrivateTmp=true
+ReadWritePaths=/var/www/neonfall-staging
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
