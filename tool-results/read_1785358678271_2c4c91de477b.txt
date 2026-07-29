@@ -1,0 +1,1141 @@
+     1→export const NEONFALL_APP_CSS = `
+     2→/* S8.17: Hold-Box takes only the space it needs (46px canvas + padding),
+     3→   Next-Box gets the rest. Previously both had flex:1 which made the Next-Box
+     4→   canvas (160px) cramped against the right edge.
+     5→   S8.18-P0: Hold-Box min-width 62->80px (more breathing room around the
+     6→   46px hold canvas). The 6px gap between Hold and Next boxes is set on
+     7→   #second-bar (parent) and is NOT changed here. */
+     8→#hold-box { flex: 0 0 auto !important; min-width: 80px; }
+     9→#next-box { flex: 1 1 auto !important; min-width: 0; }
+    10→
+    11→/* S8.18-P1: Next-Box is clickable — cycles preview count 3->2->1->3.
+    12→   A subtle pulse animation gives tactile feedback on each click. */
+    13→#next-box { cursor: pointer; position: relative; }
+    14→#next-box::after {
+    15→  content: '';
+    16→  position: absolute;
+    17→  inset: 0;
+    18→  border-radius: inherit;
+    19→  border: 2px solid transparent;
+    20→  pointer-events: none;
+    21→  transition: border-color 0.2s;
+    22→}
+    23→#next-box:hover::after { border-color: rgba(34,211,238,0.3); }
+    24→#next-box.nf-next-pulse::after {
+    25→  animation: nf-next-pulse-anim 0.4s ease-out;
+    26→}
+    27→@keyframes nf-next-pulse-anim {
+    28→  0%   { border-color: rgba(34,211,238,0.8); transform: scale(1); }
+    29→  50%  { border-color: rgba(167,139,250,0.5); transform: scale(1.02); }
+    30→  100% { border-color: transparent; transform: scale(1); }
+    31→}
+    32→
+    33→/* S8.19: Hide legacy IIFE overlays — replaced by React shadcn Dialogs.
+    34→   The IIFE still toggles 'hidden'/'visible' classes on these elements
+    35→   (for internal state), but the visual rendering is now done by React.
+    36→   display:none !important ensures the old DOM nodes never show. */
+    37→#hint-overlay { display: none !important; }
+    38→#pause-overlay { display: none !important; }
+    39→
+    40→/* S7.5b: Logo — SVG icon only, no text. font-size:0 in IIFE hides any
+    41→   text remnants. The h1 keeps sr-only text for accessibility. */
+    42→h1#title {
+    43→  display: flex !important;
+    44→  align-items: center;
+    45→  gap: 0;
+    46→}
+    47→.nf-logo-icon {
+    48→  filter: drop-shadow(0 0 4px rgba(34,211,238,0.4))
+    49→          drop-shadow(0 0 8px rgba(244,114,182,0.2));
+    50→}
+    51→.sr-only {
+    52→  position: absolute;
+    53→  width: 1px; height: 1px;
+    54→  padding: 0; margin: -1px;
+    55→  overflow: hidden;
+    56→  clip: rect(0,0,0,0);
+    57→  white-space: nowrap;
+    58→  border: 0;
+    59→}
+    60→
+    61→/* Inline icons in stat-box headers */
+    62→.stat-box h3 { display: flex; align-items: center; justify-content: center; gap: 3px; }
+    63→.nf-stat-icon { opacity: 0.55; flex-shrink: 0; }
+    64→
+    65→/* Gradient border accent on the top-bar (cyan → purple → pink) */
+    66→#top-bar { position: relative; }
+    67→#top-bar::after {
+    68→  content: '';
+    69→  position: absolute;
+    70→  inset: 0;
+    71→  border-radius: inherit;
+    72→  padding: 1px;
+    73→  background: linear-gradient(90deg, rgba(34,211,238,0.5), rgba(167,139,250,0.5), rgba(244,114,182,0.5));
+    74→  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    75→  -webkit-mask-composite: xor;
+    76→          mask-composite: exclude;
+    77→  pointer-events: none;
+    78→  opacity: 0.7;
+    79→}
+    80→
+    81→/* Sprint 1: The IIFE's #settings-panel duplicates the Settings-Dialog's
+    82→   rattle/impact sliders. We hide it via CSS (display:none) instead of removing
+    83→   the DOM nodes, because the IIFE calls getElementById('rattle-slider') and
+    84→   attaches an input listener at init — removing the node would crash the
+    85→   IIFE. The hidden sliders stay functional and are driven by the
+    86→   Settings-Dialog via the syncGameSlider() helper. */
+    87→#settings-panel { display: none !important; }
+    88→
+    89→/* ===== Sprint 3: GPU & Game-Feel Optimizations =====
+    90→   These rules layer ON TOP of the IIFE's GAME_CSS to promote expensive
+    91→   elements onto their own GPU composite layers. The IIFE's own CSS stays
+    92→   byte-identical; we only add hints the browser uses for layer promotion.
+    93→
+    94→   - body::before/::after: 60vmax blurred radial gradients animated via
+    95→     the drift 16s keyframes. Without will-change the browser re-rasterizes
+    96→     the blur on every composite. With will-change: transform it caches the layer.
+    97→   - #game-container: shaken via shakeScreen() which writes transform on
+    98→     every frame. will-change: transform reserves the layer up-front so the
+    99→     shake doesn't trigger a re-raster.
+   100→   - #flash-overlay: opacity animated by flash(). will-change: opacity.
+   101→   - #combo-popup: transform/opacity animated by comboPop keyframes.
+   102→   - #tetris-canvas: re-drawn every frame by the IIFE's draw(). Promoting
+   103→     it onto its own layer avoids compositing it with the container's
+   104→     background gradient on every frame.
+   105→   - .glass elements (top-bar, second-bar, mini-boxes): backdrop-filter is
+   106→     expensive; will-change keeps the blur cached. */
+   107→body::before, body::after { will-change: transform; }
+   108→#game-container { will-change: transform; }
+   109→#flash-overlay { will-change: opacity; }
+   110→#combo-popup { will-change: transform, opacity; }
+   111→#tetris-canvas { will-change: transform; }
+   112→.glass { will-change: backdrop-filter; }
+   113→
+   114→/* Backdrop-filter on .glass is expensive when the underlying content
+   115→   changes (e.g. canvas redraw behind top-bar). Since the top-bar/second-bar
+   116→   are above the canvas and don't need to blur it (they're opaque-ish
+   117→   already), we can reduce the blur radius slightly without visual change.
+   118→   Original: blur(18px) saturate(160%) → blur(12px) saturate(150%).
+   119→   !important needed because the IIFE's .glass rule has equal specificity
+   120→   and is loaded first. */
+   121→.glass { backdrop-filter: blur(12px) saturate(150%) !important; -webkit-backdrop-filter: blur(12px) saturate(150%) !important; }
+   122→
+   123→/* The body::before/::after drift animation runs continuously even during
+   124→   gameplay, causing constant composite work. Pause the animation while a
+   125→   game is actively running (body gets .nf-playing class via NeonfallApp's
+   126→   status sync) to save GPU cycles for the game canvas. The blobs freeze
+   127→   in place — visually identical during fast play. */
+   128→body.nf-playing::before,
+   129→body.nf-playing::after { animation-play-state: paused !important; }
+   130→
+   131→/* Inline trophy in the new-highscore badge */
+   132→.nf-trophy-inline { vertical-align: -3px; color: #fbbf24; }
+   133→
+   134→/* ===== Sprint 3: Game-Feel — stat-box pulse on value increase =====
+   135→   When the IIFE updates #score/#level/#lines/#best-score, the MutationObserver
+   136→   in Effect C adds .nf-stat-pulse to that <p> element. The animation flashes
+   137→   a cyan glow + subtle scale-up, then fades. GPU-friendly (transform+opacity
+   138→   +filter only). 600ms total, doesn't interfere with the IIFE's own stat
+   139→   rendering (it only writes textContent). */
+   140→.stat-box p.nf-stat-pulse {
+   141→  animation: nfStatPulse 0.6s ease-out;
+   142→}
+   143→@keyframes nfStatPulse {
+   144→  0% {
+   145→    transform: scale(1);
+   146→    filter: drop-shadow(0 0 0 rgba(34,211,238,0));
+   147→  }
+   148→  20% {
+   149→    transform: scale(1.08);
+   150→    filter: drop-shadow(0 0 8px rgba(34,211,238,0.7));
+   151→  }
+   152→  100% {
+   153→    transform: scale(1);
+   154→    filter: drop-shadow(0 0 0 rgba(34,211,238,0));
+   155→  }
+   156→}
+   157→/* Color-code the pulse by stat type for instant readability */
+   158→#score.nf-stat-pulse { animation-name: nfStatPulseCyan; }
+   159→#best-score.nf-stat-pulse { animation-name: nfStatPulseGold; }
+   160→#level.nf-stat-pulse { animation-name: nfStatPulsePurple; }
+   161→#lines.nf-stat-pulse { animation-name: nfStatPulsePink; }
+   162→@keyframes nfStatPulseCyan {
+   163→  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(34,211,238,0)); }
+   164→  20% { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(34,211,238,0.7)); }
+   165→  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(34,211,238,0)); }
+   166→}
+   167→@keyframes nfStatPulseGold {
+   168→  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251,191,36,0)); }
+   169→  20% { transform: scale(1.1); filter: drop-shadow(0 0 10px rgba(251,191,36,0.8)); }
+   170→  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(251,191,36,0)); }
+   171→}
+   172→@keyframes nfStatPulsePurple {
+   173→  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(167,139,250,0)); }
+   174→  20% { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(167,139,250,0.7)); }
+   175→  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(167,139,250,0)); }
+   176→}
+   177→@keyframes nfStatPulsePink {
+   178→  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(244,114,182,0)); }
+   179→  20% { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(244,114,182,0.7)); }
+   180→  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(244,114,182,0)); }
+   181→}
+   182→
+   183→/* ===== Sprint 5b: Name-Input Dialog (post-game-over score submission) ===== */
+   184→.nf-name-input-dialog { max-width: 380px !important; }
+   185→.nf-name-stats {
+   186→  display: grid;
+   187→  grid-template-columns: repeat(2, 1fr);
+   188→  gap: 8px;
+   189→  margin: 4px 0 12px;
+   190→}
+   191→.nf-name-stat {
+   192→  display: flex;
+   193→  flex-direction: column;
+   194→  align-items: center;
+   195→  padding: 8px 6px;
+   196→  background: rgba(255,255,255,0.04);
+   197→  border: 1px solid rgba(255,255,255,0.07);
+   198→  border-radius: 10px;
+   199→}
+   200→.nf-name-stat-label {
+   201→  font-size: 0.6em;
+   202→  letter-spacing: 1.5px;
+   203→  color: #9ca3ff;
+   204→  font-weight: 600;
+   205→  margin-bottom: 2px;
+   206→}
+   207→.nf-name-stat-value {
+   208→  font-family: var(--font-jetbrains-mono), monospace;
+   209→  font-size: 1.05em;
+   210→  font-weight: 700;
+   211→  color: #e8e8f5;
+   212→}
+   213→.nf-name-stat-score {
+   214→  background: linear-gradient(90deg, #22d3ee, #f472b6);
+   215→  -webkit-background-clip: text;
+   216→  background-clip: text;
+   217→  color: transparent;
+   218→  font-size: 1.2em;
+   219→}
+   220→.nf-name-stat-mode {
+   221→  font-size: 0.8em;
+   222→  color: #22d3ee;
+   223→  text-transform: uppercase;
+   224→  letter-spacing: 1px;
+   225→}
+   226→.nf-name-form {
+   227→  display: flex;
+   228→  flex-direction: column;
+   229→  gap: 12px;
+   230→}
+   231→.nf-name-input {
+   232→  background: rgba(255,255,255,0.05) !important;
+   233→  border: 1px solid rgba(34,211,238,0.3) !important;
+   234→  color: #e8e8f5 !important;
+   235→  font-family: var(--font-space-grotesk), sans-serif !important;
+   236→  font-size: 1em !important;
+   237→  height: 40px !important;
+   238→  border-radius: 10px !important;
+   239→}
+   240→.nf-name-input:focus {
+   241→  border-color: rgba(34,211,238,0.6) !important;
+   242→  box-shadow: 0 0 0 2px rgba(34,211,238,0.15) !important;
+   243→}
+   244→.nf-name-input::placeholder { color: #6b6b8a !important; }
+   245→.nf-name-actions {
+   246→  display: flex;
+   247→  gap: 8px;
+   248→  justify-content: flex-end;
+   249→}
+   250→.nf-name-submit-btn {
+   251→  background: linear-gradient(90deg, rgba(34,211,238,0.2), rgba(167,139,250,0.2)) !important;
+   252→  border: 1px solid rgba(34,211,238,0.4) !important;
+   253→  color: #22d3ee !important;
+   254→  font-weight: 600;
+   255→}
+   256→.nf-name-submit-btn:hover:not(:disabled) {
+   257→  background: linear-gradient(90deg, rgba(34,211,238,0.3), rgba(167,139,250,0.3)) !important;
+   258→}
+   259→.nf-name-success {
+   260→  display: flex;
+   261→  flex-direction: column;
+   262→  align-items: center;
+   263→  gap: 8px;
+   264→  padding: 16px;
+   265→  color: #34d399;
+   266→  font-family: var(--font-space-grotesk), sans-serif;
+   267→  font-weight: 600;
+   268→}
+   269→
+   270→/* ===== Sprint 5c: Multiplayer Dialog ===== */
+   271→.nf-mp-dialog { max-width: 380px !important; }
+   272→.nf-mp-content { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 8px 0; }
+   273→.nf-mp-create-btn {
+   274→  width: 100%;
+   275→  background: linear-gradient(90deg, rgba(244,114,182,0.2), rgba(167,139,250,0.2)) !important;
+   276→  border: 1px solid rgba(244,114,182,0.4) !important;
+   277→  color: #f472b6 !important;
+   278→  font-weight: 600;
+   279→  font-size: 1.05em !important;
+   280→  height: 48px !important;
+   281→  gap: 8px;
+   282→}
+   283→.nf-mp-create-btn:hover:not(:disabled) {
+   284→  background: linear-gradient(90deg, rgba(244,114,182,0.3), rgba(167,139,250,0.3)) !important;
+   285→}
+   286→.nf-mp-divider {
+   287→  width: 100%;
+   288→  text-align: center;
+   289→  color: #6b6b8a;
+   290→  font-size: 0.75em;
+   291→  position: relative;
+   292→  margin: 4px 0;
+   293→}
+   294→.nf-mp-divider::before, .nf-mp-divider::after {
+   295→  content: '';
+   296→  position: absolute;
+   297→  top: 50%;
+   298→  width: calc(50% - 24px);
+   299→  height: 1px;
+   300→  background: rgba(255,255,255,0.1);
+   301→}
+   302→.nf-mp-divider::before { left: 0; }
+   303→.nf-mp-divider::after { right: 0; }
+   304→.nf-mp-join { display: flex; gap: 8px; width: 100%; }
+   305→.nf-mp-code-input {
+   306→  flex: 1;
+   307→  text-align: center;
+   308→  font-family: var(--font-jetbrains-mono), monospace !important;
+   309→  font-size: 1.3em !important;
+   310→  font-weight: 700 !important;
+   311→  letter-spacing: 4px;
+   312→  text-transform: uppercase;
+   313→  background: rgba(255,255,255,0.05) !important;
+   314→  border: 1px solid rgba(244,114,182,0.3) !important;
+   315→  color: #f472b6 !important;
+   316→  height: 48px !important;
+   317→  border-radius: 10px !important;
+   318→}
+   319→.nf-mp-code-input:focus {
+   320→  border-color: rgba(244,114,182,0.6) !important;
+   321→  box-shadow: 0 0 0 2px rgba(244,114,182,0.15) !important;
+   322→}
+   323→.nf-mp-code-input::placeholder { color: #4a4a6a !important; letter-spacing: 2px; }
+   324→.nf-mp-waiting { gap: 10px; }
+   325→.nf-mp-spinner { color: #f472b6; }
+   326→.nf-mp-waiting-label { color: #c7c7f0; font-size: 0.9em; }
+   327→.nf-mp-room-code {
+   328→  font-family: var(--font-jetbrains-mono), monospace;
+   329→  font-size: 2.2em;
+   330→  font-weight: 700;
+   331→  letter-spacing: 8px;
+   332→  background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6);
+   333→  -webkit-background-clip: text;
+   334→  background-clip: text;
+   335→  color: transparent;
+   336→  padding: 8px 16px;
+   337→  border: 1px solid rgba(244,114,182,0.2);
+   338→  border-radius: 12px;
+   339→}
+   340→.nf-mp-copy-btn { color: #9ca3ff !important; gap: 6px; }
+   341→.nf-mp-leave-btn { color: #fb7185 !important; gap: 6px; margin-top: 4px; }
+   342→.nf-mp-playing { gap: 10px; }
+   343→.nf-mp-vs {
+   344→  display: flex;
+   345→  flex-direction: column;
+   346→  align-items: center;
+   347→  gap: 2px;
+   348→}
+   349→.nf-mp-vs-label { font-size: 0.6em; letter-spacing: 2px; color: #9ca3ff; }
+   350→.nf-mp-vs-name { font-family: var(--font-space-grotesk), sans-serif; font-weight: 700; color: #f472b6; font-size: 1.1em; }
+   351→.nf-mp-opponent-canvas {
+   352→  border: 1px solid rgba(244,114,182,0.2);
+   353→  border-radius: 8px;
+   354→  background: #08080f;
+   355→  /* Responsive: small on mobile, larger on desktop */
+   356→  width: 120px;
+   357→  height: 200px;
+   358→}
+   359→@media (min-width: 768px) {
+   360→  .nf-mp-dialog { max-width: 520px !important; }
+   361→  .nf-mp-opponent-canvas { width: 180px; height: 300px; }
+   362→  .nf-mp-playing { flex-direction: row; align-items: flex-start; gap: 20px; }
+   363→  .nf-mp-vs { margin-bottom: 8px; }
+   364→}
+   365→.nf-mp-result { gap: 8px; padding: 16px 0; }
+   366→.nf-mp-result-icon { display: flex; justify-content: center; margin-bottom: 4px; }
+   367→.nf-mp-win { color: #fbbf24; filter: drop-shadow(0 0 12px rgba(251,191,36,0.4)); }
+   368→.nf-mp-lose { color: #fb7185; filter: drop-shadow(0 0 12px rgba(251,113,133,0.3)); }
+   369→.nf-mp-result-text {
+   370→  font-family: var(--font-space-grotesk), sans-serif;
+   371→  font-size: 1.6em;
+   372→  font-weight: 700;
+   373→  letter-spacing: 2px;
+   374→}
+   375→.nf-mp-win + .nf-mp-result-text { color: #fbbf24; }
+   376→.nf-mp-result-sub { color: #9ca3ff; font-size: 0.8em; }
+   377→.nf-mp-result-actions { display: flex; gap: 8px; margin-top: 8px; }
+   378→.nf-mp-revanche-btn {
+   379→  background: linear-gradient(90deg, rgba(34,211,238,0.2), rgba(244,114,182,0.2)) !important;
+   380→  border: 1px solid rgba(34,211,238,0.4) !important;
+   381→  color: #22d3ee !important;
+   382→  font-weight: 600;
+   383→  gap: 6px;
+   384→}
+   385→
+   386→/* ===== Footer (fixed, glass, hidden during active play) ===== */
+   387→#nf-app-footer {
+   388→  position: fixed;
+   389→  left: 0;
+   390→  right: 0;
+   391→  bottom: 0;
+   392→  z-index: 30;
+   393→  height: 32px;
+   394→  display: flex;
+   395→  align-items: flex-end;
+   396→  justify-content: center;
+   397→  pointer-events: none;
+   398→  padding-bottom: env(safe-area-inset-bottom, 0);
+   399→}
+   400→.nf-footer-inner {
+   401→  display: flex;
+   402→  align-items: center;
+   403→  gap: 10px;
+   404→  padding: 0 12px;
+   405→  height: 30px;
+   406→  border-radius: 14px 14px 0 0;
+   407→  background: rgba(10,10,20,0.62);
+   408→  backdrop-filter: blur(16px) saturate(160%);
+   409→  -webkit-backdrop-filter: blur(16px) saturate(160%);
+   410→  border: 1px solid rgba(255,255,255,0.1);
+   411→  border-bottom: none;
+   412→  box-shadow: 0 -6px 24px rgba(0,0,0,0.45);
+   413→  pointer-events: auto;
+   414→  font-family: var(--font-space-grotesk), sans-serif;
+   415→  font-size: 11px;
+   416→  color: #c7c7f0;
+   417→  max-width: calc(100vw - 12px);
+   418→}
+   419→.nf-footer-brand {
+   420→  display: inline-flex;
+   421→  align-items: center;
+   422→  gap: 4px;
+   423→  font-weight: 700;
+   424→  letter-spacing: 1.5px;
+   425→  background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6);
+   426→  -webkit-background-clip: text;
+   427→  background-clip: text;
+   428→  color: transparent;
+   429→}
+   430→.nf-footer-mode {
+   431→  padding: 2px 8px;
+   432→  border-radius: 8px;
+   433→  background: rgba(34,211,238,0.12);
+   434→  border: 1px solid rgba(34,211,238,0.3);
+   435→  color: #22d3ee;
+   436→  font-size: 10px;
+   437→  font-weight: 600;
+   438→  letter-spacing: 1px;
+   439→  text-transform: uppercase;
+   440→}
+   441→.nf-footer-mode[data-mode="sprint"] { background: rgba(244,114,182,0.12); border-color: rgba(244,114,182,0.3); color: #f472b6; }
+   442→.nf-footer-mode[data-mode="ultra"] { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: #a78bfa; }
+   443→.nf-footer-mode[data-mode="zen"] { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.3); color: #34d399; }
+   444→.nf-footer-actions { display: inline-flex; gap: 4px; margin-left: auto; }
+   445→.nf-footer-btn {
+   446→  display: inline-flex;
+   447→  align-items: center;
+   448→  justify-content: center;
+   449→  width: 26px;
+   450→  height: 26px;
+   451→  border-radius: 8px;
+   452→  background: rgba(255,255,255,0.05);
+   453→  border: 1px solid rgba(255,255,255,0.08);
+   454→  color: #c7c7f0;
+   455→  cursor: pointer;
+   456→  transition: background .15s, color .15s, transform .1s, border-color .15s;
+   457→}
+   458→.nf-footer-btn:hover {
+   459→  background: rgba(34,211,238,0.15);
+   460→  color: #22d3ee;
+   461→  border-color: rgba(34,211,238,0.35);
+   462→}
+   463→.nf-footer-btn:active { transform: scale(0.92); }
+   464→
+   465→/* ===== shadcn Dialog neon override ===== */
+   466→/* S5c: Dialog-Overlay (Backdrop) verstärkt — statt das Spielfeld nach links
+   467→   zu verschieben (scrollbar-gutter Effekt), überblenden wir es mit einem
+   468→   dunklen, stark geblurrten Overlay. Das Spielfeld bleibt an Ort und Stelle. */
+   469→[data-slot="dialog-overlay"] {
+   470→  background: rgba(6,6,14,0.78) !important;
+   471→  backdrop-filter: blur(14px) saturate(140%);
+   472→  -webkit-backdrop-filter: blur(14px) saturate(140%);
+   473→}
+   474→.nf-dialog-neon {
+   475→  background: rgba(14,14,26,0.96) !important;
+   476→  backdrop-filter: blur(20px) saturate(160%);
+   477→  -webkit-backdrop-filter: blur(20px) saturate(160%);
+   478→  border: 1px solid rgba(34,211,238,0.25) !important;
+   479→  box-shadow: 0 0 0 1px rgba(167,139,250,0.15), 0 24px 60px rgba(0,0,0,0.6), 0 0 40px rgba(34,211,238,0.1) !important;
+   480→  color: #e8e8f5 !important;
+   481→  border-radius: 18px !important;
+   482→  max-height: calc(100vh - 32px) !important;
+   483→  overflow-y: auto;
+   484→}
+   485→.nf-dialog-neon [data-slot="dialog-close"] { color: #9ca3ff; }
+   486→.nf-dialog-neon [data-slot="dialog-close"]:hover { color: #f472b6; }
+   487→.nf-dialog-title {
+   488→  background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6);
+   489→  -webkit-background-clip: text;
+   490→  background-clip: text;
+   491→  color: transparent !important;
+   492→  font-family: var(--font-space-grotesk), sans-serif;
+   493→  letter-spacing: 1px;
+   494→  font-size: 1.1em;
+   495→}
+   496→/* S7.9: Dialog-Titel-Icon — statt inline style in jeder Komponente. */
+   497→.nf-dialog-title-icon {
+   498→  vertical-align: -3px;
+   499→  margin-right: 6px;
+   500→}
+   501→.nf-dialog-title-icon-pink { color: #f472b6; }
+   502→.nf-dialog-title-icon-gold { color: #fbbf24; }
+   503→.nf-dialog-desc { color: #9ca3ff !important; font-size: 0.85em; }
+   504→
+   505→/* ===== S8.19: Hint Dialog ===== */
+   506→.nf-hint-dialog { max-width: 420px !important; }
+   507→.nf-hint-sections {
+   508→  display: flex;
+   509→  flex-direction: column;
+   510→  gap: 16px;
+   511→  width: 100%;
+   512→}
+   513→.nf-hint-section {
+   514→  background: rgba(255,255,255,0.03);
+   515→  border: 1px solid rgba(255,255,255,0.07);
+   516→  border-radius: 12px;
+   517→  padding: 12px 14px;
+   518→}
+   519→.nf-hint-section-title {
+   520→  margin: 0 0 10px;
+   521→  font-size: 0.7em;
+   522→  font-weight: 700;
+   523→  letter-spacing: 1.5px;
+   524→  color: #22d3ee;
+   525→  text-transform: uppercase;
+   526→}
+   527→.nf-hint-list {
+   528→  list-style: none;
+   529→  margin: 0;
+   530→  padding: 0;
+   531→  display: flex;
+   532→  flex-direction: column;
+   533→  gap: 7px;
+   534→}
+   535→.nf-hint-item {
+   536→  display: flex;
+   537→  align-items: baseline;
+   538→  gap: 10px;
+   539→  font-size: 0.88em;
+   540→  line-height: 1.4;
+   541→}
+   542→.nf-hint-gesture {
+   543→  flex-shrink: 0;
+   544→  min-width: 110px;
+   545→  color: #a78bfa;
+   546→  font-weight: 600;
+   547→}
+   548→.nf-hint-keys {
+   549→  flex-shrink: 0;
+   550→  min-width: 110px;
+   551→  display: flex;
+   552→  align-items: center;
+   553→  gap: 4px;
+   554→  flex-wrap: wrap;
+   555→}
+   556→.nf-hint-keys kbd {
+   557→  display: inline-flex;
+   558→  align-items: center;
+   559→  justify-content: center;
+   560→  min-width: 24px;
+   561→  height: 24px;
+   562→  padding: 0 6px;
+   563→  background: rgba(255,255,255,0.08);
+   564→  border: 1px solid rgba(255,255,255,0.18);
+   565→  border-radius: 5px;
+   566→  font-family: var(--font-jetbrains-mono), monospace;
+   567→  font-size: 0.85em;
+   568→  color: #e8e8f5;
+   569→  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+   570→}
+   571→.nf-hint-desc {
+   572→  color: #c7c7f0;
+   573→  flex: 1;
+   574→  min-width: 0;
+   575→}
+   576→.nf-hint-checkbox-row {
+   577→  display: flex;
+   578→  align-items: center;
+   579→  gap: 8px;
+   580→  font-size: 0.82em;
+   581→  color: #9ca3ff;
+   582→  cursor: pointer;
+   583→  padding: 8px 0;
+   584→  user-select: none;
+   585→}
+   586→.nf-hint-checkbox {
+   587→  accent-color: #a78bfa;
+   588→  width: 16px;
+   589→  height: 16px;
+   590→  cursor: pointer;
+   591→}
+   592→.nf-hint-close-btn {
+   593→  width: 100%;
+   594→  padding: 12px;
+   595→  font-size: 1em;
+   596→  font-weight: 700;
+   597→  letter-spacing: 1px;
+   598→  background: linear-gradient(90deg, #22d3ee, #a78bfa) !important;
+   599→  color: #0a0a14 !important;
+   600→  border: none !important;
+   601→  border-radius: 10px !important;
+   602→  cursor: pointer;
+   603→  margin-top: 4px;
+   604→}
+   605→.nf-hint-close-btn:active { transform: scale(0.97); }
+   606→.nf-hint-footer {
+   607→  text-align: center;
+   608→  font-size: 0.72em;
+   609→  color: #6b6b8f;
+   610→  margin: 8px 0 0;
+   611→}
+   612→.nf-hint-footer b { color: #9ca3ff; }
+   613→.nf-hint-link { color: #22d3ee; text-decoration: none; }
+   614→.nf-hint-link:hover { text-decoration: underline; }
+   615→
+   616→/* ===== S8.19: Shared Overlay Components (Pause + Game-Over Dialogs) ===== */
+   617→
+   618→/* Compact level stepper: fixed-size +/- buttons, never stretched.
+   619→   Replaces the old .level-select that got mangled by P4 flex hacks. */
+   620→.nf-level-stepper {
+   621→  display: flex;
+   622→  flex-direction: column;
+   623→  align-items: center;
+   624→  gap: 6px;
+   625→  width: 100%;
+   626→  margin: 4px 0 12px;
+   627→}
+   628→.nf-level-stepper-label {
+   629→  font-size: 0.7em;
+   630→  font-weight: 700;
+   631→  letter-spacing: 1.5px;
+   632→  color: #9ca3ff;
+   633→  text-transform: uppercase;
+   634→}
+   635→.nf-level-stepper-controls {
+   636→  display: flex;
+   637→  align-items: center;
+   638→  gap: 12px;
+   639→}
+   640→.nf-stepper-btn {
+   641→  width: 36px;
+   642→  height: 36px;
+   643→  border-radius: 8px;
+   644→  border: 1px solid rgba(255,255,255,0.15);
+   645→  background: rgba(255,255,255,0.06);
+   646→  color: #e8e8f5;
+   647→  font-size: 1.3em;
+   648→  font-weight: 700;
+   649→  line-height: 1;
+   650→  cursor: pointer;
+   651→  display: flex;
+   652→  align-items: center;
+   653→  justify-content: center;
+   654→  flex-shrink: 0;
+   655→  transition: background 0.15s, transform 0.1s;
+   656→}
+   657→.nf-stepper-btn:hover { background: rgba(255,255,255,0.14); }
+   658→.nf-stepper-btn:active { transform: scale(0.92); }
+   659→.nf-stepper-value {
+   660→  font-family: var(--font-jetbrains-mono), monospace;
+   661→  font-size: 1.4em;
+   662→  font-weight: 700;
+   663→  color: #e8e8f5;
+   664→  min-width: 1.5em;
+   665→  text-align: center;
+   666→}
+   667→
+   668→/* Action button row: equal-width buttons, side-by-side on desktop,
+   669→   wrap to vertical stack on narrow mobile screens. */
+   670→.nf-pause-actions, .nf-gameover-actions {
+   671→  display: flex;
+   672→  flex-wrap: wrap;
+   673→  gap: 8px;
+   674→  width: 100%;
+   675→}
+   676→.nf-action-btn {
+   677→  flex: 1 1 140px;
+   678→  min-width: 140px;
+   679→  padding: 12px 16px !important;
+   680→  font-size: 0.95em !important;
+   681→  font-weight: 700 !important;
+   682→  letter-spacing: 1px !important;
+   683→  border-radius: 10px !important;
+   684→  cursor: pointer;
+   685→  border: none !important;
+   686→  transition: filter 0.15s, transform 0.1s !important;
+   687→}
+   688→.nf-action-btn:active { transform: scale(0.97); }
+   689→.nf-action-btn:hover { filter: brightness(1.12); }
+   690→.nf-action-btn-primary {
+   691→  background: linear-gradient(90deg, #22d3ee, #a78bfa) !important;
+   692→  color: #0a0a14 !important;
+   693→}
+   694→.nf-action-btn-secondary {
+   695→  background: rgba(255,255,255,0.08) !important;
+   696→  color: #e8e8f5 !important;
+   697→  border: 1px solid rgba(255,255,255,0.15) !important;
+   698→}
+   699→/* Single-action (e.g. Game-Over NEUSTART): full width */
+   700→.nf-action-btn-single {
+   701→  flex: 1 1 100% !important;
+   702→  min-width: 100% !important;
+   703→}
+   704→
+   705→/* ===== Pause Dialog specific ===== */
+   706→.nf-pause-dialog { max-width: 360px !important; }
+   707→.nf-pause-score {
+   708→  display: flex;
+   709→  flex-direction: column;
+   710→  align-items: center;
+   711→  gap: 2px;
+   712→  padding: 10px 0;
+   713→  margin-bottom: 4px;
+   714→  border-bottom: 1px solid rgba(255,255,255,0.07);
+   715→}
+   716→.nf-pause-score-label {
+   717→  font-size: 0.65em;
+   718→  font-weight: 700;
+   719→  letter-spacing: 1.5px;
+   720→  color: #9ca3ff;
+   721→}
+   722→.nf-pause-score-value {
+   723→  font-family: var(--font-jetbrains-mono), monospace;
+   724→  font-size: 1.6em;
+   725→  font-weight: 700;
+   726→  color: #e8e8f5;
+   727→  background: linear-gradient(90deg, #22d3ee, #a78bfa);
+   728→  -webkit-background-clip: text;
+   729→  background-clip: text;
+   730→  color: transparent;
+   731→}
+   732→
+   733→/* Settings tabs */
+   734→.nf-settings-tabs { width: 100%; }
+   735→.nf-settings-tabslist {
+   736→  background: rgba(255,255,255,0.05) !important;
+   737→  border: 1px solid rgba(255,255,255,0.08);
+   738→  width: 100%;
+   739→  height: auto;
+   740→  flex-wrap: wrap;
+   741→  gap: 2px;
+   742→  padding: 3px;
+   743→}
+   744→.nf-settings-tabslist [data-slot="tabs-trigger"] {
+   745→  color: #9ca3ff;
+   746→  font-size: 0.78em;
+   747→  height: 32px;
+   748→  border-radius: 8px;
+   749→}
+   750→.nf-settings-tabslist [data-slot="tabs-trigger"]:hover { color: #c7c7f0; }
+   751→.nf-settings-tabslist [data-slot="tabs-trigger"][data-state="active"] {
+   752→  background: rgba(34,211,238,0.15) !important;
+   753→  color: #22d3ee !important;
+   754→}
+   755→.nf-tab-content {
+   756→  display: flex;
+   757→  flex-direction: column;
+   758→  gap: 10px;
+   759→  padding: 8px 2px;
+   760→  max-height: 42vh;
+   761→  overflow-y: auto;
+   762→}
+   763→.nf-tab-content::-webkit-scrollbar { width: 6px; }
+   764→.nf-tab-content::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.3); border-radius: 3px; }
+   765→.nf-setting-row {
+   766→  display: flex;
+   767→  align-items: center;
+   768→  justify-content: space-between;
+   769→  gap: 12px;
+   770→  padding: 8px 10px;
+   771→  background: rgba(255,255,255,0.03);
+   772→  border: 1px solid rgba(255,255,255,0.06);
+   773→  border-radius: 10px;
+   774→}
+   775→.nf-setting-label {
+   776→  display: inline-flex;
+   777→  align-items: center;
+   778→  gap: 6px;
+   779→  color: #c7c7f0;
+   780→  font-size: 0.85em;
+   781→  font-family: var(--font-space-grotesk), sans-serif;
+   782→}
+   783→.nf-setting-control {
+   784→  display: flex;
+   785→  align-items: center;
+   786→  gap: 8px;
+   787→  min-width: 140px;
+   788→  flex: 1;
+   789→  justify-content: flex-end;
+   790→}
+   791→.nf-setting-control [data-slot="slider"] { max-width: 140px; }
+   792→.nf-setting-control [data-slot="slider"] [data-slot="slider-track"] { background: rgba(255,255,255,0.1); }
+   793→.nf-setting-control [data-slot="slider"] [data-slot="slider-range"] { background: linear-gradient(90deg, #22d3ee, #a78bfa); }
+   794→.nf-setting-control [data-slot="slider"] [data-slot="slider-thumb"] { border-color: #22d3ee; background: #0a0a14; }
+   795→
+   796→.nf-preview-btn {
+   797→  display: inline-flex; align-items: center; justify-content: center;
+   798→  width: 32px; height: 32px; border-radius: 8px;
+   799→  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+   800→  color: #9ca3ff; font-family: var(--font-jetbrains-mono), monospace; font-size: 0.85em; font-weight: 700;
+   801→  cursor: pointer; transition: all 0.15s;
+   802→}
+   803→.nf-preview-btn:hover { background: rgba(255,255,255,0.1); color: #c7c7f0; }
+   804→.nf-preview-btn.active { background: rgba(34,211,238,0.15); border-color: rgba(34,211,238,0.4); color: #22d3ee; }
+   805→.nf-setting-value {
+   806→  font-family: var(--font-jetbrains-mono), monospace;
+   807→  font-size: 0.72em;
+   808→  color: #22d3ee;
+   809→  min-width: 38px;
+   810→  text-align: right;
+   811→}
+   812→.nf-setting-hint { font-size: 0.7em; color: #71718a; padding: 0 10px; line-height: 1.4; }
+   813→.nf-settings-footer {
+   814→  display: flex;
+   815→  justify-content: flex-end;
+   816→  gap: 8px;
+   817→  padding-top: 8px;
+   818→  border-top: 1px solid rgba(255,255,255,0.06);
+   819→  margin-top: 4px;
+   820→}
+   821→.nf-settings-footer [data-slot="button"] { height: 30px; }
+   822→.nf-settings-footer [data-slot="button"][data-variant="default"] {
+   823→  background: linear-gradient(90deg, #22d3ee, #a78bfa);
+   824→  color: #0a0a14;
+   825→}
+   826→.nf-settings-footer [data-slot="button"][data-variant="ghost"] { color: #9ca3ff; }
+   827→
+   828→/* Keybind list (Controls tab) */
+   829→.nf-keybind-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+   830→.nf-keybind-row {
+   831→  display: flex;
+   832→  align-items: center;
+   833→  justify-content: space-between;
+   834→  gap: 10px;
+   835→  padding: 7px 10px;
+   836→  background: rgba(255,255,255,0.03);
+   837→  border: 1px solid rgba(255,255,255,0.06);
+   838→  border-radius: 8px;
+   839→  font-size: 0.8em;
+   840→}
+   841→.nf-keybind-keys { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+   842→.nf-keybind-kbd {
+   843→  display: inline-block;
+   844→  padding: 2px 7px;
+   845→  background: rgba(34,211,238,0.1);
+   846→  border: 1px solid rgba(34,211,238,0.3);
+   847→  border-radius: 5px;
+   848→  font-family: var(--font-jetbrains-mono), monospace;
+   849→  font-size: 0.85em;
+   850→  color: #22d3ee;
+   851→  min-width: 22px;
+   852→  text-align: center;
+   853→}
+   854→.nf-keybind-action { color: #c7c7f0; text-align: right; }
+   855→
+   856→/* Mode selector dialog */
+   857→.nf-mode-dialog { max-width: 460px !important; }
+   858→.nf-mode-grid {
+   859→  display: grid;
+   860→  grid-template-columns: 1fr;
+   861→  gap: 10px;
+   862→  margin-top: 4px;
+   863→}
+   864→@media (min-width: 440px) {
+   865→  .nf-mode-grid { grid-template-columns: 1fr 1fr; }
+   866→}
+   867→.nf-mode-card {
+   868→  display: flex;
+   869→  align-items: flex-start;
+   870→  gap: 12px;
+   871→  padding: 14px;
+   872→  background: rgba(255,255,255,0.03);
+   873→  border: 1px solid rgba(255,255,255,0.08);
+   874→  border-radius: 14px;
+   875→  cursor: pointer;
+   876→  text-align: left;
+   877→  color: #e8e8f5;
+   878→  font-family: var(--font-space-grotesk), sans-serif;
+   879→  transition: border-color .15s, background .15s, box-shadow .15s;
+   880→}
+   881→.nf-mode-card:hover {
+   882→  background: rgba(255,255,255,0.06);
+   883→  border-color: rgba(34,211,238,0.3);
+   884→}
+   885→.nf-mode-card-active {
+   886→  border-color: rgba(34,211,238,0.6) !important;
+   887→  background: rgba(34,211,238,0.08) !important;
+   888→  box-shadow: 0 0 0 1px rgba(34,211,238,0.3), 0 0 24px rgba(34,211,238,0.15);
+   889→}
+   890→.nf-mode-card-icon {
+   891→  display: flex;
+   892→  align-items: center;
+   893→  justify-content: center;
+   894→  width: 38px;
+   895→  height: 38px;
+   896→  border-radius: 10px;
+   897→  background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(167,139,250,0.15));
+   898→  border: 1px solid rgba(255,255,255,0.08);
+   899→  color: #22d3ee;
+   900→  flex-shrink: 0;
+   901→}
+   902→.nf-mode-card-active .nf-mode-card-icon { color: #22d3ee; border-color: rgba(34,211,238,0.4); }
+   903→.nf-mode-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+   904→.nf-mode-card-label { font-size: 0.95em; font-weight: 700; color: #e8e8f5; }
+   905→.nf-mode-card-desc { font-size: 0.74em; color: #9ca3ff; line-height: 1.35; }
+   906→.nf-mode-card-goal { font-size: 0.68em; color: #71718a; margin-top: 3px; font-family: var(--font-jetbrains-mono), monospace; }
+   907→.nf-mode-card-active .nf-mode-card-label { color: #22d3ee; }
+   908→
+   909→/* Sonner toaster neon theme */
+   910→[data-sonner-toaster] { font-family: var(--font-space-grotesk), sans-serif !important; }
+   911→[data-sonner-toast] {
+   912→  background: rgba(14,14,26,0.94) !important;
+   913→  border: 1px solid rgba(34,211,238,0.25) !important;
+   914→  color: #e8e8f5 !important;
+   915→  backdrop-filter: blur(20px) saturate(160%);
+   916→  -webkit-backdrop-filter: blur(20px) saturate(160%);
+   917→  box-shadow: 0 8px 30px rgba(0,0,0,0.5) !important;
+   918→}
+   919→[data-sonner-toast] [data-description] { color: #9ca3ff !important; }
+   920→
+   921→/* ===== Mode-aware HUD (Sprint progress / Ultra countdown) ===== */
+   922→#nf-mode-hud {
+   923→  width: 100%;
+   924→  max-width: 320px;
+   925→  display: flex;
+   926→  justify-content: center;
+   927→  flex: 0 0 auto;
+   928→  pointer-events: none;
+   929→}
+   930→.nf-mode-hud-inner {
+   931→  display: inline-flex;
+   932→  align-items: center;
+   933→  gap: 6px;
+   934→  padding: 3px 10px;
+   935→  border-radius: 10px;
+   936→  background: rgba(14,14,26,0.72);
+   937→  backdrop-filter: blur(12px) saturate(150%);
+   938→  -webkit-backdrop-filter: blur(12px) saturate(150%);
+   939→  border: 1px solid rgba(255,255,255,0.08);
+   940→  font-family: var(--font-space-grotesk), sans-serif;
+   941→  font-size: 0.65em;
+   942→  letter-spacing: 1px;
+   943→  color: #c7c7f0;
+   944→  pointer-events: auto;
+   945→  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+   946→}
+   947→.nf-mode-hud-inner[data-mode="sprint"] {
+   948→  border-color: rgba(244,114,182,0.3);
+   949→  color: #f472b6;
+   950→}
+   951→.nf-mode-hud-inner[data-mode="sprint"] .nf-mode-hud-fill {
+   952→  background: linear-gradient(90deg, #f472b6, #a78bfa);
+   953→}
+   954→.nf-mode-hud-inner[data-mode="ultra"] {
+   955→  border-color: rgba(167,139,250,0.3);
+   956→  color: #a78bfa;
+   957→}
+   958→.nf-mode-hud-inner[data-mode="ultra"][data-urgent] {
+   959→  border-color: rgba(251,113,133,0.5);
+   960→  color: #fb7185;
+   961→  animation: nfHudPulse 0.9s ease-in-out infinite;
+   962→}
+   963→@keyframes nfHudPulse {
+   964→  0%, 100% { box-shadow: 0 4px 16px rgba(0,0,0,0.35), 0 0 0 0 rgba(251,113,133,0.5); }
+   965→  50% { box-shadow: 0 4px 16px rgba(0,0,0,0.35), 0 0 0 6px rgba(251,113,133,0); }
+   966→}
+   967→.nf-mode-hud-label { font-weight: 700; }
+   968→.nf-mode-hud-bar {
+   969→  width: 60px;
+   970→  height: 4px;
+   971→  border-radius: 2px;
+   972→  background: rgba(255,255,255,0.1);
+   973→  overflow: hidden;
+   974→}
+   975→.nf-mode-hud-fill {
+   976→  height: 100%;
+   977→  border-radius: 2px;
+   978→  transition: width 0.3s ease-out;
+   979→}
+   980→.nf-mode-hud-value {
+   981→  font-family: var(--font-jetbrains-mono), monospace;
+   982→  font-weight: 700;
+   983→  min-width: 36px;
+   984→  text-align: right;
+   985→}
+   986→.nf-mode-hud-time { font-size: 1.05em; min-width: 42px; }
+   987→
+   988→/* S5c: Share button CSS removed — the button itself was removed (Effect I).
+   989→   Nobody shares Tetris scores and it was too prominent on game-over. */
+   990→
+   991→/* ===== React Bestenliste (TanStack Query + shadcn Dialog) ===== */
+   992→.nf-leaderboard-dialog { max-width: 460px !important; }
+   993→.nf-leaderboard-tabs { width: 100%; }
+   994→.nf-leaderboard-tabslist {
+   995→  background: rgba(255,255,255,0.05) !important;
+   996→  border: 1px solid rgba(255,255,255,0.08);
+   997→  width: 100%;
+   998→  height: auto;
+   999→  flex-wrap: wrap;
+  1000→  gap: 2px;
+  1001→  padding: 3px;
+  1002→}
+  1003→.nf-leaderboard-tab {
+  1004→  color: #9ca3ff !important;
+  1005→  font-size: 0.72em !important;
+  1006→  height: 30px;
+  1007→  border-radius: 8px;
+  1008→  flex: 1;
+  1009→}
+  1010→.nf-leaderboard-tab:hover { color: #c7c7f0 !important; }
+  1011→.nf-leaderboard-tab[data-state="active"] {
+  1012→  background: rgba(34,211,238,0.15) !important;
+  1013→  color: #22d3ee !important;
+  1014→}
+  1015→.nf-leaderboard-body {
+  1016→  max-height: 52vh;
+  1017→  overflow-y: auto;
+  1018→  margin-top: 4px;
+  1019→  padding-right: 2px;
+  1020→}
+  1021→.nf-leaderboard-body::-webkit-scrollbar { width: 6px; }
+  1022→.nf-leaderboard-body::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.3); border-radius: 3px; }
+  1023→.nf-leaderboard-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  1024→.nf-leaderboard-row {
+  1025→  display: flex;
+  1026→  align-items: center;
+  1027→  gap: 8px;
+  1028→  padding: 7px 10px;
+  1029→  background: rgba(255,255,255,0.03);
+  1030→  border: 1px solid rgba(255,255,255,0.06);
+  1031→  border-radius: 9px;
+  1032→  font-family: var(--font-space-grotesk), sans-serif;
+  1033→  font-size: 0.8em;
+  1034→  transition: background .15s, border-color .15s, transform .1s;
+  1035→}
+  1036→.nf-leaderboard-row:hover { background: rgba(255,255,255,0.06); }
+  1037→.nf-leaderboard-row:active { transform: scale(0.99); }
+  1038→.nf-leaderboard-me {
+  1039→  background: linear-gradient(90deg, rgba(34,211,238,0.12), rgba(167,139,250,0.12)) !important;
+  1040→  border-color: rgba(34,211,238,0.4) !important;
+  1041→  box-shadow: 0 0 0 1px rgba(34,211,238,0.2), 0 0 16px rgba(34,211,238,0.1);
+  1042→}
+  1043→.nf-leaderboard-rank {
+  1044→  width: 22px;
+  1045→  height: 22px;
+  1046→  display: flex;
+  1047→  align-items: center;
+  1048→  justify-content: center;
+  1049→  flex-shrink: 0;
+  1050→}
+  1051→.nf-leaderboard-rank-num {
+  1052→  font-family: var(--font-jetbrains-mono), monospace;
+  1053→  font-size: 0.85em;
+  1054→  font-weight: 700;
+  1055→  color: #71718a;
+  1056→}
+  1057→.nf-leaderboard-name {
+  1058→  flex: 1;
+  1059→  min-width: 0;
+  1060→  color: #e8e8f5;
+  1061→  font-weight: 600;
+  1062→  white-space: nowrap;
+  1063→  overflow: hidden;
+  1064→  text-overflow: ellipsis;
+  1065→  display: inline-flex;
+  1066→  align-items: center;
+  1067→  gap: 6px;
+  1068→}
+  1069→.nf-leaderboard-you {
+  1070→  display: inline-block;
+  1071→  padding: 1px 6px;
+  1072→  border-radius: 5px;
+  1073→  background: rgba(34,211,238,0.2);
+  1074→  border: 1px solid rgba(34,211,238,0.4);
+  1075→  color: #22d3ee;
+  1076→  font-size: 0.7em;
+  1077→  font-weight: 700;
+  1078→  letter-spacing: 0.5px;
+  1079→}
+  1080→.nf-leaderboard-score {
+  1081→  font-family: var(--font-jetbrains-mono), monospace;
+  1082→  font-weight: 700;
+  1083→  color: #22d3ee;
+  1084→  font-size: 0.95em;
+  1085→  min-width: 60px;
+  1086→  text-align: right;
+  1087→}
+  1088→.nf-leaderboard-meta {
+  1089→  display: flex;
+  1090→  flex-direction: column;
+  1091→  align-items: flex-end;
+  1092→  gap: 1px;
+  1093→  font-family: var(--font-jetbrains-mono), monospace;
+  1094→  font-size: 0.65em;
+  1095→  color: #71718a;
+  1096→  min-width: 50px;
+  1097→  text-align: right;
+  1098→}
+  1099→.nf-leaderboard-date { opacity: 0.7; }
+  1100→
+  1101→.nf-leaderboard-empty {
+  1102→  text-align: center;
+  1103→  padding: 32px 16px;
+  1104→  color: #9ca3ff;
+  1105→  font-size: 0.85em;
+  1106→  line-height: 1.5;
+  1107→}
+  1108→
+  1109→.nf-leaderboard-skeleton {
+  1110→  display: flex;
+  1111→  align-items: center;
+  1112→  gap: 8px;
+  1113→  padding: 8px 10px;
+  1114→  background: rgba(255,255,255,0.02);
+  1115→  border-radius: 9px;
+  1116→}
+  1117→.nf-leaderboard-sk-rank, .nf-leaderboard-sk-name, .nf-leaderboard-sk-score, .nf-leaderboard-sk-meta {
+  1118→  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  1119→  background-size: 200% 100%;
+  1120→  animation: nfSkShimmer 1.4s ease-in-out infinite;
+  1121→  border-radius: 4px;
+  1122→}
+  1123→.nf-leaderboard-sk-rank { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; }
+  1124→.nf-leaderboard-sk-name { flex: 1; height: 14px; }
+  1125→.nf-leaderboard-sk-score { width: 60px; height: 14px; }
+  1126→.nf-leaderboard-sk-meta { width: 50px; height: 14px; }
+  1127→@keyframes nfSkShimmer {
+  1128→  0% { background-position: 200% 0; }
+  1129→  100% { background-position: -200% 0; }
+  1130→}
+  1131→.nf-leaderboard-loading {
+  1132→  display: flex;
+  1133→  align-items: center;
+  1134→  justify-content: center;
+  1135→  gap: 6px;
+  1136→  padding: 12px;
+  1137→  color: #9ca3ff;
+  1138→  font-size: 0.75em;
+  1139→}
+  1140→`;
+  1141→

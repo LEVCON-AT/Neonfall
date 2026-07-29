@@ -1,4 +1,9 @@
 export const NEONFALL_APP_CSS = `
+/* S8.19: Hide legacy IIFE overlays — replaced by React shadcn Dialogs. */
+#hint-overlay { display: none !important; }
+#pause-overlay { display: none !important; }
+#game-over-screen { display: none !important; }
+
 /* S8.17: Hold-Box takes only the space it needs (46px canvas + padding),
    Next-Box gets the rest. Previously both had flex:1 which made the Next-Box
    canvas (160px) cramped against the right edge.
@@ -29,13 +34,6 @@ export const NEONFALL_APP_CSS = `
   50%  { border-color: rgba(167,139,250,0.5); transform: scale(1.02); }
   100% { border-color: transparent; transform: scale(1); }
 }
-
-/* S8.19: Hide legacy IIFE overlays — replaced by React shadcn Dialogs.
-   The IIFE still toggles 'hidden'/'visible' classes on these elements
-   (for internal state), but the visual rendering is now done by React.
-   display:none !important ensures the old DOM nodes never show. */
-#hint-overlay { display: none !important; }
-#pause-overlay { display: none !important; }
 
 /* S7.5b: Logo — SVG icon only, no text. font-size:0 in IIFE hides any
    text remnants. The h1 keeps sr-only text for accessibility. */
@@ -389,13 +387,24 @@ body.nf-playing::after { animation-play-state: paused !important; }
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 30;
+  z-index: 60;
   height: 32px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   pointer-events: none;
   padding-bottom: env(safe-area-inset-bottom, 0);
+  transition: opacity 0.22s ease-out, transform 0.22s ease-out;
+}
+#nf-app-footer.nf-footer-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+  pointer-events: none;
+}
+#nf-app-footer.nf-footer-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 .nf-footer-inner {
   display: flex;
@@ -479,8 +488,10 @@ body.nf-playing::after { animation-play-state: paused !important; }
   box-shadow: 0 0 0 1px rgba(167,139,250,0.15), 0 24px 60px rgba(0,0,0,0.6), 0 0 40px rgba(34,211,238,0.1) !important;
   color: #e8e8f5 !important;
   border-radius: 18px !important;
-  max-height: calc(100vh - 32px) !important;
+  max-height: calc(100dvh - 32px) !important;
+  max-height: calc(100vh - 32px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .nf-dialog-neon [data-slot="dialog-close"] { color: #9ca3ff; }
 .nf-dialog-neon [data-slot="dialog-close"]:hover { color: #f472b6; }
@@ -492,6 +503,12 @@ body.nf-playing::after { animation-play-state: paused !important; }
   font-family: var(--font-space-grotesk), sans-serif;
   letter-spacing: 1px;
   font-size: 1.1em;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1.4;
+  padding-bottom: 2px;
 }
 /* S7.9: Dialog-Titel-Icon — statt inline style in jeder Komponente. */
 .nf-dialog-title-icon {
@@ -725,6 +742,60 @@ body.nf-playing::after { animation-play-state: paused !important; }
   font-weight: 700;
   color: #e8e8f5;
   background: linear-gradient(90deg, #22d3ee, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ===== Game-Over Dialog specific ===== */
+.nf-gameover-dialog { max-width: 380px !important; }
+.nf-gameover-newhighscore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin: 4px 0 8px;
+  background: linear-gradient(90deg, rgba(251,191,36,0.15), rgba(244,114,182,0.15));
+  border: 1px solid rgba(251,191,36,0.3);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9em;
+  letter-spacing: 1px;
+  color: #fbbf24;
+  filter: drop-shadow(0 0 8px rgba(251,191,36,0.2));
+}
+.nf-gameover-stats {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.nf-gameover-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+}
+.nf-gameover-stat-label {
+  font-size: 0.6em;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #9ca3ff;
+}
+.nf-gameover-stat-value {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 1.4em;
+  font-weight: 700;
+  color: #e8e8f5;
+}
+.nf-gameover-stat-best {
+  background: linear-gradient(90deg, #fbbf24, #f472b6);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

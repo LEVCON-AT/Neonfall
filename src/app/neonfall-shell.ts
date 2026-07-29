@@ -58,12 +58,12 @@ export const SHELL_CSS = `
     position: fixed;
     inset: 0;
     background: rgba(6,6,14,0.86);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 50;
+    z-index: 70;
     padding: 16px;
     box-sizing: border-box;
 }
@@ -308,7 +308,7 @@ export const SHELL_CSS = `
     display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 47;
+    z-index: 65;
     color: #e8e8f5;
     font-family: var(--font-space-grotesk), sans-serif;
     box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 24px rgba(251,191,36,0.15);
@@ -355,7 +355,7 @@ export const SHELL_CSS = `
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 60;
+    z-index: 70;
     color: #e8e8f5;
     font-family: var(--font-space-grotesk), sans-serif;
     text-align: center;
@@ -413,15 +413,17 @@ export const SHELL_CSS = `
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 4px);
     width: calc(100% - 24px);
     max-width: 380px;
-    background: linear-gradient(135deg, rgba(34,211,238,0.12), rgba(167,139,250,0.12));
-    border: 1px solid rgba(167,139,250,0.3);
+    background: rgba(14,14,26,0.96);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(34,211,238,0.25);
     border-radius: 14px;
     padding: 12px 14px;
     display: flex;
     align-items: center;
     gap: 12px;
-    z-index: 45;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 65;
+    box-shadow: 0 0 0 1px rgba(167,139,250,0.15), 0 24px 60px rgba(0,0,0,0.6), 0 0 40px rgba(34,211,238,0.1);
     transition: transform .35s cubic-bezier(.2,.8,.2,1);
     color: #e8e8f5;
     font-family: var(--font-space-grotesk), sans-serif;
@@ -462,15 +464,17 @@ export const SHELL_CSS = `
 #nf-ios-card {
     width: 100%;
     max-width: 340px;
-    background: linear-gradient(160deg, rgba(34,211,238,0.06), rgba(167,139,250,0.05));
-    border: 1px solid rgba(167,139,250,0.22);
+    background: rgba(14,14,26,0.96);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(34,211,238,0.25);
     border-radius: 18px;
     padding: 22px 20px;
     color: #e8e8f5;
     font-family: var(--font-space-grotesk), sans-serif;
     text-align: center;
     animation: nfSlideUp .28s cubic-bezier(.2,.8,.2,1);
-    box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+    box-shadow: 0 0 0 1px rgba(167,139,250,0.15), 0 24px 60px rgba(0,0,0,0.6), 0 0 40px rgba(34,211,238,0.1);
 }
 #nf-ios-card h2 {
     margin: 0 0 6px;
@@ -517,7 +521,7 @@ export const SHELL_CSS = `
     display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 46;
+    z-index: 65;
     color: #e8e8f5;
     font-family: var(--font-space-grotesk), sans-serif;
     font-size: 0.82em;
@@ -581,7 +585,7 @@ export const SHELL_CSS = `
     border: 1px solid rgba(34,211,238,0.25);
     border-radius: 14px;
     padding: 6px 10px 6px 8px;
-    z-index: 48;
+    z-index: 65;
     color: #c7c7f0;
     font-family: var(--font-space-grotesk), sans-serif;
     font-size: 0.72em;

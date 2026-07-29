@@ -705,3 +705,43 @@ Work Log:
 
 Stage Summary:
 - All S8.21 lock-delay and IIFE hook changes restored in neonfall-content.ts
+
+---
+Task ID: CSS-restore
+Agent: general-purpose
+Task: Restore all lost CSS changes to neonfall-app.css.ts and neonfall-shell.ts
+
+Work Log:
+- neonfall-app.css.ts:
+  - Added S8.19 hide-legacy-overlays block (#hint-overlay, #pause-overlay,
+    #game-over-screen) at the very top of NEONFALL_APP_CSS; removed duplicate
+    older block (which lacked #game-over-screen) further down.
+  - #nf-app-footer: z-index 30 -> 60; added transition (opacity/transform 0.22s);
+    added .nf-footer-hidden / .nf-footer-visible modifier classes.
+  - .nf-dialog-title: added display:flex !important, align-items:center,
+    justify-content:center, gap:6px, line-height:1.4, padding-bottom:2px
+    (icon + text now render inline).
+  - .nf-dialog-neon: replaced max-height: calc(100vh - 32px) !important with
+    dvh-first fallback stack (100dvh + 100vh fallback); added
+    -webkit-overflow-scrolling: touch.
+  - Added GameOverDialog CSS block after .nf-pause-score-value: .nf-gameover-dialog,
+    .nf-gameover-newhighscore, .nf-gameover-stats, .nf-gameover-stat,
+    .nf-gameover-stat-label, .nf-gameover-stat-value, .nf-gameover-stat-best.
+- neonfall-shell.ts:
+  - #nf-install-banner: replaced gradient bg with rgba(14,14,26,0.96) +
+    backdrop-filter blur(20px) saturate(160%) (+ -webkit- prefix); border now
+    rgba(34,211,238,0.25); box-shadow upgraded to triple-layer neon deck.
+  - #nf-ios-card: same deck-end treatment (bg / border / box-shadow).
+  - #nf-stats-panel, #nf-ios-install: backdrop-filter blur(10px) -> blur(20px)
+    saturate(160%) (+ -webkit- prefix).
+  - z-index layering fixed so dialogs (z:60 footer / shell dialogs) stack correctly:
+      * #nf-stats-panel / #nf-ios-install: 50 -> 70
+      * #nf-ach-toast:                47 -> 65
+      * #nf-rotate-hint:              60 -> 70
+      * #nf-install-banner:           45 -> 65
+      * #nf-update-toast:             46 -> 65
+      * #nf-music-bar:                48 -> 65
+- Verification: `bun run lint` -> exit code 0, no errors.
+
+Stage Summary:
+- All 9 lost CSS change groups restored; lint clean.
