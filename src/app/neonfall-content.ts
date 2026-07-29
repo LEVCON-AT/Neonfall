@@ -1833,6 +1833,19 @@ export const GAME_SCRIPT = `
     });
 
     document.addEventListener('keydown', (e) => {
+        // S8.22.2: Block all keyboard input when a React shadcn Dialog is open.
+        //   Prevents the game from reacting to key presses while the user is
+        //   typing in an input field (e.g. multiplayer room code, name input)
+        //   or interacting with a dialog (settings, pause, game-over, hint).
+        //   The P/M/I shortcuts are also blocked because the React dialogs
+        //   handle their own close logic.
+        if (document.querySelector('[data-slot="dialog-content"]')) return;
+
+        // S8.22.2: Also block if the active element is an input/textarea
+        //   (fallback for non-shadcn inputs like the multiplayer code field).
+        const activeTag = document.activeElement?.tagName;
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+
         initAudio();
         if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
             if (isPaused) resumeGame(); else pauseGame();
