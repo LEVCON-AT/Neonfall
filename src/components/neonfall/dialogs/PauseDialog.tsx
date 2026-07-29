@@ -51,7 +51,7 @@ export function PauseDialog({ open, onOpenChange }: PauseDialogProps) {
   }, [open]);
 
   const handleLevelChange = (delta: number) => {
-    const newLevel = Math.max(1, Math.min(10, startLevel + delta));
+    const newLevel = Math.max(1, Math.min(20, startLevel + delta));
     setStartLevel(newLevel);
     const w = window as unknown as { __nfSetStartLevel?: (lv: number) => void };
     if (w.__nfSetStartLevel) w.__nfSetStartLevel(newLevel);

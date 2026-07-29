@@ -686,3 +686,22 @@ Stücke teilen sich dieselbe Hue-Familie.
 - Upload-Ordner leeren (noch offen aus vorheriger Runde)
 - Highscore localStorage vs. DB Sync (noch offen)
 - S8.14 Staging Pipeline (geplant)
+
+---
+Task ID: S8.21-restore
+Agent: general-purpose
+Task: Restore S8.21 lock-delay + IIFE hooks lost to auto-commit
+
+Work Log:
+- Restored lock-delay state variables (lockDelayActive, lockTimer, pendingImpactIntensity)
+- Restored isResting() helper + lock-delay cancel in playerMove/playerRotate
+- Restored lock-delay in playerDrop + stepDownDuringDrag
+- Restored hard-drop bypass in playerHardDrop
+- Restored lockPiece/holdSwap/restartGame state resets
+- Restored update() lock timer logic
+- Restored lastIsNewHighscore + IIFE hooks (__nfGetHighscore, __nfIsNewHighscore)
+- Removed duplicate __nfRestart
+- Lint passed
+
+Stage Summary:
+- All S8.21 lock-delay and IIFE hook changes restored in neonfall-content.ts

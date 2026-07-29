@@ -28,7 +28,7 @@ export const SHELL_CSS = `
     justify-content: center;
     z-index: 20;
     opacity: 0.6;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     transition: opacity .15s, transform .1s, background .15s;
 }
 #nf-stats-btn:active { transform: scale(0.9); opacity: 1; }
@@ -81,7 +81,7 @@ export const SHELL_CSS = `
     padding: 20px 18px 16px;
     box-shadow: 0 12px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
     color: #e8e8f5;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     box-sizing: border-box;
     animation: nfSlideUp .28s cubic-bezier(.2,.8,.2,1);
 }
@@ -140,7 +140,7 @@ export const SHELL_CSS = `
     font-weight: 600;
 }
 .nf-stat-value {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-jetbrains-mono), monospace;
     font-size: 1.25em;
     font-weight: 700;
     color: #e8e8f5;
@@ -197,7 +197,7 @@ export const SHELL_CSS = `
     font-size: 0.68em;
     color: #6b6b8a;
     text-align: center;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-jetbrains-mono), monospace;
 }
 
 /* ---- Recent scores list ---- */
@@ -218,7 +218,7 @@ export const SHELL_CSS = `
 .nf-recent-item:last-child { margin-bottom: 0; }
 .nf-recent-meta { color: #9ca3ff; font-size: 0.92em; }
 .nf-recent-score {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-jetbrains-mono), monospace;
     font-weight: 700;
     color: #e8e8f5;
 }
@@ -244,7 +244,7 @@ export const SHELL_CSS = `
     padding: 8px 16px;
     font-size: 0.74em;
     cursor: pointer;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     font-weight: 600;
     letter-spacing: .5px;
     transition: all .15s;
@@ -278,7 +278,7 @@ export const SHELL_CSS = `
     font-size: 0.76em;
     cursor: pointer;
     font-weight: 600;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
 }
 .nf-reset-no {
     background: rgba(255,255,255,0.06);
@@ -288,7 +288,7 @@ export const SHELL_CSS = `
     padding: 7px 14px;
     font-size: 0.76em;
     cursor: pointer;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
 }
 .nf-reset-yes:active, .nf-reset-no:active { transform: scale(0.94); }
 
@@ -310,7 +310,7 @@ export const SHELL_CSS = `
     gap: 10px;
     z-index: 47;
     color: #e8e8f5;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     box-shadow: 0 8px 28px rgba(0,0,0,0.5), 0 0 24px rgba(251,191,36,0.15);
     transition: transform .4s cubic-bezier(.2,.8,.2,1), opacity .4s;
     max-width: calc(100% - 24px);
@@ -357,7 +357,7 @@ export const SHELL_CSS = `
     justify-content: center;
     z-index: 60;
     color: #e8e8f5;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     text-align: center;
     padding: 24px;
 }
@@ -424,7 +424,7 @@ export const SHELL_CSS = `
     box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     transition: transform .35s cubic-bezier(.2,.8,.2,1);
     color: #e8e8f5;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
 }
 #nf-install-banner.show { transform: translateX(-50%) translateY(0); }
 .nf-install-icon {
@@ -444,7 +444,7 @@ export const SHELL_CSS = `
     font-weight: 700;
     font-size: 0.8em;
     cursor: pointer;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     letter-spacing: .5px;
 }
 .nf-btn-primary:active { transform: scale(0.94); }
@@ -467,7 +467,7 @@ export const SHELL_CSS = `
     border-radius: 18px;
     padding: 22px 20px;
     color: #e8e8f5;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     text-align: center;
     animation: nfSlideUp .28s cubic-bezier(.2,.8,.2,1);
     box-shadow: 0 12px 48px rgba(0,0,0,0.5);
@@ -519,7 +519,7 @@ export const SHELL_CSS = `
     gap: 10px;
     z-index: 46;
     color: #e8e8f5;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     font-size: 0.82em;
     box-shadow: 0 8px 24px rgba(0,0,0,0.45);
     transition: transform .35s cubic-bezier(.2,.8,.2,1);
@@ -583,7 +583,7 @@ export const SHELL_CSS = `
     padding: 6px 10px 6px 8px;
     z-index: 48;
     color: #c7c7f0;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     font-size: 0.72em;
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);

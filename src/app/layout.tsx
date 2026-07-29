@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { spaceGrotesk, jetbrainsMono } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "NEONFALL",
@@ -40,30 +41,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
-          rel="stylesheet"
-        />
-        {/* Preload the music so it starts fetching immediately on page load.
-            The game fetches neonfall-music.mp3 on first user interaction; with
-            this preload, the 16 MB download completes during hint-reading time,
-            so the music starts within ~100 ms (decode) of the first tap instead
-            of waiting for a multi-second download. */}
-        <link
-          rel="preload"
-          href="/neonfall-music.mp3"
-          as="fetch"
-          crossOrigin="anonymous"
-        />
-      </head>
-      <body>
+      <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
         <Providers>{children}</Providers>
       </body>
     </html>

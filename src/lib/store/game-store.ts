@@ -19,6 +19,7 @@ interface GameUiState {
   /** S8.19: React dialog open states, driven by IIFE overlay class changes */
   hintOpen: boolean;
   pauseOpen: boolean;
+  gameOverOpen: boolean;
 
   setScore: (v: number) => void;
   setBest: (v: number) => void;
@@ -32,6 +33,7 @@ interface GameUiState {
   setUltraRemaining: (s: number) => void;
   setHintOpen: (v: boolean) => void;
   setPauseOpen: (v: boolean) => void;
+  setGameOverOpen: (v: boolean) => void;
   reset: () => void;
 }
 
@@ -48,6 +50,7 @@ const INITIAL = {
   ultraRemaining: 180,
   hintOpen: false,
   pauseOpen: false,
+  gameOverOpen: false,
 };
 
 export const useGameStore = create<GameUiState>((set) => ({
@@ -64,5 +67,6 @@ export const useGameStore = create<GameUiState>((set) => ({
   setUltraRemaining: (s) => set({ ultraRemaining: s }),
   setHintOpen: (v) => set({ hintOpen: v }),
   setPauseOpen: (v) => set({ pauseOpen: v }),
+  setGameOverOpen: (v) => set({ gameOverOpen: v }),
   reset: () => set({ ...INITIAL, mode: useGameStore.getState().mode }),
 }));

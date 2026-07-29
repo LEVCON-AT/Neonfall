@@ -9,7 +9,7 @@ export const GAME_CSS = `
         overflow: hidden;
         touch-action: none;
         background: #0a0a14;
-        font-family: 'Space Grotesk', sans-serif;
+        font-family: var(--font-space-grotesk), sans-serif;
         color: #e8e8f5;
     }
 
@@ -77,7 +77,7 @@ export const GAME_CSS = `
     .stat-box h3 { margin: 0; font-size: 0.55em; color: #9ca3ff; letter-spacing: 1.5px; font-weight: 600; }
     .stat-box p {
         margin: 1px 0 0;
-        font-family: 'JetBrains Mono', monospace;
+        font-family: var(--font-jetbrains-mono), monospace;
         font-size: 1.05em;
         font-weight: 700;
         line-height: 1.15;
@@ -185,7 +185,7 @@ export const GAME_CSS = `
         top: 42%;
         left: 50%;
         transform: translate(-50%, -50%) scale(0.6);
-        font-family: 'Space Grotesk', sans-serif;
+        font-family: var(--font-space-grotesk), sans-serif;
         font-weight: 700;
         font-size: 1.5em;
         letter-spacing: 1px;
@@ -245,7 +245,7 @@ export const GAME_CSS = `
         display: inline-block;
         min-width: 1.6em;
         padding: 2px 6px;
-        font-family: 'JetBrains Mono', monospace;
+        font-family: var(--font-jetbrains-mono), monospace;
         font-size: 0.9em;
         color: #e8e8f5;
         background: rgba(255,255,255,0.08);
@@ -270,7 +270,7 @@ export const GAME_CSS = `
         margin: 0 auto 10px;
         padding: 10px 26px;
         font-size: 1em;
-        font-family: 'Space Grotesk', sans-serif;
+        font-family: var(--font-space-grotesk), sans-serif;
         font-weight: 600;
         background: linear-gradient(90deg, #22d3ee, #a78bfa);
         color: #0a0a14;
@@ -296,7 +296,7 @@ export const GAME_CSS = `
     #start-prompt.visible { display: flex; }
     .start-prompt-inner {
         color: #e8e8f5;
-        font-family: 'Space Grotesk', sans-serif;
+        font-family: var(--font-space-grotesk), sans-serif;
         font-weight: 600;
         letter-spacing: 1.5px;
         font-size: 0.95em;
@@ -340,11 +340,11 @@ export const GAME_CSS = `
         background-clip: text;
         color: transparent;
     }
-    #game-over-screen p { color: #c7c7f0; font-size: 1em; margin-bottom: 18px; font-family: 'JetBrains Mono', monospace; }
+    #game-over-screen p { color: #c7c7f0; font-size: 1em; margin-bottom: 18px; font-family: var(--font-jetbrains-mono), monospace; }
     #game-over-screen button {
         padding: 11px 24px;
         font-size: 1em;
-        font-family: 'Space Grotesk', sans-serif;
+        font-family: var(--font-space-grotesk), sans-serif;
         font-weight: 600;
         background: linear-gradient(90deg, #22d3ee, #a78bfa);
         color: #0a0a14;
@@ -384,7 +384,7 @@ export const GAME_CSS = `
         margin-bottom: 2px;
     }
     .level-select b {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: var(--font-jetbrains-mono), monospace;
         font-size: 1.2em;
         color: #e8e8f5;
         min-width: 1.2em;
@@ -449,7 +449,7 @@ export const GAME_CSS = `
         background-clip: text;
         color: transparent;
     }
-    #pause-overlay p { color: #c7c7f0; font-size: 1em; margin-bottom: 14px; font-family: 'JetBrains Mono', monospace; }
+    #pause-overlay p { color: #c7c7f0; font-size: 1em; margin-bottom: 14px; font-family: var(--font-jetbrains-mono), monospace; }
 
     #settings-panel {
         width: 100%;
@@ -489,7 +489,7 @@ export const GAME_CSS = `
         height: 4px;
     }
     .slider-line span {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: var(--font-jetbrains-mono), monospace;
         font-size: 0.75em;
         color: #e8e8f5;
         min-width: 2.6em;
@@ -513,7 +513,7 @@ export const GAME_CSS = `
     #pause-overlay button {
         padding: 11px 20px;
         font-size: 0.95em;
-        font-family: 'Space Grotesk', sans-serif;
+        font-family: var(--font-space-grotesk), sans-serif;
         font-weight: 600;
         background: linear-gradient(90deg, #22d3ee, #a78bfa);
         color: #0a0a14;
@@ -841,6 +841,16 @@ export const GAME_SCRIPT = `
     let highscore = 0;
     let rattleStrength = 1;
     let impactStrength = 1;
+    // S8.21.2: Lock-Delay — when a piece lands, give the player a 1-second
+    //   grace period to rotate/move it before it locks. Modern Tetris standard.
+    //   The timer runs continuously from first contact. Rotation and horizontal
+    //   moves do NOT reset it. Hard-Drop bypasses lock-delay (instant lock).
+    let lockDelayActive = false;
+    let lockTimer = 0;
+    const LOCK_DELAY_MS = 1000;
+    let pendingImpactIntensity = 0;
+    // S8.19: Track last game-over's "new highscore" state for React GameOverDialog.
+    let lastIsNewHighscore = false;
 
     function loadHighscore() {
         // S8.15b-fix: Try API first (global best), fallback to localStorage.
@@ -968,6 +978,24 @@ export const GAME_SCRIPT = `
             }
         }
         playBeep(dir < 0 ? 430 : 620, 0.05, 'square', sfxGain, 0.18);
+        // S8.21.2-fix3: After a successful rotation, check if the piece is
+        //   still resting. If rotation moved it off the stack, cancel lock-delay.
+        if (lockDelayActive && !isResting()) {
+            lockDelayActive = false;
+            lockTimer = 0;
+            pendingImpactIntensity = 0;
+        }
+    }
+
+    // S8.21.2-fix3: Check if the piece is resting on the floor or on another
+    //   block. Used after horizontal moves/rotations to determine if the
+    //   piece is still in contact. If not, lock-delay is cancelled so the
+    //   piece can continue falling (prevents mid-air locking).
+    function isResting() {
+        player.pos.y++;
+        const resting = collide(board, player);
+        player.pos.y--;
+        return resting;
     }
 
     function playerMove(dir) {
@@ -976,6 +1004,14 @@ export const GAME_SCRIPT = `
             player.pos.x -= dir;
         } else {
             playBeep(300, 0.04, 'square', sfxGain, 0.1);
+            // S8.21.2-fix3: After a successful horizontal move, check if the
+            //   piece is still resting. If moved off a ledge into mid-air,
+            //   cancel lock-delay so it can fall further.
+            if (lockDelayActive && !isResting()) {
+                lockDelayActive = false;
+                lockTimer = 0;
+                pendingImpactIntensity = 0;
+            }
         }
     }
 
@@ -983,19 +1019,33 @@ export const GAME_SCRIPT = `
         player.pos.y++;
         if (collide(board, player)) {
             player.pos.y--;
-            lockPiece();
+            // S8.21.2: Lock-Delay — don't lock immediately. Start the grace
+            //   period instead. The actual lockPiece() happens in update()
+            //   when lockTimer >= LOCK_DELAY_MS.
+            if (!lockDelayActive) {
+                lockDelayActive = true;
+                lockTimer = 0;
+            }
+        } else {
+            // Piece moved down successfully — cancel any active lock delay.
+            lockDelayActive = false;
         }
         dropCounter = 0;
     }
 
-    // ein Schritt nach unten waehrend des Ziehens; bei Kollision wird sofort mit
-    // dem aktuellen Tempo als Wucht eingerastet
+    // ein Schritt nach unten waehrend des Ziehens (Momentum-Drop / Rattern).
+    // S8.21.2-fix2: Bei Kollision wird NICHT sofort eingerastet — stattdessen
+    //   Lock-Delay gestartet. Der Impact-Effekt wird erst beim tatsaechlichen
+    //   Locken ausgefuehrt (in lockPiece via pendingImpactIntensity).
     function stepDownDuringDrag(intensityOnLock) {
         player.pos.y++;
         if (collide(board, player)) {
             player.pos.y--;
-            lockPiece();
-            impact(intensityOnLock);
+            if (!lockDelayActive) {
+                lockDelayActive = true;
+                lockTimer = 0;
+                pendingImpactIntensity = intensityOnLock;
+            }
             dropCounter = 0;
             return false;
         }
@@ -1003,10 +1053,13 @@ export const GAME_SCRIPT = `
         return true;
     }
 
-    // maximaler Insta-Slam bei extrem schnellem Swipe
+    // maximaler Insta-Slam bei extrem schnellem Swipe oder Leertaste.
+    // S8.21.2: Bypasses lock-delay — hard-drop locks IMMEDIATELY.
     function playerHardDrop(intensity) {
         while (!collide(board, player)) player.pos.y++;
         player.pos.y--;
+        lockDelayActive = false;
+        pendingImpactIntensity = 0;
         lockPiece();
         impact(intensity);
         dropCounter = 0;
@@ -1035,6 +1088,14 @@ export const GAME_SCRIPT = `
         merge(board, player);
         canHold = true;
         momentumActive = false;
+        // S8.21.2: Reset lock-delay state. Fire pending impact effect if
+        //   the piece was momentum-dropped.
+        lockDelayActive = false;
+        lockTimer = 0;
+        if (pendingImpactIntensity > 0) {
+            impact(pendingImpactIntensity);
+            pendingImpactIntensity = 0;
+        }
         resetPlayer();
         clearLines();
     }
@@ -1118,7 +1179,7 @@ export const GAME_SCRIPT = `
 
             linesCleared += cleared;
             level = Math.floor(linesCleared / 10) + 1;
-            dropInterval = Math.max(100, 1000 - (level - 1) * 75);
+            dropInterval = Math.max(50, 1000 - (level - 1) * 75);
 
             updateStats();
             playLineClearSound(cleared);
@@ -1142,6 +1203,10 @@ export const GAME_SCRIPT = `
 
     function holdSwap() {
         if (!canHold || gameOver) return;
+        // S8.21.2: Cancel lock-delay when holding.
+        lockDelayActive = false;
+        lockTimer = 0;
+        pendingImpactIntensity = 0;
         const currentType = player.type;
         if (heldType === null) {
             heldType = currentType;
@@ -1188,6 +1253,7 @@ export const GAME_SCRIPT = `
         finalScoreEl.textContent = 'Score: ' + score;
         finalHighscoreEl.textContent = 'Best: ' + highscore;
         newHighscoreBadge.style.display = isNewHighscore ? 'block' : 'none';
+        lastIsNewHighscore = isNewHighscore;
         gameOverScreen.classList.add('visible');
         // S5c: start-prompt entfernen falls noch sichtbar (überlappte sonst
         //   den Game-Over-Screen mit "Tippen zum Start").
@@ -1202,7 +1268,7 @@ export const GAME_SCRIPT = `
         score = 0;
         level = startLevel;
         linesCleared = (startLevel - 1) * 10;
-        dropInterval = Math.max(100, 1000 - (level - 1) * 75);
+        dropInterval = Math.max(50, 1000 - (level - 1) * 75);
         dropCounter = 0;
         lastTime = 0;
         gameOver = false;
@@ -1210,6 +1276,10 @@ export const GAME_SCRIPT = `
         heldType = null;
         canHold = true;
         momentumActive = false;
+        // S8.21.2: Reset lock-delay state on restart.
+        lockDelayActive = false;
+        lockTimer = 0;
+        pendingImpactIntensity = 0;
         isPaused = false;
         gameStarted = true;
         startPromptEl.classList.remove('visible');
@@ -1459,10 +1529,19 @@ export const GAME_SCRIPT = `
         }
         const deltaTime = time - lastTime;
         lastTime = time;
-        dropCounter += deltaTime;
-        const interval = momentumActive ? Math.max(6, 1 / momentumBlockVelocity) : dropInterval;
-        if (dropCounter > interval) {
-            if (momentumActive) momentumTick(); else playerDrop();
+        // S8.21.2: Lock-Delay timer — if a piece is resting (lockDelayActive),
+        //   count up. When the grace period expires, lock the piece.
+        if (lockDelayActive) {
+            lockTimer += deltaTime;
+            if (lockTimer >= LOCK_DELAY_MS) {
+                lockPiece();
+            }
+        } else {
+            dropCounter += deltaTime;
+            const interval = momentumActive ? Math.max(6, 1 / momentumBlockVelocity) : dropInterval;
+            if (dropCounter > interval) {
+                if (momentumActive) momentumTick(); else playerDrop();
+            }
         }
         draw();
         animationId = requestAnimationFrame(update);
@@ -1867,7 +1946,7 @@ export const GAME_SCRIPT = `
     document.querySelectorAll('.level-plus').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            startLevel = Math.min(10, startLevel + 1);
+            startLevel = Math.min(20, startLevel + 1);
             updateLevelSelectDisplays();
         });
     });
@@ -1915,15 +1994,17 @@ export const GAME_SCRIPT = `
     //   They delegate to the IIFE's internal pause/resume/restart functions
     //   so audio + game state stays in sync.
     window.__nfResume = () => { resumeGame(); };
-    window.__nfRestart = () => { restartGame(); };
     // S8.19: React PauseDialog reads this for the live score display.
     window.__nfGetScore = () => score;
     // S8.19: React dialogs read/write startLevel for the level-stepper.
     window.__nfGetStartLevel = () => startLevel;
     window.__nfSetStartLevel = (lv) => {
-        startLevel = Math.max(1, Math.min(10, lv | 0));
+        startLevel = Math.max(1, Math.min(20, lv | 0));
         updateLevelSelectDisplays();
     };
+    // S8.19: React GameOverDialog reads these for score/best/new-highscore display.
+    window.__nfGetHighscore = () => highscore;
+    window.__nfIsNewHighscore = () => lastIsNewHighscore;
 
     // S7.2: Monkey-Patch entfernt — applyGarbage() ist jetzt direkt in
     //   resetPlayer() eingebaut (oben). Sauberer als Function-Overriding.

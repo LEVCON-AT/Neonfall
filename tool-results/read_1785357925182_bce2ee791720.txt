@@ -1,0 +1,689 @@
+     1→# NEONFALL — Projekt-Worklog
+     2→
+     3→## Projekt-Status (aktuell)
+     4→
+     5→NEONFALL ist eine vollwertige, fertige Tetris-Web-App (Neon-Stil, deutsche UI,
+     6→Touch- + Tastatursteuerung, Hold/Next, Momentum-Drop, integrierte Musik +
+     7→synth. SFX). Das eigentliche Spiel stammt aus einer vom Nutzer gelieferten
+     8→einzelnen HTML-Datei (`upload/neonfall-10.html`) und ist **stilistisch und
+     9→spieltechnisch unverändert** belassen worden.
+    10→
+    11→Die Aufgabe war ausschließlich, diese HTML in eine echte **installierbare
+    12→PWA-App** (Next.js) zu überführen und das **CORS/Musik-Problem am Handy** zu
+    13→lösen. Beides ist umgesetzt und verifiziert.
+    14→
+    15→## Architektur / Key Decisions
+    16→
+    17→- **Spiel-Code preservation**: CSS (16 KB), Body-HTML (4.4 KB) und JS-IIFE
+    18→  (34.5 KB) wurden 1:1 aus der Original-HTML extrahiert (`scripts/extract.js`)
+    19→  und als escapte Template-Literals in `src/app/neonfall-content.ts` abgelegt.
+    20→  So ist sichergestellt, dass keinerlei Spiellogik/Styling angefasst wird.
+    21→- **`src/app/page.tsx`** (Client-Komponente):
+    22→  - Injiziert die Original-CSS via `<style dangerouslySetInnerHTML>`.
+    23→  - Rendert den Original-Body als **JSX** (class→className, for→htmlFor,
+    24→    value→defaultValue bei Range-Slidern, um React-Warnungen zu vermeiden —
+    25→    verhaltenserhaltend). JSX statt Wrapper-Div, damit die `body`-Flex-Layout-
+    26→    Regeln der Original-CSS exakt greifen (Elemente sind direkte Body-Kinder).
+    27→  - Führt das Original-IIFE in `useEffect` per injected `<script>`-Tag aus
+    28→    (läuft einmal dank `initRef`-Guard; `reactStrictMode:false` im next.config
+    29→    verhindert Dev-Double-Invoke).
+    30→  - Registriert den Service Worker (`/sw.js`).
+    31→- **`src/app/layout.tsx`**: Minimal, nur PWA-Metadaten (manifest, theme-color
+    32→  #0a0a14, apple-mobile-web-app-capable, viewport-fit=cover, user-scalable=no)
+    33→  + Google-Fonts (Space Grotesk, JetBrains Mono) als `<link>` (damit die
+    34→  Font-Namen aus der Original-CSS erhalten bleiben). Kein Geist-Font, keine
+    35→  Toaster, kein Wrapper — Body enthält direkt `{children}`.
+    36→- **Musik (CORS-Fix)**: `neonfall-music.mp3` liegt in `public/`. Das Spiel
+    37→  macht `fetch('neonfall-music.mp3')` → relativ zu `/` → `/neonfall-music.mp3`
+    38→  → same-origin (Next.js serviert `public/`), **kein CORS mehr**. Am Handy
+    39→  (wo die Datei vorher via `file://` oder falschem Host geladen wurde) lädt
+    40→  sie jetzt zuverlässig.
+    41→- **PWA**: `public/manifest.json` (name NEONFALL, standalone, portrait,
+    42→  icons 192/512 any+maskable). `public/sw.js` precacht App-Shell + Musik,
+    43→  cache-first für Same-Origin-Assets, SWR für Cross-Origin (Fonts). Dadurch
+    44→  installierbar (Android Chrome + iOS Add-to-Home-Screen) **und offline-
+    45→  fähig**.
+    46→- **Icons**: Via image-generation Skill ein 1024×1024 Neon-Tetris-Icon
+    47→  generiert, mit sharp auf 512/192/180/32 resized (`icon-512/192.png`,
+    48→  `apple-touch-icon.png`, `favicon.png`).
+    49→
+    50→## Verifizierung (alle bestanden)
+    51→
+    52→Getestet mit `agent-browser` (Server + Browser in einem Bash-Aufruf, da
+    53→Hintergrundprozesse im Sandbox beim Tool-Teardown gekillt werden):
+    54→
+    55→- Static-Assets: `neonfall-music.mp3` HTTP 206 audio/mpeg ✓, `manifest.json`
+    56→  200 ✓, `sw.js` 200 ✓, `icon-192/512.png` + `apple-touch-icon.png` 200 ✓.
+    57→- Page: HTTP 200, `<title>NEONFALL</title>`, 41 KB.
+    58→- Accessibility-Snapshot: volle UI-Struktur (NEONFALL-Titel, SCORE/BEST/
+    59→  LEVEL/LINES, HOLD/NEXT-Canvas, ⓘ/⏸/🔊-Buttons, Hinweis-Overlay mit
+    60→  Touch-/Tastatur-Anleitung).
+    61→- Interaktion: Hint per „LOS GEHT'S" geschlossen → Start-Prompt sichtbar →
+    62→  Game-Container geklickt → Spiel läuft (rAF-Loop, Canvas wird gezeichnet).
+    63→  Tastatur (←/→/↑) bewegt/dreht den Stein.
+    64→- Musik: Nach `initAudio()` (Keyboard/Touch) wird `neonfall-music.mp3`
+    65→  geladen — `decodedBodySize: 16.802.515` (volle 16 MB), `transferBytes: 0`
+    66→  (= via Service-Worker-Cache ausgeliefert). Hauptanliegen des Nutzers
+    67→  gelöst.
+    68→- Service Worker: `navigator.serviceWorker.controller === true` ✓ (aktiv &
+    69→  controlling).
+    70→- PWA-Meta: `link[rel=manifest]=/manifest.json`, `theme-color=#0a0a14`,
+    71→  `apple-mobile-web-app-capable=yes` ✓.
+    72→- React-Warnungen: 0 (value→defaultValue-Fix greift).
+    73→- Fehler in `dev.log`: keine.
+    74→- **VLM-Visuell** (`z-ai vision`):
+    75→  - Initial: „NEONFALL"-Titel in Neon-Gradient, Stats, HOLD/NEXT, dunkles
+    76→    modernes Neon-Design, Hinweis-Overlay — vollständig gerendert.
+    77→  - Spielend: Spielfeld mit fallendem lila T-Tetromino, Next-Vorschau cyan
+    78→    I-Stein, „polished, dark-themed neon design, fully functional and
+    79→    visually appealing".
+    80→
+    81→## Unresolved Issues / Risks / Next-Steps
+    82→
+    83→- **Sandbox-Teardown**: Hintergrundprozesse (`bun run dev`) werden beim Ende
+    84→  eines Bash-Tool-Aufrufs gekillt (cgroup-basiert; setsid/nohup/systemd-run
+    85→  alles nicht verfügbar — PID 1 ist `tini`). Für Verifikation wird der Server
+    86→  darum immer innerhalb eines einzelnen Bash-Aufrufs gestartet. Die Preview-
+    87→  Panel-Infrastruktur der Plattform serviert Port 3000 für den Nutzer
+    88→  unabhängig davon.
+    89→- **Google Fonts extern**: Werden online geladen; offline via SW-Cache
+    90→  (Cross-Origin SWR). Für 100 % Offline-Crispness könnten Fonts gebündelt
+    91→  werden (aktuell graceful Fallback auf sans-serif).
+    92→- **Keine Spiel-Änderung gewünscht**: Der Nutzer hat das Spiel als fertig
+    93→  deklariert. Stil/Logik wurden nicht angetastet. Mögliche zukünftige
+    94→  Enhancements (nur wenn gewünscht): Highscore-Cloud-Sync, mehrere
+    95→  Musik-Tracks, Landscape-Modus, Pause-bei-Tab-Wechsel ist bereits
+    96→  implementiert.
+    97→- **Cron-Review-Job**: Es wurde ein `webDevReview`-Job alle 15 Min angelegt,
+    98→  der Status prüft, ggf. Bugs fixed oder neue Features vorschlägt.
+    99→
+   100→---
+   101→
+   102→## Cron-Review-Zyklus 1 (App-Shell-Erweiterungen)
+   103→
+   104→**Task ID:** CR-1 · **Agent:** main (cron webDevReview)
+   105→
+   106→### Ausgangslage / QA-Befund
+   107→
+   108→Vor diesem Zyklus war die App stabil (Spiel + PWA + Musik alle funktionsfähig,
+   109→keine Bugs). Der Cron-Job forderte explizit neue Features + mehr Styling.
+   110→Da der Nutzer ursprünglich sagte, das **Spiel** solle nicht verändert werden,
+   111→wurden sämtliche Erweiterungen **außerhalb** des Spiel-IIFE vorgenommen
+   112→(position:fixed UI, MutationObserver auf Spiel-DOM, eigenes CSS — die
+   113→`neonfall-content.ts` mit dem Original-Spielcode blieb unangetastet).
+   114→
+   115→### Umgesetzte Features (alle im neuen Modul `src/app/neonfall-shell.ts`)
+   116→
+   117→1. **PWA-Install-Prompt** (`#nf-install-banner` + `#nf-ios-install`)
+   118→   - Android/Chrome: fängt `beforeinstallprompt` ab, zeigt neon-styled Banner
+   119→     am unteren Rand mit „Installieren"/„✕". Dismiss wird in localStorage
+   120→     gespeichert (`nf_install_dismissed`).
+   121→   - iOS: erkennt iPhone/iPad (auch iPadOS 13+ via `Macintosh`+touch), der
+   122→     Online-Dot wird klickbar und öffnet eine Schritt-für-Schritt-Anleitung
+   123→     (Teilen → Zum Startbildschirm hinzufügen).
+   124→   - **Bug gefixt**: Banner wurde anfangs über dem Hinweis-Overlay gezeigt und
+   125→     verdeckte den „LOS GEHT'S"-Button. Jetzt wird das Banner unterdrückt,
+   126→     solange ein Modal (Hinweis/Pause/Game-Over) sichtbar ist, und per
+   127→     MutationObserver nach Schließen des Hinweises nachgereicht.
+   128→
+   129→2. **Karriere-Statistik** (`#nf-stats-btn` + `#nf-stats-panel`)
+   130→   - Neuer 📊-Button oben links (neben ⓘ, position:fixed, z-20).
+   131→   - Öffnet ein Glassmorphism-Panel (z-50) mit: Spiele, Bestes Level,
+   132→     Highscore, Linien gesamt, Punkte gesamt, Spielzeit + 12 Achievements.
+   133→   - Datenerhebung **berührungslos** via MutationObserver auf den Spiel-Elementen
+   134→     `#game-over-screen` (Klasse `visible` → Spiel gezählt), `#level`
+   135→     (laufendes Max-Level), `#lines` (Tetris-Erkennung, s.u.), `#final-score`
+   136→     (Punkte). Spielzeit via 1s-Interval, das nur zählt, wenn das Spiel aktiv
+   137→     läuft (Hinweis weg, gestartet, nicht pausiert, nicht Game-Over, Tab sichtbar).
+   138→   - Speicherung in localStorage (`nf_stats`).
+   139→   - **Bug gefixt**: Stats-Panel pausierte das Spiel anfangs nicht, weil die
+   140→     `isGameActive()`-Prüfung `document.hidden` enthielt (im Headless-Browser
+   141→     `true`). Aufgespalten in `isGameRunning()` (nur Spiel-Zustand, für die
+   142→     Pause-Entscheidung) und `isGameActive()` (zusätzlich `!document.hidden`,
+   143→     für die Spielzeit-Zählung).
+   144→   - **Bug gefixt**: `tetris_4`-Achievement löste anfangs schon bei ≥4 Linien
+   145→     *insgesamt* aus. Jetzt erkennt ein eigener `#lines`-MutationObserver einen
+   146→     Sprung von ≥4 in einer einzigen Mutation (= echter 4-Linien-Clear / Tetris).
+   147→
+   148→3. **Service-Worker-Update-Toast** (`#nf-update-toast`)
+   149→   - Zeigt „✨ Neue Version verfügbar — Neuladen" oben, sobald ein neuer SW den
+   150→     Zustand `installed` erreicht (und bereits ein Controller aktiv ist).
+   151→     SW-Cache-Version auf `neonfall-v2` hochgezählt. Stündliches `reg.update()`.
+   152→
+   153→4. **Online/Offline-Indikator** (`#nf-online-dot`)
+   154→   - Kleiner grüner Punkt neben dem 📊-Button; wird rot + blinkend bei Offline.
+   155→     Auf iOS (nicht installiert) klickbar → öffnet Install-Anleitung.
+   156→
+   157→### Styling-Verbesserungen (Mandat erfüllt, ohne Spiel-CSS anzutasten)
+   158→
+   159→Eigenes `SHELL_CSS` (separates `<style>`, nach `GAME_CSS` injiziert) mit:
+   160→- Neon-Glassmorphism (rgba-Weiß-Tints, `backdrop-filter: blur`, border-radius 18px)
+   161→- Gradient-Akzente passend zum Spiel (`#22d3ee → #a78bfa → #f472b6`)
+   162→- Space-Grotesk-/JetBrains-Mono-Fonts (konsistent mit dem Spiel)
+   163→- SlideUp-Animation für Panels, Blink-Animation für Offline-Dot
+   164→- Hover-/Active-States, Desktop-Mediaquery, Scrollbar-Styling
+   165→- Touch-Targets ≥34px, safe-area-inset unterstützt
+   166→
+   167→### Verifikation (alle bestanden, via `agent-browser`)
+   168→
+   169→- Shell-Elemente alle present (statsBtn, onlineDot, statsPanel, iosInstall,
+   170→  installBanner, updateToast) ✓
+   171→- Keine Console-Errors, keine dev.log-Errors ✓
+   172→- Spiel weiterhin voll funktionsfähig (Canvas gerendert, Tastatur-Steuerung) ✓
+   173→- Fix 1: Banner unterdrückt bei sichtbarem Hinweis (`bannerShown:false`),
+   174→  erscheint nach Hinweis-Schließen (`bannerShown:true`) ✓
+   175→- Fix 2: Stats-Panel pausiert das Spiel (`gamePaused:true`), Resume bei Close ✓
+   176→- Fix 3: 4-Linien-Sprung → `tetris_4` freigeschaltet; 2-Linien-Sprung → nicht ✓
+   177→- Stats-Recording: nach Game-Over → Spiele=1, Best=1.234, Linien=7,
+   178→  3 Achievements, Footer mit Datum ✓
+   179→- Install-Banner Dismiss persistiert in localStorage ✓
+   180→- Online-Dot reagiert auf navigator.onLine ✓
+   181→- **VLM-Visuell** (`z-ai vision`):
+   182→  - Banner: „neon-styled install banner... game UI fully visible and
+   183→    unobscured... styling perfectly matches the neon aesthetic... no visual
+   184→    problems or overlaps... cohesive and professional."
+   185→  - Stats-Panel: „glassmorphic neon-styled card titled STATISTIK... ERFOLGE
+   186→    section with achievement badges, some in color, others grayed... clean and
+   187→    highly readable... no clutter or alignment issues."
+   188→
+   189→### Unresolved Issues / Risks / Empfehlungen für nächste Phase
+   190→
+   191→- **Spiel-Code weiterhin unangetastet**: `neonfall-content.ts` (Original-CSS/
+   192→  HTML/JS) wurde in diesem Zyklus nicht verändert. Alle Erweiterungen sind im
+   193→  separaten `neonfall-shell.ts` gekapselt. Soll der Nutzer das Spiel selbst
+   194→  erweitern wollen, bleibt der Weg offen.
+   195→- **Achievements sind rein lokal** (localStorage). Für geräteübergreifende
+   196→  Synchronisation wäre ein Backend nötig (Prisma+SQLite vorhanden, NextAuth
+   197→  verfügbar) — nur bei Nutzerwunsch.
+   198→- **Google Fonts noch extern**: offline via SW-Cache; für 100% Offline könnten
+   199→  Fonts gebundelt werden (next/font/self-host).
+   200→- **Headless-QA-Artefakt**: `document.hidden` ist im Headless-Browser oft
+   201→  `true`, daher wird Spielzeit in agent-browser-Tests nicht akkumuliert — auf
+   202→  einem echten Gerät (Fokus) funktioniert es.
+   203→- **Cron-Review-Zyklen**: Der 15-Min-Job läuft weiter. Nächste sinnvolle
+   204→  Schwerpunkte: (a)„Stats zurücksetzen"-Button im Panel, (b) Soundeffekt-Lautstärke-
+   205→  Regelung (erfordert Hook ins AudioCtx — aktuell im IIFE-Closure, schwer ohne
+   206→  Spieländerung), (c) mehrere Musik-Tracks, (d) Landscape-Layout-Optimierung,
+   207→  (e) Cloud-Highscore-Liste.
+   208→- **Sandbox-Teardown** weiterhin: Dev-Server wird beim Bash-Tool-Teardown
+   209→  gekillt; QA läuft darum in einem einzigen Bash-Aufruf. Preview-Panel serviert
+   210→  Port 3000 für den Nutzer unabhängig.
+   211→
+   212→---
+   213→
+   214→## Cron-Review-Zyklus 2 (Stats-Reset, Recent Scores, Achievement-Toast, Landscape-Hint)
+   215→
+   216→**Task ID:** CR-2 · **Agent:** main (cron webDevReview)
+   217→
+   218→### Ausgangslage / QA-Befund
+   219→
+   220→App war stabil (Spiel + alle Shell-Features aus Zyklus 1 funktionsfähig, keine
+   221→Console-/dev.log-Errors, Spiel spielbar). Der Stats-Reset-Button (aus Zyklus-1-
+   222→Empfehlung) fehlte noch; keine Landsacpe-Unterstützung vorhanden. Der Cron-Job
+   223→forderte erneut mehr Features + Styling. Auch hier wurde das Spiel-IIFE erneut
+   224→**nicht angetastet** — alle Erweiterungen im `neonfall-shell.ts`.
+   225→
+   226→### Umgesetzte Features (alle in `src/app/neonfall-shell.ts` ergänzt)
+   227→
+   228→1. **Stats-Reset-Button** (`#nf-stats-reset` + `#nf-reset-confirm`)
+   229→   - Roter „Statistik zurücksetzen"-Button am Ende des Stats-Panels.
+   230→   - Klick → Inline-Bestätigungs-Dialog („Wirklich alle Statistiken & Erfolge
+   231→     löschen?") mit „Löschen"/„Abbrechen". Löschen → `defaultStats()` + save +
+   232→     re-render. Abbrechen → Dialog verbergen, Button wiederherstellen.
+   233→   - **Bug gefixt**: Der Confirm-Dialog saß am Ende der scrollbaren Karte und
+   234→     war nach Klick außerhalb des Viewports → YES/NO-Buttons nicht klickbar.
+   235→     Fix: `scrollIntoView({block:'center'})` nach 50ms im Reset-Button-Handler.
+   236→
+   237→2. **Letzte-Spiele-Liste** (`.nf-recent`)
+   238→   - Neue Sektion „Letzte Spiele" im Stats-Panel: zeigt die letzten 5 Spiele
+   239→     mit Level, Linien, Zeitstempel („gerade eben"/„vor X min"/Datum) + Score.
+   240→   - `recentScores: RecentScore[]` zum Stats-Interface hinzugefügt, beim
+   241→     Game-Over via `unshift` + Trim auf 5 Einträge gepflegt.
+   242→
+   243→3. **Achievement-Unlock-Toast** (`#nf-ach-toast`)
+   244→   - Goldener/amberner Toast oben Mitte (z-47): „ERFOLG FREIGESCHALTET" + Icon
+   245→     + Name. Pop-Animation für Icon, auto-hide nach 3,2s.
+   246→   - `unlock()` ruft jetzt `showAchToast(id)` auf — erscheint nur bei NEU
+   247→     freigeschalteten Achievements (nicht bei bereits bestehenden).
+   248→   - 12 Achievements unverändert; Tetris-Erkennung via #lines-Sprung-Observer
+   249→     (aus Zyklus 1) bleibt erhalten.
+   250→
+   251→4. **Landscape-Rotate-Hint** (`#nf-rotate-hint`)
+   252→   - Vollbild-Overlay (z-60) bei Landscape auf Phone-Klasse (min-Dimension
+   253→     <500px). Animiertes Handy-Icon (Wiggle-Rotation), „Drehe dein Gerät"-Text.
+   254→   - Tablets/Desktop (breit genug) werden nicht gestört. Reagiert auf
+   255→     `resize` + `orientationchange`.
+   256→
+   257→### Styling-Verbesserungen
+   258→
+   259→- Reset-Button + Confirm in dezentem Rot (`#fb7185`), passend zum Game-Over-Stil.
+   260→- Recent-Scores-Liste mit Meta-Text (cyan) + Score (JetBrains-Mono, weiß).
+   261→- Achievement-Toast mit amber-goldenem Gradient (`#fbbf24 → #f472b6`),
+   262→  Glow-Schatten, Pop-Keyframe-Animation.
+   263→- Rotate-Hint mit neon-outlined Handy-Icon, Wiggle-Animation, Gradient-Titel.
+   264→- Alles konsistent im Neon-Dark-Theme (Space Grotesk / JetBrains Mono).
+   265→
+   266→### Verifikation (alle bestanden, via `agent-browser`)
+   267→
+   268→- Keine Console-Errors, keine dev.log-Errors ✓
+   269→- Neue Elemente present (achToast, rotateHint, resetBtn, resetConfirm) ✓
+   270→- **Reset-Flow** (nach scrollIntoView-Fix):
+   271→  - Reset → Confirm sichtbar (rect y=415, im Viewport) ✓
+   272→  - NO → `confirmShow:false, resetBtnVisible:true` ✓
+   273→  - YES → `games:0, recentCount:0, achCount:0, recentEmpty:true,
+   274→    resetBtnBack:true, confirmHidden:true` (vollständig gelöscht) ✓
+   275→- **Recent-Scores**: nach Game-Over → 1 Eintrag „L1 · 12 Linien · gerade eben
+   276→  2.500" ✓
+   277→- **Achievement-Toast**: erster Game-Over → `achToastShown:true,
+   278→  achToastName:"Erstes Spiel", achToastLabel:"Erfolg freigeschaltet"` ✓;
+   279→  auto-hide nach 3,2s ✓
+   280→- **Landscape-Hint**: Phone-Landscape (740×360) → `rotateHintShown:true` ✓;
+   281→  Portrait → `rotateHintHidden:true` ✓
+   282→- Spiel weiterhin voll funktionsfähig (Canvas, Tastatur) ✓
+   283→- **VLM-Visuell**:
+   284→  - Toast: „golden/amber neon toast... ERFOLG FREIGESCHALTET... Erstes Spiel...
+   285→    perfectly matches the app's neon aesthetic."
+   286→  - Rotate: „full-screen overlay... neon-outlined phone icon... Drehe dein
+   287→    Gerät... perfectly matches the app's signature neon dark aesthetic."
+   288→
+   289→### Unresolved Issues / Risks / Empfehlungen für nächste Phase
+   290→
+   291→- **Spiel-Code weiterhin unangetastet**: `neonfall-content.ts` unchanged.
+   292→- **Achievement-Toast überlappt minimal BEST-Box** (laut VLM) — typisch für
+   293→  Overlay-Notifications, akzeptabel. Könnte bei Bedarf höher positioniert
+   294→  werden.
+   295→- **Stats nur lokal** (localStorage): Cloud-Sync erst bei Nutzerwunsch
+   296→  (Prisma+SQLite+NextAuth vorhanden).
+   297→- **Nächste sinnvolle Schwerpunkte**: (a) mehrere Musik-Tracks (erfordert
+   298→  Hook ins AudioCtx oder separates Audio-Element — aktuell im IIFE-Closure),
+   299→  (b) Daily-Challenge-Modus, (c) Cloud-Highscore-Liste, (d) Settings-Import/
+   300→  Export, (e) Tastatur-Shortcuts im Stats-Panel (S=Stats, Esc=Close).
+   301→
+   302→---
+   303→
+   304→## Nutzer-Feedback: 3 Probleme (Musik-Ladezeit, Hinweis-Layout, Desktop-Breite)
+   305→
+   306→**Task ID:** UF-1 · **Agent:** main (Nutzer-Anfrage, Vorrang vor Cron)
+   307→
+   308→### Problem 1: Musik dauert lange bis sie beginnt
+   309→**Ursache:** Das Spiel fetcht `neonfall-music.mp3` (16 MB) erst bei der ersten
+   310→Nutzer-Interaktion (`initAudio`), dann `decodeAudioData`. Auf dem Handy heißt
+   311→das: 16 MB Download über mobiles Netz + Decode = mehrere Sekunden Wartezeit.
+   312→
+   313→**Fix:** `<link rel="preload" href="/neonfall-music.mp3" as="fetch" crossorigin>`
+   314→in `layout.tsx` head. Der Browser startet den Download sofort beim Seitenladen
+   315→(hohe Priorität), während der Nutzer den Hinweis liest. Beim ersten Tap ist die
+   316→Datei bereits im HTTP-Cache → `fetch()` im Spiel liefert sofort, nur noch
+   317→Decode (~100 ms).
+   318→
+   319→**Verifiziert:** Resource-Timing zeigt `initiator:link, startTime:89ms,
+   320→duration:140ms, decodedMB:16.02` — Preload läuft sofort. Nach `initAudio`:
+   321→`musicTransferKB:0` (aus Cache) — Musik startet innerhalb ~100 ms. ✓
+   322→
+   323→**Offen (6-Track-Crossfade):** Nutzer erwähnt 6 einzelne Musikdateien, die
+   324→gefadet werden sollen. Dateien noch nicht hochgeladen → kann noch nicht
+   325→implementiert werden. Wurde vom Nutzer angefragt; auf Upload wartend.
+   326→
+   327→### Problem 2: Hinweis-Overlay zweispaltig (sieht schlecht aus)
+   328→**Ursache:** Original-Game-CSS hat `@media (min-width: 700px) {
+   329→.hint-cols-wrap { display: flex; gap: 24px; } }` → auf Desktop/Breitbild werden
+   330→Touch- und Tastatur-Anleitung nebeneinander gezeigt. Nutzer sagt: „war so auch
+   331→nicht" (soll einspaltig sein).
+   332→
+   333→**Fix:** Shell-CSS-Override (injected nach Game-CSS):
+   334→`.hint-cols-wrap { display: flex !important; flex-direction: column !important;
+   335→gap: 16px !important; }` → Touch und Tastatur stapeln sich immer vertikal.
+   336→
+   337→**Verifiziert:** `hintColsWrapDirection:column` ✓. VLM: „single vertical column
+   338→(stacked)... no longer split into two side-by-side columns... highly readable,
+   339→well-spaced... no significant layout problems."
+   340→
+   341→### Problem 3: Desktop-App zu breit
+   342→**Ursache:** Original-Game-CSS setzt nur `#top-bar, #second-bar,
+   343→#game-container { max-width: 440px }` in der Desktop-Mediaquery, aber `body`
+   344→selbst ist voll-bildschirmbreit. Inhalt ist 440px zentriert, aber Body-
+   345→Hintergrund + Gradient-Blobs füllen den ganzen Viewport → App wirkt „zu breit".
+   346→
+   347→**Fix:** Shell-CSS-Override in `@media (min-width: 700px)`:
+   348→- `html { background: #050509 }` (außen dunkler)
+   349→- `body { max-width: 460px; margin: 0 auto; border-left/right: 1px solid
+   350→  rgba(255,255,255,0.07); box-shadow: 0 0 80px rgba(0,0,0,0.7) }`
+   351→- `body::before, body::after { position: absolute !important }` → Gradient-Blobs
+   352→  werden auf die Body-Säule geclippt (body ist position:relative), außen bleibt
+   353→  flach-dunkel.
+   354→
+   355→**Verifiziert:** `bodyW:460, bodyMaxW:460px, htmlBg:rgb(5,5,9), bodyBorderL:1px,
+   356→contentW:440` ✓. VLM: „narrow column centered on screen... empty dark space on
+   357→both sides... thin border/frame... content occupies most of that narrow width...
+   358→looks like a phone app centered on a desktop screen."
+   359→
+   360→### Verifikation Gesamt
+   361→- Keine Console-Errors, keine dev.log-Errors ✓
+   362→- Spiel weiterhin voll funktionsfähig (Canvas, Tastatur) ✓
+   363→- Preload-Link im HTML bestätigt ✓
+   364→- SW-Cache-Version auf v4 hochgezählt ✓
+   365→- Lint: 0 Errors ✓
+   366→
+   367→### Offen / Nächste Schritte
+   368→- **6-Track-Crossfade:** Warte auf Upload der 6 Musikdateien. Plan: separater
+   369→  Web-Audio-Crossfade-Player im Shell-Modul (6× AudioBuffer, nahtloses
+   370→  Überblenden). Herausforderung: Koexistenz mit dem Spiel-eigenen AudioCtx
+   371→  (IIFE-Closure). Option A: Spiel-Musik stummschalten und nur Shell-Player
+   372→  nutzen (erfordert Eingriff in `masterGain`/`musicGain` — nicht von außen
+   373→  zugänglich). Option B: `neonfall-music.mp3` durch eine leere/Stumm-Datei
+   374→  ersetzen + Shell-Player übernimmt. Wird mit Nutzer klären.
+   375→- Cron-Review-Job läuft weiter.
+   376→
+   377→---
+   378→
+   379→## 8-Track-Crossfade-Music-Player implementiert
+   380→
+   381→**Task ID:** MUSIC-1 · **Agent:** main (Nutzer-Anfrage)
+   382→
+   383→### Problem
+   384→Nutzer: „Die Musik dauert sehr lange bis sie beginnt" + „ich habe auch 6
+   385→einzelne Dateien, wenn das hilft. Diese müssten dann halt gefadet werden."
+   386→(Nutzer lud 8 MP3s hoch — 4 Track-Namen × 2 Versionen, alle verschieden, je
+   387→64–188 kbps, 48 kHz, 64–343 s Dauer.)
+   388→
+   389→### Lösung: Option B (stumme Datei + Shell-Player)
+   390→
+   391→1. **Stumme MP3** (16 KB, 2 s) ersetzt `public/neonfall-music.mp3` (vorher
+   392→   16 MB). Das Spiel-IIFE bleibt **unverändert** — es lädt/loopt weiterhin
+   393→   „neonfall-music.mp3", die aber jetzt stumm ist. Das alte Ladezeit-Problem
+   394→   ist damit komplett gelöst (16 KB statt 16 MB, Preload entfällt faktisch).
+   395→2. **8 Tracks** nach `public/music/track-1…8-*.mp3` kopiert (31 MB gesamt).
+   396→3. **Crossfade-Player** im Shell-Modul (`neonfall-shell.ts`):
+   397→   - Eigener `AudioContext` (separat vom Spiel-Closure).
+   398→   - Lädt Tracks on-demand (decode + cache als AudioBuffer), preloaded
+   399→     jeweils den nächsten Track.
+   400→   - 3 s Crossfade: FADE_DUR vor Track-Ende startet der nächste Track,
+   401→     aktueller faded aus.
+   402→   - Startet bei erster Nutzer-Interaktion (gleiche Trigger wie Spiel:
+   403→     touchstart/mousedown/keydown auf game-container, hint-close, start-prompt).
+   404→   - Start-Track zufällig (mehr Abwechslung bei App-Start).
+   405→   - UI: Music-Bar unten (z-48) mit ⏮/⏭-Buttons, animierten Equalizer-Bars,
+   406→     „♪ NOW PLAYING"-Label + Trackname.
+   407→
+   408→### Sync mit dem Spiel (alles via MutationObserver, kein IIFE-Eingriff)
+   409→- **Pause:** `#pause-overlay .visible` → Player pausiert (gain→0 + ctx.suspend).
+   410→  Resume → gain→1 + ctx.resume.
+   411→- **Mute:** `#mute-btn` textContent 🔇/🔊 → Player muted/unmuted (master gain).
+   412→- **Tab-Hide:** visibilitychange → Player silences (wie das Spiel selbst).
+   413→- **Game-Over:** Musik läuft weiter (besserer Vibe).
+   414→- **Hinweis-Overlay / Game-Over-Screen sichtbar:** Music-Bar wird ausgeblendet
+   415→  (hidden-by-game), damit sie nicht über Modals ragt.
+   416→- **Install-Banner sichtbar:** Music-Bar rutscht hoch (shift-up, bottom 84px),
+   417→  damit das Banner die Skip-Buttons nicht überdeckt.
+   418→
+   419→### Bug während QA gefunden & gefixt
+   420→Skip-Buttons (⏮/⏭) wurden vom Install-Banner überdeckt (beide am Boden,
+   421→Banner z-45 > Music-Bar z-22) → Skip funktionierte nicht. **Fix:** Music-Bar
+   422→z-index auf 48 erhöht + `shift-up`-Klasse (bottom +76px), die per
+   423→MutationObserver aktiviert wird, wenn das Banner `show` hat.
+   424→
+   425→### Verifikation (alle bestanden, via `agent-browser`)
+   426→- Stumme MP3 + alle 8 Tracks servieren (HTTP 206) ✓
+   427→- Music-Bar initial hidden (hidden-by-game während Hinweis) ✓
+   428→- Nach Hinweis-Schließen + Spielstart: `barShow:true, trackName:"Neon Pixel
+   429→  Run (Alt)"`, 2 Tracks geladen (current + preload) ✓
+   430→- Skip next: Track wechselt korrekt (Neon Pixel Run (Alt) → Neon Pixel Rush
+   431→  → Neon Pixel Rush (Alt)) ✓
+   432→- Skip prev: Track wechselt zurück ✓
+   433→- Pause-Sync: `gamePaused:true → musicBarPaused:true` ✓; Resume → false ✓
+   434→- Mute-Sync: `muteBtn:🔇 → musicBarPaused:true` ✓; Unmute → false ✓
+   435→- Shift-Up: Banner show → `shiftUp:true, bottom:84px` ✓; Skip klickbar ✓;
+   436→  Banner hide → `shiftUp:false` ✓
+   437→- 3 vorherige Fixes noch intakt: `bodyMaxW:460px, hintDir:column` ✓
+   438→- Spiel voll spielbar (`boardDrawn:true`), keine Console-/dev.log-Errors ✓
+   439→- **VLM-Visuell:** „compact music player bar at the bottom... NOW PLAYING...
+   440→  Neon Pixel Rush... animated equalizer-bars icon... perfectly matches the
+   441→  neon dark theme... no overlap."
+   442→
+   443→### Service Worker
+   444→- Cache-Version auf v5 hochgezählt.
+   445→- Alle 8 Tracks + stumme MP3 in PRECACHE_URLS → offline-fähig.
+   446→
+   447→### Offen / Nächste Schritte
+   448→- Track-Reihenfolge ist fix (1→8, dann Loop). Ggf. Shuffle-Modus oder
+   449→  Nutzer-Sortierung als zukünftiges Feature.
+   450→- Musik-Lautstärke ist fix (0.5). Ein Volume-Slider wäre möglich (erfordert
+   451→  UI-Platz im Player).
+   452→- Cron-Review-Job läuft weiter.
+   453→
+   454→---
+   455→
+   456→## Nutzer-Feedback Runde 2: Music-Player kollabierbar, fancy Namen, Hintergrund-Fix
+   457→
+   458→**Task ID:** UF-2 · **Agent:** main (Nutzer-Anfrage)
+   459→
+   460→### Problem 1: Music-Player ist im Weg
+   461→**Lösung:** Player ist jetzt kollabierbar. Toggle-Geste wie vom Nutzer vorgeschlagen:
+   462→- **Mobil:** Long-Press (450 ms) auf den 🔊-Lautsprecher-Button oben rechts
+   463→- **Desktop:** Doppelklick auf den 🔊-Button
+   464→- Kollabiert → winzige Pille nur mit Equalizer-Bars-Icon (kein Trackname/Buttons)
+   465→- Expandiert → volle Music-Bar mit ⏮/⏭ + Trackname
+   466→- Zustand persistiert in localStorage (`nf_music_collapsed`)
+   467→- Einmaliger Hinweis-Puls (cyan-Ring) auf dem 🔊-Button beim ersten Besuch
+   468→- Einzelklick auf 🔊 mutet weiterhin (Spiel-Handler unberührt); der synthetische
+   469→  Klick nach einem Long-Press wird bewusst verschluckt (verhindert versehentliches
+   470→  Muten direkt nach dem Kollabieren)
+   471→
+   472→### Problem 2: Tracks brauchen fancy Namen
+   473→**Lösung:** 8 Tracks umbenannt (Dateinamen unverändert, nur Anzeige):
+   474→- Neon Pulse → **Pulse Drive**
+   475→- Neon Pulse (Alt) → **Static Bloom**
+   476→- Neon Pixel Run → **Pixel Drift**
+   477→- Neon Pixel Run (Alt) → **Bitstream**
+   478→- Neon Pixel Rush → **Grid Runner**
+   479→- Neon Pixel Rush (Alt) → **Circuit Breaker**
+   480→- Block Rush → **Cascade**
+   481→- Block Rush (Alt) → **Freefall**
+   482→
+   483→### Problem 3: Hintergrund außerhalb der App-Spalte ist schwarz
+   484→**Ursache:** Mein Issue-3-Fix aus UF-1 hatte `body::before/after` auf
+   485→`position: absolute !important` gesetzt → Gradient-Blobs wurden auf die 460px-
+   486→Spalte geclippt. Außen zeigte nur `html { background: #050509 }` (fast schwarz).
+   487→
+   488→**Fix:** Override entfernt. `body::before/after` bleiben `position: fixed` (ihr
+   489→Originalwert) → Blobs bedecken den **ganzen Viewport**. `html`-Base auf `#0a0a14`
+   490→gesetzt (dunkles Navy, passend zur App). App-Content bleibt in der 460px-Spalte,
+   491→aber der Gradient + die animierten Blobs füllen die gesamte Bildschirmfläche.
+   492→
+   493→### Verifikation (alle bestanden)
+   494→- **Issue 3:** `htmlBg:rgb(10,10,20)` (#0a0a14), `blobBeforePos:fixed`,
+   495→  `bodyMaxW:460px` ✓. VLM: „not pure black... dark navy/purple gradient with
+   496→  glowing colored blobs... flows seamlessly... no hard black edge."
+   497→- **Issue 2:** Track-Namen: Pixel Drift → Bitstream → Grid Runner ✓
+   498→- **Issue 1:** Doppelklick → `collapsed:true, persisted:"1"` ✓; erneut →
+   499→  `collapsed:false, persisted:"0"` ✓; Long-Press-Simulation → `collapsed:true` ✓;
+   500→  Einzelklick mutet weiterhin ✓. VLM: „tiny minimal pill with equalizer bars...
+   501→  significantly reduces obstruction... maintains neon aesthetic."
+   502→- Spiel voll spielbar, keine Console-/dev.log-Errors ✓
+   503→- SW-Cache-Version auf v6 hochgezählt.
+   504→
+   505→
+   506→
+   507→---
+   508→
+   509→## S8.16: Next-Box Bug-Fix + Eindeutige Spielstein-Farben
+   510→
+   511→**Task ID:** S8.16 · **Agent:** main (Nutzer-Anfrage)
+   512→
+   513→### Problem 1: Next-Box war komplett leer
+   514→**Ursache (gefunden via Code-Inspektion):** In `drawNext()` wurden
+   515→`offsetX`/`offsetY` in **Pixeln** berechnet (`centerX - pieceW/2` etc.),
+   516→aber dann an `drawCell(ctx, x + offsetX, y + offsetY, ...)` übergeben.
+   517→`drawCell` macht intern `px = x * size` — multipliziert also den Offset
+   518→nochmal mit der Zellgröße. Bei einem I-Stein (4 Zellen breit, size=9)
+   519→landeten die Zellen bei `px = (0 + 86) * 9 = 774px` in einem 120px-Canvas.
+   520→→ Alle Steine wurden weit außerhalb des Canvas gezeichnet → Next-Box leer.
+   521→
+   522→**Fix:** Pixel-Offsets vor dem `drawCell`-Aufruf durch `size` teilen, um
+   523→sie in Zell-Einheiten zurückzuwandeln:
+   524→```js
+   525→const offsetX_cells = offsetX_px / size;
+   526→const offsetY_cells = offsetY_px / size;
+   527→drawCell(nextCtx, x + offsetX_cells, y + offsetY_cells, ...);
+   528→```
+   529→Außerdem: klarere Slot-Pitch-Konstanten (34px Abstand, 14px rechter Rand)
+   530→und leicht erhöhte Opacity für hintere Steine (0.5/0.3 statt 0.45/0.25)
+   531→für bessere Sichtbarkeit.
+   532→
+   533→**Verifiziert:** `getImageData` auf next-canvas → 812 non-bg Pixel von
+   534→5520 (≈15% Coverage). VLM bestätigt sichtbare Steine (Cyan/Orange/Magenta
+   535→im Next-Box). ✓
+   536→
+   537→### Problem 2: Spielstein-Farben teilweise fast ident
+   538→**Ursache:** Alte Palette nutzte für 16 Steine fast ausschließlich
+   539→Tailwind-400/500-Varianten derselben Hue-Familien:
+   540→- F (#06b6d4 cyan-500) ≈ I (#22d3ee cyan-400) — fast gleich
+   541→- F' (#0ea5e9 sky-500) ≈ F (#06b6d4) — fast gleich
+   542→- P (#ec4899 pink-500) ≈ P' (#f43f5e rose-500) — fast gleich
+   543→- Y (#f59e0b) ≈ Y' (#eab308) ≈ O (#fbbf24) — alle gelb/amber
+   544→- L5 (#8b5cf6) ≈ T (#a78bfa) — beide violet
+   545→- J5 (#d946ef) ≈ P (#ec4899) — beide magenta-pink
+   546→
+   547→Besonders die Spiegel-Paare (F/F', P/P', Y/Y', L5/J5) waren kaum
+   548→unterscheidbar — das war genau die Nutzerbeschwerde.
+   549→
+   550→**Fix — Neue 16-Farben-Palette mit Strategie „warm vs. cool" für Spiegel-Paare:**
+   551→
+   552→| Stück  | Farbe (alt)        | Farbe (neu)   | Name            | Spiegel-Paar |
+   553→|--------|--------------------|---------------|-----------------|--------------|
+   554→| I      | #22d3ee cyan-400   | **#00f0ff**   | electric cyan   | —            |
+   555→| J      | #6366f1 indigo-500 | **#4d7dff**   | royal blue      | L (warm)     |
+   556→| L      | #fb923c orange-400 | **#ff8c1a**   | neon orange     | J (cool)     |
+   557→| O      | #fbbf24 amber-400  | **#ffd400**   | golden yellow   | —            |
+   558→| S      | #34d399 emerald-400| **#00e676**   | emerald green   | Z (warm)     |
+   559→| T      | #a78bfa violet-400 | **#b347ff**   | neon purple     | —            |
+   560→| Z      | #fb7185 rose-400   | **#ff2db4**   | hot pink        | S (cool)     |
+   561→| F      | #06b6d4 cyan-500   | **#00ffaa**   | mint (cool)     | F' (warm)    |
+   562→| F'     | #0ea5e9 sky-500    | **#ffaa00**   | amber (warm)    | F (cool)     |
+   563→| P      | #ec4899 pink-500   | **#ff5cb0**   | rose pink (warm)| P' (cool)    |
+   564→| P'     | #f43f5e rose-500   | **#c4ff3d**   | chartreuse(cool)| P (warm)     |
+   565→| T5     | #10b981 emerald-500| **#00b3a4**   | deep teal       | —            |
+   566→| Y      | #f59e0b amber-500  | **#d9b34d**   | mustard gold wm | Y' (cool)    |
+   567→| Y'     | #eab308 yellow-500 | **#5d9cff**   | sky blue (cool) | Y (warm)     |
+   568→| L5     | #8b5cf6 violet-500 | **#7a1aff**   | deep violet col | J5 (warm)    |
+   569→| J5     | #d946ef fuchsia-500| **#ff6e3d**   | coral (warm)    | L5 (cool)    |
+   570→
+   571→Jeder Spiegel-Paar-Spartner sitzt am **gegenüberliegenden Ende des
+   572→warm/cool-Spektrums** → immer deutlich unterscheidbar. Keine zwei
+   573→Stücke teilen sich dieselbe Hue-Familie.
+   574→
+   575→**Verifiziert:** VLM erkennt nach Several-drops 7+ distinct Farben
+   576→(yellow, cyan, purple, blue, orange, pink, green) plus ghost. ✓
+   577→
+   578→### Lint & Build
+   579→- ESLint: 0 Errors (1 pre-existing warning zu custom-font in layout.tsx)
+   580→- Dev-Server: Ready in 292ms, GET / 200, keine Runtime-Errors. ✓
+   581→- Service Worker Cache: sollte bei nächstem Deploy inkrementiert werden.
+   582→
+   583→### Offen / Nächste Schritte
+   584→- Upload-Ordner leeren (Nutzer-Anfrage aus vorheriger Runde — noch offen)
+   585→- Highscore localStorage vs. DB-Erklärung (vorherige Runde — noch offen)
+   586→- S8.14 Staging Pipeline (geplant)
+   587→
+   588→---
+   589→
+   590→## S8.17: Next-Box-Redesign + React-Console-Fehler behoben
+   591→
+   592→**Task ID:** S8.17 · **Agent:** main (Nutzer-Anfrage)
+   593→
+   594→### Problem 1: Next-Box sah aus wie "Hobby-Projekt"
+   595→**Ursachen (via VLM-Analyse identifiziert):**
+   596→1. Canvas zu klein (120×46px) — 3 Steine gequetscht, keine Atemraum
+   597→2. Layout "fan from right" — Front piece ganz rechts, sah unausgewogen aus
+   598→3. Fehlende visuelle Struktur — Pieces schwebten ohne Container/Hintergrund
+   599→4. Spacing ungleichmäßig — "top-heavy" laut VLM
+   600→
+   601→**Fix — Vollständiger Redesign:**
+   602→
+   603→1. **Canvas vergrößert** (HoldNextBar.tsx): 120×46 → **160×52** (+33% Breite, +13% Höhe)
+   604→2. **CSS-Anpassung** (neonfall-app.css.ts):
+   605→   - `#hold-box { flex: 0 0 auto }` — Hold nimmt nur den Platz den es braucht (62px)
+   606→   - `#next-box { flex: 1 1 auto }` — Next bekommt den gesamten Rest
+   607→   - Vorher hatten beide `flex: 1` → Next-Canvas wurde gequetscht
+   608→3. **drawNext() komplett neu** (neonfall-content.ts):
+   609→   - 3 explizite Slots mit berechneten Positionen (kein "fan from right" mehr)
+   610→   - Front slot (x 4-84, 80px breit): size 11, opacity 1.0, glow 8
+   611→   - Mid slot (x 88-120, 32px breit): size 6, opacity 0.50, glow 1
+   612→   - Back slot (x 124-156, 32px breit): size 5, opacity 0.25, glow 0
+   613→   - **Subtle Slot-Hintergründe**: Gerundete Rechtecke mit faint fill+stroke
+   614→     - Front: fillAlpha 0.06, strokeAlpha 0.16 (am deutlichsten)
+   615→     - Mid: fillAlpha 0.035, strokeAlpha 0.08
+   616→     - Back: fillAlpha 0.02, strokeAlpha 0.08 (am subtilsten)
+   617→   - Klare Hierarchie: Front piece groß+bright, hintere dimmer+kleiner
+   618→
+   619→**Verifiziert (VLM):**
+   620→- Vorher: "8/10 aber sieht aus wie Hobby-Projekt, keine klare Struktur"
+   621→- Nachher: **"9/10 Professionalität"** — "polished, modern, highly polished"
+   622→- 3 Stücke klar sichtbar in getrennten Slots ✓
+   623→- Slot-Separatoren sichtbar ✓
+   624→- Layout balanced ✓
+   625→
+   626→### Problem 2: Viele React/Console-Fehler in der Vorschau
+   627→**Ursachen (3 unabhängige Quellen identifiziert):**
+   628→
+   629→1. **Hydration-Mismatch** (Canvas-Width/Height):
+   630→   - React renderte `<canvas id="tetris-canvas">` ohne width/height
+   631→   - IIFE setzte dann `canvas.width = 288; canvas.height = 576`
+   632→   - Bei React-Re-Render: VDOM (keine Attribute) ≠ DOM (Attribute gesetzt) → Warning
+   633→
+   634→2. **Fast-Refresh Runtime-Error** (IIFE Double-Init):
+   635→   - Bei Hot-Reload injizierte useGameBootstrap den IIFE-Script erneut
+   636→   - IIFE versuchte, Event-Listener erneut zu registrieren → Runtime-Error
+   637→   - Next.js: "⚠ Fast Refresh had to perform a full reload due to a runtime error"
+   638→
+   639→3. **404 Errors für Music-Tracks**:
+   640→   - Shell referenzierte `/music/track-13-neon-block-rush.mp3` etc.
+   641→   - Aber tatsächliche Dateien hießen anders (`track-13-block-rush-vi.mp3`)
+   642→   - 4 Tracks (13-16) → 404 in Console
+   643→   - Tracks 17-21 existierten in `public/music/` wurden aber nie in der Liste geführt
+   644→
+   645→**Fixes:**
+   646→
+   647→1. **Canvas-Attribute in React gesetzt** (GameCanvas.tsx):
+   648→   ```jsx
+   649→   <canvas id="tetris-canvas" width={288} height={576}></canvas>
+   650→   ```
+   651→   → Server und Client rendern identisch → keine Hydration-Mismatch
+   652→
+   653→2. **IIFE-Guard gegen Double-Init** (neonfall-content.ts, Zeile 665):
+   654→   ```js
+   655→   if (window.__nfInitialized) return;
+   656→   window.__nfInitialized = true;
+   657→   ```
+   658→   → Hot-Reload überspringt IIFE-Neu-Init → keine Runtime-Errors → keine Fast-Refresh-Warnings
+   659→
+   660→3. **Track-Liste korrigiert** (neonfall-shell.ts):
+   661→   - 4 falsche Dateipfade korrigiert (13-16)
+   662→   - 5 fehlende Tracks hinzugefügt (17-21)
+   663→   - Jetzt 21 Tracks in der Liste (vorher 16, davon 4 broken)
+   664→   → keine 404s mehr in Console
+   665→
+   666→**Verifiziert:**
+   667→- `agent-browser console` nach frischem Load: nur `React DevTools` Info + `[HMR] connected`
+   668→- `agent-browser errors`: leer
+   669→- `dev.log`: keine Warnings, keine Errors, keine 404s, keine Hydration-Mismatches
+   670→- Vorher: "Fast Refresh had to perform a full reload due to a runtime error" (mehrfach)
+   671→- Nachher: saubere Hot-Reloads ohne Warnings
+   672→
+   673→### Lint & Build
+   674→- ESLint: 0 Errors ✓
+   675→- Dev-Server: läuft stabil, GET / 200, keine Runtime-Errors ✓
+   676→
+   677→### Trade-offs / Notizen
+   678→- **IIFE-Guard Trade-off**: Bei Code-Änderungen am IIFE selbst ist ein manueller
+   679→  Page-Reload nötig (statt Hot-Reload). Das ist ein akzeptabler Trade-off für eine
+   680→  saubere Console. Für Production ist das ohnehin irrelevant (kein HMR).
+   681→- **Canvas-Größe**: Next-Canvas jetzt 160×52. Das verändert das Hold/Next-Bar-Layout
+   682→  minimal (Next-Box ist jetzt breiter als Hold-Box). Sieht aber balanced aus, weil
+   683→  Hold nur den Platz nimmt den es braucht.
+   684→
+   685→### Offen / Nächste Schritte
+   686→- Upload-Ordner leeren (noch offen aus vorheriger Runde)
+   687→- Highscore localStorage vs. DB Sync (noch offen)
+   688→- S8.14 Staging Pipeline (geplant)
+   689→
