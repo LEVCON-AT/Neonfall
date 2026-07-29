@@ -111,6 +111,11 @@ echo -e "\n${YELLOW}[3.5] Install multiplayer dependencies...${NC}"
 
 cd mini-services/multiplayer
 bun install --frozen-lockfile --no-progress 2>&1 || bun install --frozen-lockfile 2>&1
+
+# S8.21.7: Ensure start.sh wrapper is executable
+chmod +x start.sh 2>/dev/null || true
+chown www-data:www-data start.sh 2>/dev/null || true
+
 cd "$PROJECT_DIR"
 echo "  ✓ Multiplayer dependencies installiert"
 

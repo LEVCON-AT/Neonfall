@@ -5,11 +5,18 @@
 #
 #  Startet den socket.io Backend für 1v1 Multiplayer matches.
 #  Läuft auf Port 3004, wird von nginx via XTransformPort geroutet.
+#
+#  WICHTIG: Bun muss system-wide installiert sein (nicht nur in /root/.bun/),
+#  damit der www-data User es ausführen kann. Siehe Deploy-Doku.
 
 [Unit]
 Description=Neonfall Multiplayer Service (socket.io, port 3004)
 Documentation=https://github.com/LEVCON-AT/Neonfall
 After=network.target neonfall.service
+# S8.21.7: StartLimit muss in [Unit] stehen, nicht in [Service].
+#   Give up after 5 rapid restarts in 60s (prevents infinite restart loop).
+StartLimitBurst=5
+StartLimitIntervalSec=60
 
 [Service]
 Type=simple
@@ -18,11 +25,11 @@ Group=www-data
 WorkingDirectory=/var/www/neonfall/mini-services/multiplayer
 Environment="NODE_ENV=production"
 
-# Start socket.io backend via bun
-# S8.14: Fallback to node if bun not at /usr/local/bin/bun
-ExecStart=/usr/local/bin/bun run /var/www/neonfall/mini-services/multiplayer/index.ts
-# Fallback (uncomment if bun not available):
-# ExecStart=/usr/bin/node /var/www/neonfall/mini-services/multiplayer/index.ts
+# S8.21.7: Use a wrapper script that finds bun wherever it's installed.
+#   Tries: /usr/local/bin/bun → /opt/bun/bin/bun → $HOME/.bun/bin/bun
+#   If none found, falls back to node (requires tsx for .ts execution).
+#   The actual script is created by vps-update.sh during deploy.
+ExecStart=/var/www/neonfall/mini-services/multiplayer/start.sh
 
 # Restart Logic
 Restart=always
@@ -40,6 +47,8 @@ CPUQuota=40%
 # Security Hardening
 NoNewPrivileges=true
 PrivateTmp=true
+# S8.21.7: ProtectHome=true verhindert Zugriff auf /root/.bun/.
+#   Bun muss system-wide installiert werden (siehe Deploy-Doku).
 ProtectHome=true
 ReadWritePaths=/var/www/neonfall/mini-services/multiplayer
 ProtectKernelTunables=true
