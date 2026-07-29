@@ -86,7 +86,7 @@ export function HintDialog({ open, onOpenChange }: HintDialogProps) {
                 <span className="nf-hint-desc">Stein bewegen</span>
               </li>
               <li className="nf-hint-item">
-                <span className="nf-hint-gesture">Tippen links / rechts</span>
+                <span className="nf-hint-gesture">Tippen</span>
                 <span className="nf-hint-desc">Drehung links / rechts</span>
               </li>
               <li className="nf-hint-item">

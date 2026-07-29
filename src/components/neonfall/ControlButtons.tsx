@@ -27,11 +27,9 @@ const GAME_SVG = {
  * Layout (top of viewport, safe-area aware):
  *   top-left:  #info-btn (IIFE) → #nf-stats-btn (shell)
  *   top-right: #pause-btn (IIFE) → #mute-btn (IIFE)
- *   below #nf-stats-btn: #nf-online-dot (status indicator)
- *
  * - #info-btn, #pause-btn, #mute-btn → game-controlled (raw SVG, IIFE owns them)
  * - #nf-stats-btn → shell-controlled (lucide icon, opens stats panel via initShell)
- * - #nf-online-dot → status indicator (no icon, just a coloured dot)
+ * S8.21.1: #nf-online-dot removed (green status indicator, no value).
  *
  * S2.3 cleanup: removed #nf-music-btn and #nf-mp-btn — they were dead DOM
  * nodes with no CSS positioning and no shell click-handler, floating over the
@@ -64,7 +62,9 @@ export function ControlButtons() {
       <button id="nf-stats-btn" aria-label="Statistik öffnen" title="Statistik">
         <BarChart3 size={18} aria-hidden="true" />
       </button>
-      <div id="nf-online-dot" aria-hidden="true" title="Online" />
+      {/* S8.21.1: Removed #nf-online-dot — the green status indicator was
+          visually distracting and provided no real value (the app always
+          works offline thanks to the service worker). */}
     </>
   );
 }
