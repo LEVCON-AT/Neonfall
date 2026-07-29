@@ -96,14 +96,25 @@ export const SHELL_CSS = `
     justify-content: space-between;
     margin-bottom: 14px;
 }
+/* S8.22.4: Stats title now matches .nf-dialog-title style (flex, line-height,
+   padding-bottom, same font-size). Includes inline icon like other dialogs. */
 .nf-stats-title {
-    font-size: 1.15em;
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.4;
+    padding-bottom: 2px;
+    font-size: 1.1em;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+}
+.nf-stats-title svg {
+    flex-shrink: 0;
+    color: #22d3ee;
 }
 .nf-stats-close {
     background: rgba(255,255,255,0.06);
@@ -921,7 +932,7 @@ export function initShell() {
       : '<div class="nf-recent-empty">Noch keine Spiele — leg los!</div>';
     card.innerHTML =
       '<div class="nf-stats-header">' +
-        '<div class="nf-stats-title">STATISTIK</div>' +
+        '<div class="nf-stats-title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16V8M12 16v-5M17 16v-3"/></svg>Statistik</div>' +
         '<button class="nf-stats-close" id="nf-stats-close" aria-label="Schließen">✕</button>' +
       '</div>' +
       '<div class="nf-stats-grid">' +
