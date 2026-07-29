@@ -268,19 +268,7 @@ body.nf-playing::after { animation-play-state: paused !important; }
 /* ===== Sprint 5c: Multiplayer Dialog ===== */
 .nf-mp-dialog { max-width: 380px !important; }
 .nf-mp-content { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 8px 0; }
-.nf-mp-create-btn {
-  width: 100%;
-  background: linear-gradient(90deg, rgba(244,114,182,0.2), rgba(167,139,250,0.2)) !important;
-  border: 1px solid rgba(244,114,182,0.4) !important;
-  color: #f472b6 !important;
-  font-weight: 600;
-  font-size: 1.05em !important;
-  height: 48px !important;
-  gap: 8px;
-}
-.nf-mp-create-btn:hover:not(:disabled) {
-  background: linear-gradient(90deg, rgba(244,114,182,0.3), rgba(167,139,250,0.3)) !important;
-}
+/* S8.22.1d: Removed .nf-mp-create-btn (now uses .nf-action-btn .nf-action-btn-primary) */
 .nf-mp-divider {
   width: 100%;
   text-align: center;
@@ -299,24 +287,30 @@ body.nf-playing::after { animation-play-state: paused !important; }
 }
 .nf-mp-divider::before { left: 0; }
 .nf-mp-divider::after { right: 0; }
-.nf-mp-join { display: flex; gap: 8px; width: 100%; }
+/* S8.22.1c: Stacked layout — Input above Button, both full-width. */
+.nf-mp-join {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
 .nf-mp-code-input {
-  flex: 1;
+  width: 100%;
   text-align: center;
   font-family: var(--font-jetbrains-mono), monospace !important;
-  font-size: 1.3em !important;
+  font-size: 1.2em !important;
   font-weight: 700 !important;
   letter-spacing: 4px;
   text-transform: uppercase;
   background: rgba(255,255,255,0.05) !important;
-  border: 1px solid rgba(244,114,182,0.3) !important;
-  color: #f472b6 !important;
-  height: 48px !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #e8e8f5 !important;
+  height: 44px !important;
   border-radius: 10px !important;
 }
 .nf-mp-code-input:focus {
-  border-color: rgba(244,114,182,0.6) !important;
-  box-shadow: 0 0 0 2px rgba(244,114,182,0.15) !important;
+  border-color: rgba(34,211,238,0.5) !important;
+  box-shadow: 0 0 0 2px rgba(34,211,238,0.15) !important;
 }
 .nf-mp-code-input::placeholder { color: #4a4a6a !important; letter-spacing: 2px; }
 .nf-mp-waiting { gap: 10px; }

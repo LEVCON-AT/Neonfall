@@ -290,8 +290,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
               <Button
                 type="button"
                 onClick={handleCreateRoom}
-                className="nf-mp-create-btn"
-                size="lg"
+                className="nf-action-btn nf-action-btn-primary nf-action-btn-single"
               >
                 <Sword size={16} aria-hidden="true" />
                 Raum erstellen
@@ -311,7 +310,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
                   type="button"
                   onClick={handleJoinRoom}
                   disabled={joinInput.length !== 4}
-                  size="default"
+                  className="nf-action-btn nf-action-btn-primary nf-action-btn-single"
                 >
                   Beitreten
                 </Button>
