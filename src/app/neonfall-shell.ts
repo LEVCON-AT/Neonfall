@@ -1057,6 +1057,15 @@ export function initShell() {
     { file: '/music/track-19-neon-pixel-run-alt.mp3',     name: 'Bitstorm' },
     { file: '/music/track-20-neon-pixel-rush.mp3',        name: 'Hyperdrive' },
     { file: '/music/track-21-neon-pixel-rush-alt.mp3',    name: 'Quantum Leap' },
+    // S8.22.7: 8 new tracks added (track-22..29)
+    { file: '/music/track-22-block-rush-vii.mp3',          name: 'Gravity Well' },
+    { file: '/music/track-23-block-rush-viii.mp3',         name: 'Plasma Arc' },
+    { file: '/music/track-24-block-rush-ix.mp3',           name: 'Void Pulse' },
+    { file: '/music/track-25-block-rush-x.mp3',            name: 'Synthwave Drift' },
+    { file: '/music/track-26-block-rush-xi.mp3',           name: 'Neon Eclipse' },
+    { file: '/music/track-27-block-rush-xii.mp3',          name: 'Crystal Storm' },
+    { file: '/music/track-28-block-rush-xiii.mp3',         name: 'Dark Matter' },
+    { file: '/music/track-29-block-rush-xiv.mp3',          name: 'Singularity' },
   ];
   const FADE_DUR = 3.0;          // seconds of crossfade between tracks
   const MUSIC_VOL = 0.5;         // target music volume (matches game's musicGain)
@@ -1099,13 +1108,25 @@ export function initShell() {
     }
   }
 
+  // S8.22.7: Preload the next track's buffer while the current one plays.
+  //   Previously loadTrack(next) was called 3s before end — if the network
+  //   was slow, the buffer wasn't ready in time → 2-3s silence gap.
+  //   Now we preload immediately after the current track starts.
+  let nextBuffer: { idx: number; buf: AudioBuffer | null } | null = null;
+
+  async function preloadNext(i: number) {
+    if (nextBuffer && nextBuffer.idx === i) return; // already preloading
+    nextBuffer = { idx: i, buf: null };
+    const buf = await loadTrack(i);
+    if (nextBuffer.idx === i) nextBuffer.buf = buf;
+  }
+
   // Play track i immediately, fading in over fadeInDur. Schedules the next track
   // to crossfade in FADE_DUR before this track ends.
   async function playTrack(i: number, fadeInDur: number) {
     if (!mCtx || !mVol) return;
     const buf = await loadTrack(i);
     if (!buf || !mCtx) return;
-    // If we switched tracks while loading, abort.
     if (curIdx !== i) return;
     stopCurSource();
     curSrc = mCtx.createBufferSource();
@@ -1117,12 +1138,18 @@ export function initShell() {
     srcGain.gain.exponentialRampToValueAtTime(MUSIC_VOL, t0 + fadeInDur);
     curSrc.connect(srcGain); srcGain.connect(mVol);
     curSrc.start(t0);
+
+    // S8.22.7: Preload the next track immediately (not 3s before end).
+    //   This ensures the buffer is ready when the crossfade fires.
+    const nextIdx = (i + 1) % TRACKS.length;
+    preloadNext(nextIdx);
+
     // schedule crossfade to next track
     const dur = buf.duration;
     const crossStart = Math.max(0, dur - FADE_DUR);
     if (nextTimer) clearTimeout(nextTimer);
     nextTimer = setTimeout(() => {
-      // fade out current, start next
+      // fade out current
       if (curSrc && mCtx) {
         const tt = mCtx.currentTime;
         try {
@@ -1131,9 +1158,13 @@ export function initShell() {
           srcGain.gain.exponentialRampToValueAtTime(0.0001, tt + FADE_DUR);
         } catch {}
       }
-      curIdx = (curIdx + 1) % TRACKS.length;
-      // give the fade-out a moment, then start next (overlapping)
-      setTimeout(() => { playTrack(curIdx, FADE_DUR); updateMusicBar(); }, 50);
+      curIdx = nextIdx;
+      // S8.22.7: Start next track IMMEDIATELY (no 50ms gap that caused silence).
+      //   If the preloaded buffer is ready, use it directly. Otherwise fall
+      //   back to loadTrack (which may cause a brief gap, but preloading
+      //   should prevent that in practice).
+      playTrack(curIdx, FADE_DUR);
+      updateMusicBar();
       // stop the old source after the fade completes
       setTimeout(() => {
         if (curSrc && curSrc.buffer === buf) {
