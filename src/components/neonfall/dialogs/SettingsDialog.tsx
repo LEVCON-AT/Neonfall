@@ -20,6 +20,7 @@ import {
   Lightbulb,
   Keyboard,
   Eye,
+  Settings,
 } from 'lucide-react';
 import { useSettingsStore } from '@/lib/store/settings-store';
 
@@ -73,7 +74,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="nf-dialog-neon">
         <DialogHeader>
-          <DialogTitle className="nf-dialog-title">Einstellungen</DialogTitle>
+          <DialogTitle className="nf-dialog-title">
+            <Settings size={16} aria-hidden="true" className="nf-dialog-title-icon" style={{ color: '#22d3ee' }} />
+            Einstellungen
+          </DialogTitle>
           <DialogDescription className="nf-dialog-desc">
             Passe Feedback, Anzeige und Steuerung an. Wird lokal gespeichert.
             NEONFALL ist ein Neon-Dark-Spiel — ein heller Modus ist nicht
