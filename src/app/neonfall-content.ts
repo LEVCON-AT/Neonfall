@@ -1117,25 +1117,12 @@ export const GAME_SCRIPT = `
         playBeep(150 + v * 320, 0.03 + v * 0.03, 'square', sfxGain, 0.05 + v * 0.2);
     }
 
+    // S8.22.8: shakeScreen completely disabled — no transform on gameContainer.
+    //   The screen-shake effect caused the playfield to shift sideways when
+    //   dialogs opened (body padding-right + transform interaction) and was
+    //   visually distracting. The game stays perfectly stable now.
     function shakeScreen(intensity, duration) {
-        // S8.22.3: Don't shake if a dialog is open (would shift game behind dialog).
-        if (document.querySelector('[data-slot="dialog-content"]')) return;
-        let start = null;
-        function animate(ts) {
-            if (!start) start = ts;
-            const elapsed = ts - start;
-            if (elapsed < duration) {
-                const progress = 1 - elapsed / duration;
-                const dx = (Math.random() * 2 - 1) * intensity * progress;
-                const dy = (Math.random() * 2 - 1) * intensity * progress;
-                const rot = (Math.random() * 2 - 1) * intensity * 0.05 * progress;
-                gameContainer.style.transform = \`translate(\${dx}px, \${dy}px) rotate(\${rot}deg)\`;
-                requestAnimationFrame(animate);
-            } else {
-                gameContainer.style.transform = 'translate(0,0) rotate(0deg)';
-            }
-        }
-        requestAnimationFrame(animate);
+        // No-op: all transform code removed.
     }
 
     function flash(peakOpacity) {

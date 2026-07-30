@@ -510,12 +510,17 @@ body.nf-playing::after { animation-play-state: paused !important; }
   padding-bottom: 2px;
 }
 /* S7.9: Dialog-Titel-Icon — statt inline style in jeder Komponente. */
+/* S8.20.1: flex-shrink:0 prevents icon from being squished.
+   S8.22.8: Icons need explicit color override because parent .nf-dialog-title
+   has color:transparent !important (gradient text). The inline style on each
+   icon sets color, but SVG stroke uses currentColor which inherits transparent.
+   Fix: set stroke explicitly via CSS for icons that have inline color style. */
 .nf-dialog-title-icon {
-  vertical-align: -3px;
-  margin-right: 6px;
+  flex-shrink: 0;
+  stroke: currentColor !important;
 }
-.nf-dialog-title-icon-pink { color: #f472b6; }
-.nf-dialog-title-icon-gold { color: #fbbf24; }
+.nf-dialog-title-icon-pink { color: #f472b6 !important; }
+.nf-dialog-title-icon-gold { color: #fbbf24 !important; }
 .nf-dialog-desc { color: #9ca3ff !important; font-size: 0.85em; }
 
 /* ===== S8.19: Hint Dialog ===== */

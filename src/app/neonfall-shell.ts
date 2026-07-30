@@ -1053,10 +1053,8 @@ export function initShell() {
     { file: '/music/track-15-neon-block-rush-alt.mp3',    name: 'Heartbeat Sync' },
     { file: '/music/track-16-neon-pulse-ii.mp3',          name: 'Voltage Surge' },
     { file: '/music/track-17-neon-pulse-iii.mp3',         name: 'Current Drift' },
-    { file: '/music/track-18-neon-pixel-run.mp3',         name: 'Pixel Wave' },
-    { file: '/music/track-19-neon-pixel-run-alt.mp3',     name: 'Bitstorm' },
-    { file: '/music/track-20-neon-pixel-rush.mp3',        name: 'Hyperdrive' },
-    { file: '/music/track-21-neon-pixel-rush-alt.mp3',    name: 'Quantum Leap' },
+    // S8.22.7: Removed tracks 18-21 (exact duplicates of 3-6) and track-9
+    //   (duplicate of track-8). Moved to public/music/duplicates/.
     // S8.22.7: 8 new tracks added (track-22..29)
     { file: '/music/track-22-block-rush-vii.mp3',          name: 'Gravity Well' },
     { file: '/music/track-23-block-rush-viii.mp3',         name: 'Plasma Arc' },
