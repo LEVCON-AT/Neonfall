@@ -4,11 +4,17 @@ export const NEONFALL_APP_CSS = `
 #pause-overlay { display: none !important; }
 #game-over-screen { display: none !important; }
 
-/* S8.22.8: Radix UI Dialog manipulates body padding when a dialog opens
-   (removes padding-left, adds padding-right for scrollbar compensation).
-   Our body has overflow:hidden (no scrollbar), so any padding change
-   shifts the game layout sideways. Lock ALL body paddings to 0. */
-body { padding-right: 0 !important; padding-left: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+/* S8.22.8: Radix UI Dialog adds data-scroll-locked to <body> when a dialog
+   opens, then sets margin:0, padding:410px, position:relative via CSS.
+   This shifts the playfield. Target the exact same selector with !important
+   to override. Same specificity (0,1,1) + !important + later in cascade = wins. */
+body[data-scroll-locked] {
+  margin: 0 auto !important;
+  padding: 0 !important;
+}
+@media (max-width: 699px) {
+  body[data-scroll-locked] { margin: 0 !important; }
+}
 
 /* S8.17: Hold-Box takes only the space it needs (46px canvas + padding),
    Next-Box gets the rest. Previously both had flex:1 which made the Next-Box
