@@ -76,38 +76,20 @@ jobs:
           if [ -z "$VPS_USER" ]; then echo "❌ VPS_USER not set"; exit 1; fi
           if [ -z "$VPS_SSH_KEY" ]; then echo "❌ VPS_SSH_KEY not set"; exit 1; fi
           echo "✅ All secrets set"
-
-      - name: Setup SSH
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-        run: |
-          set -e
-          PORT="${VPS_PORT:-22}"
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo "$VPS_SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          if [ ! -s ~/.ssh/deploy_key ]; then echo "❌ SSH key empty"; exit 1; fi
-          ssh-keyscan -p "$PORT" -T 30 "$VPS_HOST" >> ~/.ssh/known_hosts 2>&1 || {
-            echo "❌ ssh-keyscan failed for $VPS_HOST:$PORT"
-            exit 1
-          }
-          ssh -i ~/.ssh/deploy_key -p "$PORT" -o ConnectTimeout=10 -o StrictHostKeyChecking=yes \
-            "$VPS_USER@$VPS_HOST" "echo '✅ SSH connection works'"
+          echo "   VPS_HOST: $VPS_HOST"
+          echo "   VPS_USER: $VPS_USER"
+          echo "   VPS_PORT: ${VPS_PORT:-22}"
 
       - name: Copy staging update script to VPS
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-        run: |
-          PORT="${VPS_PORT:-22}"
-          scp -i ~/.ssh/deploy_key -P "$PORT" -o StrictHostKeyChecking=yes \
-            deploy/scripts/vps-update-staging.sh \
-            "$VPS_USER@$VPS_HOST:/tmp/neonfall-staging-update.sh"
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: deploy/scripts/vps-update-staging.sh
+          target: /tmp/neonfall-staging-update.sh
+          strip_components: 2
 
       - name: Execute staging update script on VPS
         uses: appleboy/ssh-action@v1
