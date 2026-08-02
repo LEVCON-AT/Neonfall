@@ -5,12 +5,15 @@ export const NEONFALL_APP_CSS = `
 #game-over-screen { display: none !important; }
 
 /* S8.22.8: Radix UI Dialog adds data-scroll-locked to <body> when a dialog
-   opens, then sets margin:0, padding:410px, position:relative via CSS.
-   This shifts the playfield. Target the exact same selector with !important
-   to override. Same specificity (0,1,1) + !important + later in cascade = wins. */
+   opens. Radix sets margin:0, padding:410px, position:relative, overflow:hidden.
+   This causes: (1) playfield shifts left (margin removed), (2) everything gets
+   bigger (position:relative changes layout context), (3) visual jump.
+   Override ALL of Radix's properties with !important so the body stays stable. */
 body[data-scroll-locked] {
   margin: 0 auto !important;
   padding: 0 !important;
+  position: static !important;
+  overflow: hidden !important;
 }
 @media (max-width: 699px) {
   body[data-scroll-locked] { margin: 0 !important; }
