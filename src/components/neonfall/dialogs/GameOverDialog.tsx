@@ -58,7 +58,7 @@ export function GameOverDialog({ open, onOpenChange }: GameOverDialogProps) {
       <DialogContent className="nf-dialog-neon nf-gameover-dialog">
         <DialogHeader>
           <DialogTitle className="nf-dialog-title">
-            <Gamepad2 size={16} aria-hidden="true" className="nf-dialog-title-icon" style={{ color: '#f472b6' }} />
+            <Gamepad2 size={16} aria-hidden="true" className="nf-dialog-title-icon" style={{ color: '#22d3ee' }} />
             Game Over
           </DialogTitle>
           <DialogDescription className="nf-dialog-desc">

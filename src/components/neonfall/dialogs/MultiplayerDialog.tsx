@@ -269,7 +269,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
       <DialogContent className="nf-dialog-neon nf-mp-dialog">
         <DialogHeader>
           <DialogTitle className="nf-dialog-title">
-            <Users size={16} aria-hidden="true" className="nf-dialog-title-icon nf-dialog-title-icon-pink" />
+            <Users size={16} aria-hidden="true" className="nf-dialog-title-icon" style={{ color: '#22d3ee' }} />
             Multiplayer
           </DialogTitle>
           <DialogDescription className="nf-dialog-desc">

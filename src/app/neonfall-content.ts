@@ -1106,7 +1106,7 @@ export const GAME_SCRIPT = `
         // S5c: Reduced flash intensity — was (0.12 + i * 0.65), now (0.04 + i * 0.12).
         //   Combined with the 0.25 cap in flash(), this gives a subtle tint instead
         //   of a blinding white overlay on hard drops.
-        flash((0.04 + i * 0.12) * impactStrength);
+        flash((0.02 + i * 0.06) * impactStrength);
         playThud(0.25 + i * 1.05);
     }
 
@@ -1137,11 +1137,9 @@ export const GAME_SCRIPT = `
     }
 
     function flash(peakOpacity) {
-        // S5c: Reduced max opacity from 0.85 → 0.25. Hard drops were
-        //   flashing too much white over the playfield, making it hard to
-        //   see the next piece during rapid drops. Now it's a subtle tint.
+        // S8.23.2: Further reduced — cap 0.25 → 0.12, hard-drop values halved.
         flashOverlay.style.transition = 'none';
-        flashOverlay.style.opacity = String(Math.min(0.25, peakOpacity));
+        flashOverlay.style.opacity = String(Math.min(0.12, peakOpacity));
         requestAnimationFrame(() => {
             flashOverlay.style.transition = 'opacity 180ms ease-out';
             flashOverlay.style.opacity = '0';
