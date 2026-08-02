@@ -5,14 +5,12 @@ export const NEONFALL_APP_CSS = `
 #game-over-screen { display: none !important; }
 
 /* S8.22.8: Radix UI Dialog adds data-scroll-locked to <body> when a dialog
-   opens. Radix sets: pointer-events:none, margin:0, padding:410px,
-   position:relative, overflow:hidden.
-   pointer-events:none makes the top-bar buttons (info/pause/mute/stats)
-   non-interactive → they visually disappear → playfield gets more space →
-   everything shifts/resizes. Override ALL Radix properties with !important. */
+   opens. Radix changes: pointer-events, margin, padding, position.
+   The IIFE sets body { padding: 38px 8px 6px }. Radix overrides this to
+   padding:410px → playfield jumps. Fix: preserve the EXACT original padding. */
 body[data-scroll-locked] {
   margin: 0 auto !important;
-  padding: 0 !important;
+  padding: 38px 8px 6px !important;
   position: static !important;
   overflow: hidden !important;
   pointer-events: auto !important;
