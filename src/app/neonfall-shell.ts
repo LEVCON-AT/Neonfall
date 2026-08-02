@@ -33,25 +33,7 @@ export const SHELL_CSS = `
 }
 #nf-stats-btn:active { transform: scale(0.9); opacity: 1; }
 
-#nf-online-dot {
-    position: fixed;
-    top: calc(max(8px, env(safe-area-inset-top)) + 30px);
-    left: calc(max(8px, env(safe-area-inset-left)) + 38px);
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: #34d399;
-    box-shadow: 0 0 6px #34d399;
-    z-index: 21;
-    pointer-events: none;
-    transition: opacity .2s;
-    opacity: 0.85;
-}
-#nf-online-dot.offline {
-    background: #fb7185;
-    box-shadow: 0 0 6px #fb7185;
-    animation: nfBlink 1.4s ease-in-out infinite;
-}
-@keyframes nfBlink { 0%,100%{opacity:.85} 50%{opacity:.3} }
+/* S8.23.6: #nf-online-dot CSS removed — element was removed in S8.21.1. */
 
 /* ---- Generic overlay backdrop for shell panels ---- */
 #nf-stats-panel, #nf-ios-install {
@@ -554,14 +536,8 @@ export const SHELL_CSS = `
 
 /* ===== User-requested fixes (override game CSS, injected AFTER game CSS) ===== */
 
-/* Issue 2: Hint overlay — always single column (stacked), never two columns.
-   The game's @media(min-width:700px) sets .hint-cols-wrap to flex row; we override
-   to flex-column so Touch and Tastatur stack vertically on every screen. */
-.hint-cols-wrap {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 16px !important;
-}
+/* S8.23.6: .hint-cols-wrap override removed — legacy #hint-overlay is hidden
+   via display:none !important (React HintDialog handles its own layout). */
 
 /* Issue 3: Desktop — constrain the app CONTENT to a phone-width column with a
    thin frame, but let the animated gradient background cover the WHOLE screen.

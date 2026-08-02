@@ -529,7 +529,6 @@ body.nf-playing::after { animation-play-state: paused !important; }
   flex-shrink: 0;
   stroke: currentColor !important;
 }
-.nf-dialog-title-icon-pink { color: #f472b6 !important; }
 .nf-dialog-title-icon-gold { color: #fbbf24 !important; }
 .nf-dialog-desc { color: #9ca3ff !important; font-size: 0.85em; }
 
