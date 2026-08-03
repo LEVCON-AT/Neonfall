@@ -52,6 +52,8 @@ export function NeonfallApp() {
   // S8.24.3: Shared socket ref — Dialog creates it, NeonfallApp uses it for
   // board-send during playing (when Dialog is closed/unmounted).
   const mpSocketRef = useRef<Socket | null>(null);
+  const mpPlayingRef = useRef(false);
+  useEffect(() => { mpPlayingRef.current = mpPlaying; }, [mpPlaying]);
 
   const mode = useGameStore((s) => s.mode);
   const hintOpen = useGameStore((s) => s.hintOpen);
@@ -120,14 +122,15 @@ export function NeonfallApp() {
     return () => window.removeEventListener('nf-board-updated', onBoardUpdate);
   }, [mpPlaying]);
 
-  // S8.24.3a: Receive opponent events while playing. These were previously
-  // in MultiplayerDialog but the dialog closes when playing starts → socket
-  // disconnects → events lost. Now NeonfallApp handles them via shared socket.
+  // S8.24.3a: Receive opponent events. Registered as soon as the socket
+  // exists (not waiting for mpPlaying) so no events are lost during the
+  // transition from dialog-close to playing.
   useEffect(() => {
-    if (!mpPlaying || !mpSocketRef.current) return;
+    if (!mpSocketRef.current) return;
     const sock = mpSocketRef.current;
 
     const onGarbage = (data: { count: number }) => {
+      if (!mpPlayingRef.current) return;
       try { (window as unknown as { __nfAddGarbage?: (n: number) => void }).__nfAddGarbage?.(data.count); } catch {}
     };
 
@@ -135,12 +138,22 @@ export function NeonfallApp() {
       setOpponentData(prev => ({ name: prev.name, board: data.board }));
     };
 
+    // S8.24.3a-fix: Also listen for opponent:joined — the joiner goes to
+    //   'playing' immediately but the host's name arrives via this event.
+    //   The dialog's listener is cleaned up when it closes, so NeonfallApp
+    //   must handle it to ensure the name is set.
+    const onJoined = (data: { playerName: string }) => {
+      setOpponentData(prev => ({ name: data.playerName, board: prev.board }));
+    };
+
     const onWin = () => {
+      if (!mpPlayingRef.current) return;
       setMpPlaying(false);
       setMultiplayerOpen(true);
     };
 
     const onLeft = () => {
+      if (!mpPlayingRef.current) return;
       setMpPlaying(false);
       setMultiplayerOpen(true);
     };
@@ -149,6 +162,7 @@ export function NeonfallApp() {
       try { (window as unknown as { __nfRestart?: () => void }).__nfRestart?.(); } catch {}
     };
 
+    sock.on('opponent:joined', onJoined);
     sock.on('opponent:garbage', onGarbage);
     sock.on('opponent:board', onBoard);
     sock.on('opponent:win', onWin);
@@ -156,13 +170,14 @@ export function NeonfallApp() {
     sock.on('opponent:restart', onRestart);
 
     return () => {
+      sock.off('opponent:joined', onJoined);
       sock.off('opponent:garbage', onGarbage);
       sock.off('opponent:board', onBoard);
       sock.off('opponent:win', onWin);
       sock.off('opponent:left', onLeft);
       sock.off('opponent:restart', onRestart);
     };
-  }, [mpPlaying]);
+  }, []); // Register once when socket is created (ref accessed in effect)
 
   // S8.24.3a: Send garbage to opponent on line clears.
   useEffect(() => {

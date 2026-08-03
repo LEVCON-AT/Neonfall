@@ -193,12 +193,8 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
     sharedSocketRef?.current?.emit('room:join', { roomId: code, playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
       if (res.ok && res.roomId) {
         setRoomCode(res.roomId);
-        // S8.24.3a-fix: Don't go to 'playing' yet. The backend will send
-        //   opponent:joined with the host's name. That event handler calls
-        //   updateMpState('playing'). If we set 'playing' here, the dialog
-        //   closes and the opponent:joined listener is cleaned up before
-        //   the event arrives → joiner never gets the host's name.
-        //   Just set roomCode and wait for opponent:joined.
+        updateMpState('playing');
+        try { window.__nfRestart?.(); } catch {}
       } else {
         toast.error('Beitreten fehlgeschlagen', { description: res.error || 'Unbekannter Fehler.' });
       }
