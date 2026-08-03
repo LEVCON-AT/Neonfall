@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 interface OpponentPanelProps {
   opponentName: string;
-  opponentBoard: number[][] | null;
+  opponentBoard: (number | string)[][] | null;
   onLeave: () => void;
 }
 

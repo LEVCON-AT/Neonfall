@@ -26,7 +26,10 @@ export const SHELL_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 20;
+    opacity: 0.6;
 }
+#nf-stats-btn:active { transform: scale(0.9); opacity: 1; }
 /* S8.24.5: 1v1 Multiplayer indicator in the control button bar */
 #nf-mp-indicator {
     position: fixed;

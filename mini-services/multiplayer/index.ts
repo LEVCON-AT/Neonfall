@@ -265,14 +265,17 @@ io.on('connection', (socket: Socket) => {
         if (opponent) {
           const opponentSocket = io.sockets.sockets.get(opponent.socketId)
           opponentSocket?.emit('opponent:joined', { playerName: playerName })
-
-          // S8.24.3a-fix: Also notify the JOINING player of the host's name.
-          //   Previously only the host got opponent:joined — the joiner didn't
-          //   know the host's name → showed '?' in the OpponentPanel.
-          socket.emit('opponent:joined', { playerName: opponent.playerName })
         }
 
         cb?.({ ok: true, roomId, playerId: socket.id })
+
+        // S8.24.3a-fix: Notify the JOINING player of the host's name.
+        //   Sent AFTER the callback so the client has processed room:join
+        //   response first. The client's opponent:joined handler will then
+        //   set the host's name and transition to 'playing'.
+        if (opponent) {
+          socket.emit('opponent:joined', { playerName: opponent.playerName })
+        }
       } catch (err) {
         console.error('[room:join] error', err)
         cb?.({ ok: false, error: 'Server error joining room' })

@@ -110,7 +110,7 @@ export function NeonfallApp() {
       if (now - lastSend < 100) return;
       lastSend = now;
       try {
-        const board = (window as unknown as { __nfGetBoard?: () => number[][] }).__nfGetBoard?.();
+        const board = (window as unknown as { __nfGetBoard?: () => (number | string)[][] }).__nfGetBoard?.();
         if (board && mpSocketRef.current) {
           mpSocketRef.current.emit('game:board', { board });
         }
@@ -131,7 +131,7 @@ export function NeonfallApp() {
       try { (window as unknown as { __nfAddGarbage?: (n: number) => void }).__nfAddGarbage?.(data.count); } catch {}
     };
 
-    const onBoard = (data: { board: number[][] }) => {
+    const onBoard = (data: { board: (number | string)[][] }) => {
       setOpponentData(prev => ({ name: prev.name, board: data.board }));
     };
 
