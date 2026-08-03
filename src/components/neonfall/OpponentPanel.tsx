@@ -142,10 +142,10 @@ export function OpponentPanel({ opponentName, opponentBoard, onLeave }: Opponent
       onMouseEnter={() => setShowGrip(true)}
       onMouseLeave={() => setShowGrip(false)}
     >
-      {/* Drag handle */}
+      {/* Drag handle — always visible (dezent), brighter on hover/drag */}
       <div
         className="nf-opponent-drag-handle"
-        style={{ opacity: showGrip || isDragging ? 1 : 0 }}
+        style={{ opacity: isDragging ? 1 : showGrip ? 0.8 : 0.4 }}
         onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
         onTouchStart={(e) => { if (e.touches[0]) handleDragStart(e.touches[0].clientX, e.touches[0].clientY); }}
       >

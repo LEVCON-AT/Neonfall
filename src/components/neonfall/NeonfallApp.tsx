@@ -27,6 +27,7 @@ import { HintDialog } from './dialogs/HintDialog';
 import { PauseDialog } from './dialogs/PauseDialog';
 import { GameOverDialog } from './dialogs/GameOverDialog';
 import type { Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
 /**
  * Root client component for the NEONFALL experience.
@@ -72,7 +73,33 @@ export function NeonfallApp() {
     leaderboardOpen,
   );
 
-  // S8.24.3: Send board updates to opponent while playing.
+  // S8.24.3a: Create socket when multiplayer dialog opens, keep it alive
+  // through playing phase. Previously the socket was created in
+  // MultiplayerDialog's useEffect — but when the dialog closes (open=false),
+  // the cleanup disconnects the socket. Now NeonfallApp owns the socket.
+  useEffect(() => {
+    if (!multiplayerOpen && !mpPlaying) return;
+    // Only connect once
+    if (mpSocketRef.current) return;
+
+    const sock = io('/?XTransformPort=3004', {
+      path: '/socket.io/',
+      transports: ['websocket', 'polling'],
+      timeout: 5000,
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000,
+    });
+    mpSocketRef.current = sock;
+
+    return () => {
+      // Only disconnect when BOTH multiplayer dialog is closed AND not playing
+      if (!multiplayerOpen && !mpPlaying) {
+        sock.disconnect();
+        mpSocketRef.current = null;
+      }
+    };
+  }, [multiplayerOpen, mpPlaying]);
   useEffect(() => {
     if (!mpPlaying) return;
     let lastSend = 0;

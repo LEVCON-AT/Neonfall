@@ -42,6 +42,8 @@ type MPResult = 'win' | 'lose' | null;
  * nf-lines-cleared CustomEvent.
  */
 export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOpponentData, socketRef: sharedSocketRef }: MultiplayerDialogProps) {
+  // S8.24.3a: Socket is owned by NeonfallApp (sharedSocketRef).
+  // This dialog only uses it for lobby/waiting/result actions.
   const [mpState, setMpState] = useState<MPState>('lobby');
   const [roomCode, setRoomCode] = useState('');
   const [joinInput, setJoinInput] = useState('');
@@ -49,7 +51,6 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
   const [result, setResult] = useState<MPResult>(null);
   const [opponentBoard, setOpponentBoard] = useState<number[][] | null>(null);
   const [copied, setCopied] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
   const opponentCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // S7.4: mpStateRef tracks the current MP state for socket event guards.
@@ -63,21 +64,19 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
     onMpStateChange?.(next);
   }, [onMpStateChange]);
 
-  // Connect to socket.io when dialog opens, disconnect on close.
+  // S8.24.3a: Socket is now created and owned by NeonfallApp (sharedSocketRef).
+  //   This dialog only registers lobby/waiting/result event handlers.
+  //   Previously the socket was created here — but when dialog closes
+  //   (open=false), cleanup disconnected it → no events during playing.
   useEffect(() => {
     if (!open) return;
-    const sock = io('/?XTransformPort=3004', {
-      transports: ['websocket', 'polling'],
-      timeout: 5000,
-      reconnection: true,
-      reconnectionAttempts: 3,
-      reconnectionDelay: 1000,
-    });
-    socketRef.current = sock;
-    // S8.24.3: Sync to shared ref so NeonfallApp can send board updates
-    if (sharedSocketRef) sharedSocketRef.current = sock;
+    const sock = sharedSocketRef?.current;
+    if (!sock) {
+      toast.error('Nicht verbunden', { description: 'Multiplayer-Service nicht bereit.' });
+      return;
+    }
 
-    // S7.7: Connection error handling — show toast if socket can't connect.
+    // S7.7: Connection error handling
     sock.on('connect_error', (err: Error) => {
       toast.error('Verbindung fehlgeschlagen', {
         description: 'Multiplayer-Service nicht erreichbar. Bitte später erneut versuchen.',
@@ -109,12 +108,15 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
     });
 
     return () => {
-      sock.disconnect();
-      socketRef.current = null;
-      if (sharedSocketRef) sharedSocketRef.current = null;
+      // S8.24.3a: Don't disconnect socket — NeonfallApp owns it.
+      // Only remove dialog-specific listeners.
+      sock.off('connect_error');
+      sock.off('connect_timeout');
+      sock.off('opponent:joined');
+      sock.off('error');
       mpStateRef.current = 'lobby';
     };
-  }, [open, updateMpState]);
+  }, [open, updateMpState, sharedSocketRef]);
 
   // S8.24.3a: All playing-phase effects (garbage-send, board-send,
   // game-over, opponent event listeners) moved to NeonfallApp. The dialog
@@ -143,11 +145,12 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
 
   const handleCreateRoom = useCallback(() => {
     const name = localStorage.getItem('neonfall_player_name') || 'Player';
-    if (!socketRef.current) {
-      toast.error('Nicht verbunden', { description: 'Multiplayer-Service noch nicht bereit. Bitte erneut versuchen.' });
+    const sock = sharedSocketRef?.current;
+    if (!sock) {
+      toast.error('Nicht verbunden', { description: 'Multiplayer-Service noch nicht bereit.' });
       return;
     }
-    socketRef.current.emit('room:create', { playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
+    sock.emit('room:create', { playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
       if (res.ok && res.roomId) {
         setRoomCode(res.roomId);
         updateMpState('waiting');
@@ -155,7 +158,7 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
         toast.error('Fehler beim Erstellen', { description: res.error || 'Unbekannter Fehler.' });
       }
     });
-  }, [updateMpState]);
+  }, [updateMpState, sharedSocketRef]);
 
   const handleJoinRoom = useCallback(() => {
     const code = joinInput.trim().toUpperCase();
@@ -164,7 +167,7 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
       return;
     }
     const name = localStorage.getItem('neonfall_player_name') || 'Player';
-    socketRef.current?.emit('room:join', { roomId: code, playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
+    sharedSocketRef?.current?.emit('room:join', { roomId: code, playerName: name }, (res: { ok: boolean; roomId?: string; error?: string }) => {
       if (res.ok && res.roomId) {
         setRoomCode(res.roomId);
         updateMpState('playing');
@@ -173,22 +176,22 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
         toast.error('Beitreten fehlgeschlagen', { description: res.error || 'Unbekannter Fehler.' });
       }
     });
-  }, [joinInput, updateMpState]);
+  }, [joinInput, updateMpState, sharedSocketRef]);
 
   const handleLeave = useCallback(() => {
-    socketRef.current?.emit('room:leave');
+    sharedSocketRef?.current?.emit('room:leave');
     updateMpState('lobby');
     setRoomCode('');
     setOpponentName('');
     setResult(null);
-  }, [updateMpState]);
+  }, [updateMpState, sharedSocketRef]);
 
   const handleRevanche = useCallback(() => {
-    socketRef.current?.emit('game:restart');
+    sharedSocketRef?.current?.emit('game:restart');
     try { window.__nfRestart?.(); } catch {}
     updateMpState('playing');
     setResult(null);
-  }, [updateMpState]);
+  }, [updateMpState, sharedSocketRef]);
 
   const handleCopyCode = useCallback(() => {
     navigator.clipboard.writeText(roomCode).then(() => {
