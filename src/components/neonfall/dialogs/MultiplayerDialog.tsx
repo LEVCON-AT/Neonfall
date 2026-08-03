@@ -18,6 +18,10 @@ import { io, Socket } from 'socket.io-client';
 interface MultiplayerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** S8.24.2: Called when mpState changes — NeonfallApp uses this to show/hide OpponentPanel */
+  onMpStateChange?: (state: MPState) => void;
+  /** S8.24.2: Called when opponent data updates — NeonfallApp passes it to OpponentPanel */
+  onOpponentData?: (data: { name: string; board: number[][] | null }) => void;
 }
 
 type MPState = 'lobby' | 'waiting' | 'playing' | 'result';
@@ -37,7 +41,7 @@ type MPResult = 'win' | 'lose' | null;
  * via the IIFE hooks (__nfAddGarbage / __nfGetBoard / __nfRestart) and the
  * nf-lines-cleared CustomEvent.
  */
-export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps) {
+export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOpponentData }: MultiplayerDialogProps) {
   const [mpState, setMpState] = useState<MPState>('lobby');
   const [roomCode, setRoomCode] = useState('');
   const [joinInput, setJoinInput] = useState('');
@@ -56,7 +60,8 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
   const updateMpState = useCallback((next: MPState) => {
     mpStateRef.current = next;
     setMpState(next);
-  }, []);
+    onMpStateChange?.(next);
+  }, [onMpStateChange]);
 
   // Connect to socket.io when dialog opens, disconnect on close.
   useEffect(() => {
@@ -87,6 +92,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
 
     sock.on('opponent:joined', (data: { playerName: string }) => {
       setOpponentName(data.playerName);
+      onOpponentData?.({ name: data.playerName, board: null });
       updateMpState('playing');
       try { window.__nfRestart?.(); } catch {}
     });
@@ -98,9 +104,9 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
     });
 
     sock.on('opponent:board', (data: { board: number[][] }) => {
-      // S7.4: Only update board preview if we're still playing.
       if (mpStateRef.current !== 'playing') return;
       setOpponentBoard(data.board);
+      onOpponentData?.({ name: opponentName, board: data.board });
     });
 
     sock.on('opponent:win', () => {
@@ -222,7 +228,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
         toast.error('Fehler beim Erstellen', { description: res.error || 'Unbekannter Fehler.' });
       }
     });
-  }, []);
+  }, [updateMpState]);
 
   const handleJoinRoom = useCallback(() => {
     const code = joinInput.trim().toUpperCase();
@@ -240,7 +246,7 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
         toast.error('Beitreten fehlgeschlagen', { description: res.error || 'Unbekannter Fehler.' });
       }
     });
-  }, [joinInput]);
+  }, [joinInput, updateMpState]);
 
   const handleLeave = useCallback(() => {
     socketRef.current?.emit('room:leave');
@@ -248,14 +254,14 @@ export function MultiplayerDialog({ open, onOpenChange }: MultiplayerDialogProps
     setRoomCode('');
     setOpponentName('');
     setResult(null);
-  }, []);
+  }, [updateMpState]);
 
   const handleRevanche = useCallback(() => {
     socketRef.current?.emit('game:restart');
     try { window.__nfRestart?.(); } catch {}
     updateMpState('playing');
     setResult(null);
-  }, []);
+  }, [updateMpState]);
 
   const handleCopyCode = useCallback(() => {
     navigator.clipboard.writeText(roomCode).then(() => {

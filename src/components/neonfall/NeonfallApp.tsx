@@ -14,6 +14,7 @@ import { TopBar } from './TopBar';
 import { HoldNextBar } from './HoldNextBar';
 import { ControlButtons } from './ControlButtons';
 import { GameCanvas } from './GameCanvas';
+import { OpponentPanel } from './OpponentPanel';
 import { Footer } from './Footer';
 import { ModeHud } from './ModeHud';
 import { ShellOverlays } from './ShellOverlays';
@@ -42,6 +43,9 @@ export function NeonfallApp() {
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [nameInputOpen, setNameInputOpen] = useState(false);
   const [multiplayerOpen, setMultiplayerOpen] = useState(false);
+  // S8.24.2: Multiplayer playing state + opponent data for OpponentPanel
+  const [mpPlaying, setMpPlaying] = useState(false);
+  const [opponentData, setOpponentData] = useState<{ name: string; board: number[][] | null }>({ name: '', board: null });
 
   const mode = useGameStore((s) => s.mode);
   const hintOpen = useGameStore((s) => s.hintOpen);
@@ -85,7 +89,20 @@ export function NeonfallApp() {
       <HoldNextBar />
       <ControlButtons />
 
-      <GameCanvas />
+      {/* S8.24.2: Game + OpponentPanel side by side when multiplayer is active */}
+      <div className={mpPlaying ? 'nf-game-with-opponent' : undefined}>
+        <GameCanvas />
+        {mpPlaying && (
+          <OpponentPanel
+            opponentName={opponentData.name}
+            opponentBoard={opponentData.board}
+            onLeave={() => {
+              setMpPlaying(false);
+              setMultiplayerOpen(true);
+            }}
+          />
+        )}
+      </div>
 
       <ShellOverlays />
 
@@ -104,7 +121,15 @@ export function NeonfallApp() {
         initialMode={mode}
       />
       <NameInputDialog open={nameInputOpen} onOpenChange={setNameInputOpen} />
-      <MultiplayerDialog open={multiplayerOpen} onOpenChange={setMultiplayerOpen} />
+      <MultiplayerDialog
+        open={multiplayerOpen}
+        onOpenChange={setMultiplayerOpen}
+        onMpStateChange={(state) => {
+          setMpPlaying(state === 'playing');
+          if (state === 'playing') setMultiplayerOpen(false);
+        }}
+        onOpponentData={setOpponentData}
+      />
       <HintDialog open={hintOpen} onOpenChange={setHintOpen} />
       <PauseDialog open={pauseOpen} onOpenChange={setPauseOpen} />
       <GameOverDialog open={gameOverOpen} onOpenChange={setGameOverOpen} />

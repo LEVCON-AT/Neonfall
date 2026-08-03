@@ -416,6 +416,14 @@ body.nf-playing::after { animation-play-state: paused !important; }
   pointer-events: auto;
 }
 
+/* S8.24.2: Flex container for Game + OpponentPanel side by side */
+.nf-game-with-opponent {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 /* ===== S8.24.1: Opponent Panel (Multiplayer) ===== */
 /* Normales DOM-Element neben dem Spielfeld — kein Dialog/Overlay. */
 .nf-opponent-panel {
