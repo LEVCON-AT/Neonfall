@@ -18,10 +18,10 @@ import { io, Socket } from 'socket.io-client';
 interface MultiplayerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** S8.24.2: Called when mpState changes — NeonfallApp uses this to show/hide OpponentPanel */
   onMpStateChange?: (state: MPState) => void;
-  /** S8.24.2: Called when opponent data updates — NeonfallApp passes it to OpponentPanel */
   onOpponentData?: (data: { name: string; board: number[][] | null }) => void;
+  /** S8.24.3: Shared socket ref — Dialog writes to it, NeonfallApp reads from it */
+  socketRef?: React.MutableRefObject<Socket | null>;
 }
 
 type MPState = 'lobby' | 'waiting' | 'playing' | 'result';
@@ -41,7 +41,7 @@ type MPResult = 'win' | 'lose' | null;
  * via the IIFE hooks (__nfAddGarbage / __nfGetBoard / __nfRestart) and the
  * nf-lines-cleared CustomEvent.
  */
-export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOpponentData }: MultiplayerDialogProps) {
+export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOpponentData, socketRef: sharedSocketRef }: MultiplayerDialogProps) {
   const [mpState, setMpState] = useState<MPState>('lobby');
   const [roomCode, setRoomCode] = useState('');
   const [joinInput, setJoinInput] = useState('');
@@ -74,6 +74,8 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
       reconnectionDelay: 1000,
     });
     socketRef.current = sock;
+    // S8.24.3: Sync to shared ref so NeonfallApp can send board updates
+    if (sharedSocketRef) sharedSocketRef.current = sock;
 
     // S7.7: Connection error handling — show toast if socket can't connect.
     sock.on('connect_error', (err: Error) => {
@@ -141,7 +143,7 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
     return () => {
       sock.disconnect();
       socketRef.current = null;
-      // S7.4: Reset state ref on cleanup so stale events are ignored.
+      if (sharedSocketRef) sharedSocketRef.current = null;
       mpStateRef.current = 'lobby';
     };
   }, [open, updateMpState]);
@@ -161,22 +163,9 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
     return () => window.removeEventListener('nf-lines-cleared', onLines as EventListener);
   }, [mpState]);
 
-  // Listen for board updates → send board to opponent (throttled).
-  useEffect(() => {
-    if (mpState !== 'playing') return;
-    let lastSend = 0;
-    const onBoardUpdate = () => {
-      const now = Date.now();
-      if (now - lastSend < 100) return; // throttle to 10fps
-      lastSend = now;
-      try {
-        const board = window.__nfGetBoard?.();
-        if (board) socketRef.current?.emit('game:board', { board });
-      } catch {}
-    };
-    window.addEventListener('nf-board-updated', onBoardUpdate);
-    return () => window.removeEventListener('nf-board-updated', onBoardUpdate);
-  }, [mpState]);
+  // S8.24.3: Board-send effect moved to NeonfallApp (this dialog closes
+  // when playing starts, which would clean up the effect and stop board
+  // updates. NeonfallApp stays mounted and keeps sending.)
 
   // Listen for our own game-over → notify opponent.
   useEffect(() => {
@@ -272,7 +261,7 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`nf-dialog-neon nf-mp-dialog ${mpState === 'playing' ? 'nf-mp-hidden' : ''}`}>
+      <DialogContent className="nf-dialog-neon nf-mp-dialog">
         <DialogHeader>
           <DialogTitle className="nf-dialog-title">
             <Users size={16} aria-hidden="true" className="nf-dialog-title-icon" style={{ color: '#22d3ee' }} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { GAME_CSS } from '@/app/neonfall-content';
 import { SHELL_CSS } from '@/app/neonfall-shell';
@@ -26,6 +26,7 @@ import { MultiplayerDialog } from './dialogs/MultiplayerDialog';
 import { HintDialog } from './dialogs/HintDialog';
 import { PauseDialog } from './dialogs/PauseDialog';
 import { GameOverDialog } from './dialogs/GameOverDialog';
+import type { Socket } from 'socket.io-client';
 
 /**
  * Root client component for the NEONFALL experience.
@@ -43,9 +44,11 @@ export function NeonfallApp() {
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [nameInputOpen, setNameInputOpen] = useState(false);
   const [multiplayerOpen, setMultiplayerOpen] = useState(false);
-  // S8.24.2: Multiplayer playing state + opponent data for OpponentPanel
   const [mpPlaying, setMpPlaying] = useState(false);
   const [opponentData, setOpponentData] = useState<{ name: string; board: number[][] | null }>({ name: '', board: null });
+  // S8.24.3: Shared socket ref — Dialog creates it, NeonfallApp uses it for
+  // board-send during playing (when Dialog is closed/unmounted).
+  const mpSocketRef = useRef<Socket | null>(null);
 
   const mode = useGameStore((s) => s.mode);
   const hintOpen = useGameStore((s) => s.hintOpen);
@@ -68,6 +71,28 @@ export function NeonfallApp() {
     modeDialogOpen,
     leaderboardOpen,
   );
+
+  // S8.24.3: Send board updates to opponent while playing.
+  // This was previously in MultiplayerDialog but the dialog closes when
+  // playing starts → effect was cleaned up → no board updates sent.
+  // Now it lives in NeonfallApp which stays mounted.
+  useEffect(() => {
+    if (!mpPlaying) return;
+    let lastSend = 0;
+    const onBoardUpdate = () => {
+      const now = Date.now();
+      if (now - lastSend < 100) return;
+      lastSend = now;
+      try {
+        const board = (window as unknown as { __nfGetBoard?: () => number[][] }).__nfGetBoard?.();
+        if (board && mpSocketRef.current) {
+          mpSocketRef.current.emit('game:board', { board });
+        }
+      } catch {}
+    };
+    window.addEventListener('nf-board-updated', onBoardUpdate);
+    return () => window.removeEventListener('nf-board-updated', onBoardUpdate);
+  }, [mpPlaying]);
 
   return (
     <>
@@ -122,14 +147,15 @@ export function NeonfallApp() {
       />
       <NameInputDialog open={nameInputOpen} onOpenChange={setNameInputOpen} />
       <MultiplayerDialog
-        open={multiplayerOpen || mpPlaying}
-        onOpenChange={(v) => { if (!mpPlaying) setMultiplayerOpen(v); }}
+        open={multiplayerOpen}
+        onOpenChange={setMultiplayerOpen}
         onMpStateChange={(state) => {
           setMpPlaying(state === 'playing');
           if (state === 'playing') setMultiplayerOpen(false);
           if (state === 'lobby' || state === 'result') setMultiplayerOpen(true);
         }}
         onOpponentData={setOpponentData}
+        socketRef={mpSocketRef}
       />
       <HintDialog open={hintOpen} onOpenChange={setHintOpen} />
       <PauseDialog open={pauseOpen} onOpenChange={setPauseOpen} />
