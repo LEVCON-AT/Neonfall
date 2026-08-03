@@ -272,7 +272,7 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="nf-dialog-neon nf-mp-dialog">
+      <DialogContent className={`nf-dialog-neon nf-mp-dialog ${mpState === 'playing' ? 'nf-mp-hidden' : ''}`}>
         <DialogHeader>
           <DialogTitle className="nf-dialog-title">
             <Users size={16} aria-hidden="true" className="nf-dialog-title-icon" style={{ color: '#22d3ee' }} />

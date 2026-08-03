@@ -89,23 +89,19 @@ export function NeonfallApp() {
       <HoldNextBar />
       <ControlButtons />
 
-      {/* S8.24.2: Game + OpponentPanel side by side when multiplayer is active.
-          Without mpPlaying, no wrapper class is applied — GameCanvas renders
-          exactly as before (no layout change). */}
-      {mpPlaying ? (
-        <div className="nf-game-with-opponent">
-          <GameCanvas />
-          <OpponentPanel
-            opponentName={opponentData.name}
-            opponentBoard={opponentData.board}
-            onLeave={() => {
-              setMpPlaying(false);
-              setMultiplayerOpen(true);
-            }}
-          />
-        </div>
-      ) : (
-        <GameCanvas />
+      {/* S8.24.2: GameCanvas stays direct child of body (IIFE expects this).
+          OpponentPanel is position:fixed (like footer/topbar) so it doesn't
+          disturb the game's flex layout. */}
+      <GameCanvas />
+      {mpPlaying && (
+        <OpponentPanel
+          opponentName={opponentData.name}
+          opponentBoard={opponentData.board}
+          onLeave={() => {
+            setMpPlaying(false);
+            setMultiplayerOpen(true);
+          }}
+        />
       )}
 
       <ShellOverlays />
@@ -126,11 +122,12 @@ export function NeonfallApp() {
       />
       <NameInputDialog open={nameInputOpen} onOpenChange={setNameInputOpen} />
       <MultiplayerDialog
-        open={multiplayerOpen}
-        onOpenChange={setMultiplayerOpen}
+        open={multiplayerOpen || mpPlaying}
+        onOpenChange={(v) => { if (!mpPlaying) setMultiplayerOpen(v); }}
         onMpStateChange={(state) => {
           setMpPlaying(state === 'playing');
           if (state === 'playing') setMultiplayerOpen(false);
+          if (state === 'lobby' || state === 'result') setMultiplayerOpen(true);
         }}
         onOpponentData={setOpponentData}
       />

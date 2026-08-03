@@ -416,17 +416,17 @@ body.nf-playing::after { animation-play-state: paused !important; }
   pointer-events: auto;
 }
 
-/* S8.24.2: Flex container for Game + OpponentPanel side by side */
-.nf-game-with-opponent {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  justify-content: center;
+/* S8.24.3: Hide the MP dialog visually while playing (keep it mounted
+   so the socket + board-send effect stay active). */
+.nf-mp-hidden {
+  display: none !important;
 }
 
-/* ===== S8.24.1: Opponent Panel (Multiplayer) ===== */
-/* Normales DOM-Element neben dem Spielfeld — kein Dialog/Overlay. */
+/* S8.24.3: OpponentPanel is position:fixed (like footer/topbar) so it
+   doesn't disturb the game's body flex layout. Positioned right of the
+   game-container on desktop, below it on mobile. */
 .nf-opponent-panel {
+  position: fixed;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -437,7 +437,21 @@ body.nf-playing::after { animation-play-state: paused !important; }
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   border: 1px solid rgba(244,114,182,0.2);
   border-radius: 12px;
-  flex-shrink: 0;
+  z-index: 25;
+  /* Desktop: right of game-container */
+  right: max(8px, env(safe-area-inset-right));
+  top: 50%;
+  transform: translateY(-50%);
+}
+@media (max-width: 699px) {
+  .nf-opponent-panel {
+    /* Mobile: bottom-right, smaller, above footer */
+    top: auto;
+    bottom: calc(42px + env(safe-area-inset-bottom, 0px));
+    right: 4px;
+    transform: none;
+    max-height: 40vh;
+  }
 }
 .nf-opponent-header {
   display: flex;
