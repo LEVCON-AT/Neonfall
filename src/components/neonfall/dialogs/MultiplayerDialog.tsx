@@ -99,41 +99,9 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
       try { window.__nfRestart?.(); } catch {}
     });
 
-    sock.on('opponent:garbage', (data: { count: number }) => {
-      // S7.4: Only apply garbage if we're actually playing.
-      if (mpStateRef.current !== 'playing') return;
-      try { window.__nfAddGarbage?.(data.count); } catch {}
-    });
-
-    sock.on('opponent:board', (data: { board: number[][] }) => {
-      if (mpStateRef.current !== 'playing') return;
-      setOpponentBoard(data.board);
-      onOpponentData?.({ name: opponentName, board: data.board });
-    });
-
-    sock.on('opponent:win', () => {
-      // S7.4: Only process win if we're still playing.
-      if (mpStateRef.current !== 'playing') return;
-      setResult('win');
-      updateMpState('result');
-    });
-
-    sock.on('opponent:left', () => {
-      // S7.4: Only show "left" toast if we were in an active match.
-      if (mpStateRef.current === 'lobby') return;
-      toast.error('Gegner hat verlassen', { description: 'Das Match wurde abgebrochen.' });
-      updateMpState('lobby');
-      setRoomCode('');
-      setOpponentName('');
-    });
-
-    sock.on('opponent:restart', () => {
-      // S7.4: Only restart if we're in result state (waiting for revanche).
-      if (mpStateRef.current !== 'result') return;
-      try { window.__nfRestart?.(); } catch {}
-      updateMpState('playing');
-      setResult(null);
-    });
+    // S8.24.3a: opponent:garbage, opponent:board, opponent:win,
+    //   opponent:left, opponent:restart are now handled in NeonfallApp
+    //   (they need to stay active after the dialog closes).
 
     sock.on('error', (msg: string) => {
       toast.error('Multiplayer-Fehler', { description: msg });
@@ -148,39 +116,9 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
     };
   }, [open, updateMpState]);
 
-  // Listen for line clears → send garbage to opponent.
-  useEffect(() => {
-    if (mpState !== 'playing') return;
-    const onLines = (e: Event) => {
-      const ev = e as CustomEvent<{ cleared?: number }>;
-      const cleared = ev.detail?.cleared ?? 0;
-      if (cleared < 1) return;
-      // Backend converts cleared lines to garbage via linesToGarbage().
-      // It ignores singles (cleared < 2), so we just forward the raw count.
-      socketRef.current?.emit('game:lines', { cleared });
-    };
-    window.addEventListener('nf-lines-cleared', onLines as EventListener);
-    return () => window.removeEventListener('nf-lines-cleared', onLines as EventListener);
-  }, [mpState]);
-
-  // S8.24.3: Board-send effect moved to NeonfallApp (this dialog closes
-  // when playing starts, which would clean up the effect and stop board
-  // updates. NeonfallApp stays mounted and keeps sending.)
-
-  // Listen for our own game-over → notify opponent.
-  useEffect(() => {
-    if (mpState !== 'playing') return;
-    const goEl = document.getElementById('game-over-screen');
-    if (!goEl) return;
-    const observer = new MutationObserver(() => {
-      if (goEl.classList.contains('visible')) {
-        socketRef.current?.emit('game:over');
-        updateMpState('result');
-      }
-    });
-    observer.observe(goEl, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, [mpState]);
+  // S8.24.3a: All playing-phase effects (garbage-send, board-send,
+  // game-over, opponent event listeners) moved to NeonfallApp. The dialog
+  // closes when playing starts — these effects would be cleaned up.
 
   // Render opponent board preview on canvas.
   useEffect(() => {

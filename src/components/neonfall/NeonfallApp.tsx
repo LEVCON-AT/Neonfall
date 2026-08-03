@@ -73,9 +73,6 @@ export function NeonfallApp() {
   );
 
   // S8.24.3: Send board updates to opponent while playing.
-  // This was previously in MultiplayerDialog but the dialog closes when
-  // playing starts → effect was cleaned up → no board updates sent.
-  // Now it lives in NeonfallApp which stays mounted.
   useEffect(() => {
     if (!mpPlaying) return;
     let lastSend = 0;
@@ -92,6 +89,79 @@ export function NeonfallApp() {
     };
     window.addEventListener('nf-board-updated', onBoardUpdate);
     return () => window.removeEventListener('nf-board-updated', onBoardUpdate);
+  }, [mpPlaying]);
+
+  // S8.24.3a: Receive opponent events while playing. These were previously
+  // in MultiplayerDialog but the dialog closes when playing starts → socket
+  // disconnects → events lost. Now NeonfallApp handles them via shared socket.
+  useEffect(() => {
+    if (!mpPlaying || !mpSocketRef.current) return;
+    const sock = mpSocketRef.current;
+
+    const onGarbage = (data: { count: number }) => {
+      try { (window as unknown as { __nfAddGarbage?: (n: number) => void }).__nfAddGarbage?.(data.count); } catch {}
+    };
+
+    const onBoard = (data: { board: number[][] }) => {
+      setOpponentData(prev => ({ name: prev.name, board: data.board }));
+    };
+
+    const onWin = () => {
+      setMpPlaying(false);
+      setMultiplayerOpen(true);
+    };
+
+    const onLeft = () => {
+      setMpPlaying(false);
+      setMultiplayerOpen(true);
+    };
+
+    const onRestart = () => {
+      try { (window as unknown as { __nfRestart?: () => void }).__nfRestart?.(); } catch {}
+    };
+
+    sock.on('opponent:garbage', onGarbage);
+    sock.on('opponent:board', onBoard);
+    sock.on('opponent:win', onWin);
+    sock.on('opponent:left', onLeft);
+    sock.on('opponent:restart', onRestart);
+
+    return () => {
+      sock.off('opponent:garbage', onGarbage);
+      sock.off('opponent:board', onBoard);
+      sock.off('opponent:win', onWin);
+      sock.off('opponent:left', onLeft);
+      sock.off('opponent:restart', onRestart);
+    };
+  }, [mpPlaying]);
+
+  // S8.24.3a: Send garbage to opponent on line clears.
+  useEffect(() => {
+    if (!mpPlaying) return;
+    const onLines = (e: Event) => {
+      const ev = e as CustomEvent<{ cleared?: number }>;
+      const cleared = ev.detail?.cleared ?? 0;
+      if (cleared < 1) return;
+      mpSocketRef.current?.emit('game:lines', { cleared });
+    };
+    window.addEventListener('nf-lines-cleared', onLines as EventListener);
+    return () => window.removeEventListener('nf-lines-cleared', onLines as EventListener);
+  }, [mpPlaying]);
+
+  // S8.24.3a: Notify opponent on game over.
+  useEffect(() => {
+    if (!mpPlaying) return;
+    const goEl = document.getElementById('game-over-screen');
+    if (!goEl) return;
+    const observer = new MutationObserver(() => {
+      if (goEl.classList.contains('visible')) {
+        mpSocketRef.current?.emit('game:over');
+        setMpPlaying(false);
+        setMultiplayerOpen(true);
+      }
+    });
+    observer.observe(goEl, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
   }, [mpPlaying]);
 
   return (

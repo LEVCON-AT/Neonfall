@@ -422,34 +422,39 @@ body.nf-playing::after { animation-play-state: paused !important; }
   display: none !important;
 }
 
-/* S8.24.3: OpponentPanel is position:fixed (like footer/topbar) so it
-   doesn't disturb the game's body flex layout. Positioned right of the
-   game-container on desktop, below it on mobile. */
+/* S8.24.3b: OpponentPanel — position:fixed, draggable, with grip handle */
 .nf-opponent-panel {
   position: fixed;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 8px 6px;
+  padding: 8px 6px 6px;
   background: rgba(14,14,26,0.96);
   backdrop-filter: blur(12px) saturate(150%);
   -webkit-backdrop-filter: blur(12px) saturate(150%);
   border: 1px solid rgba(244,114,182,0.2);
   border-radius: 12px;
   z-index: 25;
-  /* Desktop: right of game-container */
-  right: max(8px, env(safe-area-inset-right));
-  top: 50%;
-  transform: translateY(-50%);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.nf-opponent-drag-handle {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  cursor: grab;
+  color: rgba(156, 163, 255, 0.5);
+  padding: 2px;
+  transition: opacity 0.2s;
+  pointer-events: auto;
+}
+.nf-opponent-drag-handle:active {
+  cursor: grabbing;
 }
 @media (max-width: 699px) {
   .nf-opponent-panel {
-    /* Mobile: bottom-right, smaller, above footer */
-    top: auto;
-    bottom: calc(42px + env(safe-area-inset-bottom, 0px));
-    right: 4px;
-    transform: none;
     max-height: 40vh;
   }
 }
