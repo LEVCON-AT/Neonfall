@@ -26,6 +26,21 @@ export const SHELL_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
+}
+/* S8.24.5: 1v1 Multiplayer indicator in the control button bar */
+#nf-mp-indicator {
+    position: fixed;
+    top: max(8px, env(safe-area-inset-top));
+    left: calc(max(8px, env(safe-area-inset-left)) + 84px);
+    color: #f472b6;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 0 4px rgba(244,114,182,0.4));
+    z-index: 20;
+    pointer-events: none;
     z-index: 20;
     opacity: 0.6;
     font-family: var(--font-space-grotesk), sans-serif;

@@ -309,6 +309,13 @@ body.nf-playing::after { animation-play-state: paused !important; }
   gap: 8px;
   width: 100%;
 }
+/* S8.24.4-fix: MpNameDialog form — same layout as nf-mp-join (stacked, gap) */
+.nf-mp-name-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
 .nf-mp-code-input {
   width: 100%;
   text-align: center;

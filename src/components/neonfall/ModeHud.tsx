@@ -15,7 +15,7 @@ export function ModeHud() {
   const ultraRemaining = useGameStore((s) => s.ultraRemaining);
 
   const visible =
-    (mode === 'sprint' || mode === 'ultra' || mode === 'multiplayer') && status !== 'gameover';
+    (mode === 'sprint' || mode === 'ultra') && status !== 'gameover';
 
   return (
     <AnimatePresence>
@@ -33,9 +33,6 @@ export function ModeHud() {
           )}
           {mode === 'ultra' && (
             <UltraChip seconds={ultraRemaining} />
-          )}
-          {mode === 'multiplayer' && (
-            <MultiplayerChip />
           )}
         </motion.div>
       )}

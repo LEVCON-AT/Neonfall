@@ -1986,7 +1986,25 @@ export const GAME_SCRIPT = `
     // Expose hooks for the React multiplayer layer.
     window.__nfAddGarbage = (count) => { pendingGarbage += Math.max(0, count | 0); };
     window.__nfResetGarbage = () => { pendingGarbage = 0; };
-    window.__nfGetBoard = () => board.map(row => row.slice());
+    // S8.24.3a-fix: Return board WITH the current falling piece merged in,
+    //   so the opponent sees the falling piece in real-time.
+    window.__nfGetBoard = () => {
+        const snapshot = board.map(row => row.slice());
+        if (player && player.matrix && player.pos) {
+            player.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        const by = y + player.pos.y;
+                        const bx = x + player.pos.x;
+                        if (by >= 0 && by < ROWS && bx >= 0 && bx < COLS) {
+                            snapshot[by][bx] = value;
+                        }
+                    }
+                });
+            });
+        }
+        return snapshot;
+    };
     window.__nfRestart = () => restartGame();
     window.__nfNextPreview = (n) => {
         nextPreviewCount = Math.max(1, Math.min(3, n | 0));

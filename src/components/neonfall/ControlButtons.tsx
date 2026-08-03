@@ -1,6 +1,7 @@
 'use client';
 
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Swords } from 'lucide-react';
+import { useGameStore } from '@/lib/store/game-store';
 
 /**
  * Inline SVG strings for the game-controlled buttons.
@@ -37,6 +38,8 @@ const GAME_SVG = {
  * multiplayer button was never wired in the current shell.
  */
 export function ControlButtons() {
+  const mode = useGameStore((s) => s.mode);
+
   return (
     <>
       {/* Game-controlled buttons (IIFE overwrites innerHTML on state change) */}
@@ -58,13 +61,18 @@ export function ControlButtons() {
         dangerouslySetInnerHTML={{ __html: GAME_SVG.volOn }}
       />
 
+      {/* S8.24.5: 1v1 indicator — only visible in multiplayer mode.
+          Placed in the control button bar so it doesn't take extra space. */}
+      {mode === 'multiplayer' && (
+        <div id="nf-mp-indicator" aria-label="Multiplayer 1v1" title="1v1 Multiplayer">
+          <Swords size={14} aria-hidden="true" />
+        </div>
+      )}
+
       {/* Shell-controlled button (lucide icon, wired by initShell) */}
       <button id="nf-stats-btn" aria-label="Statistik öffnen" title="Statistik">
         <BarChart3 size={18} aria-hidden="true" />
       </button>
-      {/* S8.21.1: Removed #nf-online-dot — the green status indicator was
-          visually distracting and provided no real value (the app always
-          works offline thanks to the service worker). */}
     </>
   );
 }
