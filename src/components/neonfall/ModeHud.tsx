@@ -1,17 +1,12 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Timer } from 'lucide-react';
+import { Zap, Timer, Swords } from 'lucide-react';
 import { useGameStore } from '@/lib/store/game-store';
 
 /**
- * Mode-aware HUD chip — appears below the top-bar during Sprint and Ultra
- * modes. Shows either:
- *  - Sprint: progress towards 40 lines (e.g. "12 / 40") with a neon bar
- *  - Ultra:  a live 3:00 countdown (e.g. "2:47") that turns red under 30s
- *
- * Marathon and Zen don't show a chip — the LINES stat in the top bar already
- * conveys progress and there's no time pressure.
+ * Mode-aware HUD chip — appears below the top-bar during Sprint, Ultra,
+ * and Multiplayer modes.
  */
 export function ModeHud() {
   const mode = useGameStore((s) => s.mode);
@@ -20,7 +15,7 @@ export function ModeHud() {
   const ultraRemaining = useGameStore((s) => s.ultraRemaining);
 
   const visible =
-    (mode === 'sprint' || mode === 'ultra') && status !== 'gameover';
+    (mode === 'sprint' || mode === 'ultra' || mode === 'multiplayer') && status !== 'gameover';
 
   return (
     <AnimatePresence>
@@ -38,6 +33,9 @@ export function ModeHud() {
           )}
           {mode === 'ultra' && (
             <UltraChip seconds={ultraRemaining} />
+          )}
+          {mode === 'multiplayer' && (
+            <MultiplayerChip />
           )}
         </motion.div>
       )}
@@ -75,6 +73,15 @@ function UltraChip({ seconds }: { seconds: number }) {
       <Timer size={12} aria-hidden="true" />
       <span className="nf-mode-hud-label">ULTRA</span>
       <span className="nf-mode-hud-value nf-mode-hud-time">{timeStr}</span>
+    </div>
+  );
+}
+
+function MultiplayerChip() {
+  return (
+    <div className="nf-mode-hud-inner" data-mode="multiplayer">
+      <Swords size={12} aria-hidden="true" />
+      <span className="nf-mode-hud-label">1v1</span>
     </div>
   );
 }

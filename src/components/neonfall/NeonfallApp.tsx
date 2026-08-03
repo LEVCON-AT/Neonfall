@@ -205,7 +205,16 @@ export function NeonfallApp() {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenModeSelect={() => setModeDialogOpen(true)}
         onOpenLeaderboard={() => setLeaderboardOpen(true)}
-        onOpenMultiplayer={() => setMultiplayerOpen(true)}
+        onOpenMultiplayer={() => {
+          // S8.24.4: Check if player has a name. If not, open NameInputDialog first.
+          // The NameInputDialog saves the name, then the user can open Multiplayer again.
+          const name = localStorage.getItem('neonfall_player_name');
+          if (!name) {
+            setNameInputOpen(true);
+          } else {
+            setMultiplayerOpen(true);
+          }
+        }}
       />
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
@@ -221,8 +230,14 @@ export function NeonfallApp() {
         onOpenChange={setMultiplayerOpen}
         onMpStateChange={(state) => {
           setMpPlaying(state === 'playing');
-          if (state === 'playing') setMultiplayerOpen(false);
-          if (state === 'lobby' || state === 'result') setMultiplayerOpen(true);
+          if (state === 'playing') {
+            setMultiplayerOpen(false);
+            useGameStore.getState().setMode('multiplayer');
+          }
+          if (state === 'lobby' || state === 'result') {
+            setMultiplayerOpen(true);
+            useGameStore.getState().setMode('marathon');
+          }
         }}
         onOpponentData={setOpponentData}
         socketRef={mpSocketRef}

@@ -1,6 +1,6 @@
 // Shared NEONFALL types — used across components, stores, and API routes.
 
-export type GameMode = 'marathon' | 'sprint' | 'ultra' | 'zen';
+export type GameMode = 'marathon' | 'sprint' | 'ultra' | 'zen' | 'multiplayer';
 
 export type GameStatus =
   | 'idle'         // hint visible, waiting for first tap
@@ -100,6 +100,12 @@ export const GAME_MODES: Record<
     description: 'Entspanntes Spiel ohne Game Over — perfekt zum Üben.',
     icon: 'Sparkles',
     goal: 'Ohne Ende',
+  },
+  multiplayer: {
+    label: '1v1',
+    description: 'Tritt gegen einen Freund an.',
+    icon: 'Swords',
+    goal: 'Gegner besiegen',
   },
 };
 
