@@ -415,6 +415,61 @@ body.nf-playing::after { animation-play-state: paused !important; }
   transform: translateY(0);
   pointer-events: auto;
 }
+
+/* ===== S8.24.1: Opponent Panel (Multiplayer) ===== */
+/* Normales DOM-Element neben dem Spielfeld — kein Dialog/Overlay. */
+.nf-opponent-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px;
+  background: rgba(14,14,26,0.96);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(244,114,182,0.2);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.nf-opponent-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.nf-opponent-label {
+  font-size: 0.55em;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #9ca3ff;
+}
+.nf-opponent-name {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  color: #f472b6;
+  font-size: 0.8em;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nf-opponent-canvas {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  background: #08080f;
+  width: 96px;
+  height: 192px;
+}
+.nf-opponent-leave-btn {
+  font-size: 0.7em !important;
+  color: #9ca3ff !important;
+  padding: 4px 8px !important;
+  height: auto !important;
+}
+.nf-opponent-leave-btn:hover {
+  color: #fb7185 !important;
+}
+
 .nf-footer-inner {
   display: flex;
   align-items: center;
