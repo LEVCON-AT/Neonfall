@@ -23,6 +23,7 @@ import { GameModeDialog } from './dialogs/GameModeDialog';
 import { LeaderboardDialog } from './dialogs/LeaderboardDialog';
 import { NameInputDialog } from './dialogs/NameInputDialog';
 import { MultiplayerDialog } from './dialogs/MultiplayerDialog';
+import { MpNameDialog } from './dialogs/MpNameDialog';
 import { HintDialog } from './dialogs/HintDialog';
 import { PauseDialog } from './dialogs/PauseDialog';
 import { GameOverDialog } from './dialogs/GameOverDialog';
@@ -44,6 +45,7 @@ export function NeonfallApp() {
   const [modeDialogOpen, setModeDialogOpen] = useState(false);
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [nameInputOpen, setNameInputOpen] = useState(false);
+  const [mpNameOpen, setMpNameOpen] = useState(false);
   const [multiplayerOpen, setMultiplayerOpen] = useState(false);
   const [mpPlaying, setMpPlaying] = useState(false);
   const [opponentData, setOpponentData] = useState<{ name: string; board: number[][] | null }>({ name: '', board: null });
@@ -233,11 +235,9 @@ export function NeonfallApp() {
         onOpenModeSelect={() => setModeDialogOpen(true)}
         onOpenLeaderboard={() => setLeaderboardOpen(true)}
         onOpenMultiplayer={() => {
-          // S8.24.4: Check if player has a name. If not, open NameInputDialog first.
-          // The NameInputDialog saves the name, then the user can open Multiplayer again.
           const name = localStorage.getItem('neonfall_player_name');
           if (!name) {
-            setNameInputOpen(true);
+            setMpNameOpen(true);
           } else {
             setMultiplayerOpen(true);
           }
@@ -252,6 +252,11 @@ export function NeonfallApp() {
         initialMode={mode}
       />
       <NameInputDialog open={nameInputOpen} onOpenChange={setNameInputOpen} />
+      <MpNameDialog
+        open={mpNameOpen}
+        onOpenChange={setMpNameOpen}
+        onNameSet={() => setMultiplayerOpen(true)}
+      />
       <MultiplayerDialog
         open={multiplayerOpen}
         onOpenChange={setMultiplayerOpen}

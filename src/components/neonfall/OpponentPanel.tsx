@@ -145,7 +145,7 @@ export function OpponentPanel({ opponentName, opponentBoard, onLeave }: Opponent
       {/* Drag handle — always visible (dezent), brighter on hover/drag */}
       <div
         className="nf-opponent-drag-handle"
-        style={{ opacity: isDragging ? 1 : showGrip ? 0.8 : 0.4 }}
+        style={{ opacity: isDragging ? 1 : showGrip ? 0.9 : 0.6 }}
         onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
         onTouchStart={(e) => { if (e.touches[0]) handleDragStart(e.touches[0].clientX, e.touches[0].clientY); }}
       >

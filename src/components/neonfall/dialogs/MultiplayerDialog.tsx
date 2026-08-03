@@ -70,11 +70,29 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
   //   (open=false), cleanup disconnected it → no events during playing.
   useEffect(() => {
     if (!open) return;
-    const sock = sharedSocketRef?.current;
-    if (!sock) {
-      toast.error('Nicht verbunden', { description: 'Multiplayer-Service nicht bereit.' });
-      return;
-    }
+
+    // S8.24.3a-fix: Wait for socket to be ready (NeonfallApp creates it
+    //   asynchronously in its own useEffect). Retry up to 10 times with
+    //   100ms delay = 1 second max wait.
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const tryConnect = () => {
+      const sock = sharedSocketRef?.current;
+      if (sock) {
+        setupListeners(sock);
+        return;
+      }
+      attempts++;
+      if (attempts < 10) {
+        timer = setTimeout(tryConnect, 100);
+      } else {
+        toast.error('Nicht verbunden', { description: 'Multiplayer-Service nicht erreichbar.' });
+        updateMpState('lobby');
+      }
+    };
+
+    const setupListeners = (sock: Socket) => {
 
     // S7.7: Connection error handling
     sock.on('connect_error', (err: Error) => {
@@ -106,14 +124,19 @@ export function MultiplayerDialog({ open, onOpenChange, onMpStateChange, onOppon
       toast.error('Multiplayer-Fehler', { description: msg });
       updateMpState('lobby');
     });
+    }; // end setupListeners
+
+    tryConnect();
 
     return () => {
-      // S8.24.3a: Don't disconnect socket — NeonfallApp owns it.
-      // Only remove dialog-specific listeners.
-      sock.off('connect_error');
-      sock.off('connect_timeout');
-      sock.off('opponent:joined');
-      sock.off('error');
+      if (timer) clearTimeout(timer);
+      const sock = sharedSocketRef?.current;
+      if (sock) {
+        sock.off('connect_error');
+        sock.off('connect_timeout');
+        sock.off('opponent:joined');
+        sock.off('error');
+      }
       mpStateRef.current = 'lobby';
     };
   }, [open, updateMpState, sharedSocketRef]);
