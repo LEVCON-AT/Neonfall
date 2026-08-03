@@ -89,10 +89,12 @@ export function NeonfallApp() {
       <HoldNextBar />
       <ControlButtons />
 
-      {/* S8.24.2: Game + OpponentPanel side by side when multiplayer is active */}
-      <div className={mpPlaying ? 'nf-game-with-opponent' : undefined}>
-        <GameCanvas />
-        {mpPlaying && (
+      {/* S8.24.2: Game + OpponentPanel side by side when multiplayer is active.
+          Without mpPlaying, no wrapper class is applied — GameCanvas renders
+          exactly as before (no layout change). */}
+      {mpPlaying ? (
+        <div className="nf-game-with-opponent">
+          <GameCanvas />
           <OpponentPanel
             opponentName={opponentData.name}
             opponentBoard={opponentData.board}
@@ -101,8 +103,10 @@ export function NeonfallApp() {
               setMultiplayerOpen(true);
             }}
           />
-        )}
-      </div>
+        </div>
+      ) : (
+        <GameCanvas />
+      )}
 
       <ShellOverlays />
 
