@@ -141,10 +141,12 @@ export function NeonfallApp() {
       }
     };
   }, [multiplayerOpen, mpPlaying]);
+
+  // S8.24.3: Send board updates — always registered, uses mpPlayingRef guard.
   useEffect(() => {
-    if (!mpPlaying) return;
     let lastSend = 0;
     const onBoardUpdate = () => {
+      if (!mpPlayingRef.current) return;
       const now = Date.now();
       if (now - lastSend < 100) return;
       lastSend = now;
@@ -157,16 +159,16 @@ export function NeonfallApp() {
     };
     window.addEventListener('nf-board-updated', onBoardUpdate);
     return () => window.removeEventListener('nf-board-updated', onBoardUpdate);
-  }, [mpPlaying]);
+  }, []); // Always active — uses mpPlayingRef for guard
 
   // S8.24.3a: All opponent event listeners are now registered directly in
   //   the socket-creation Effect above — guarantees they're active before
   //   any event arrives. No separate Effect needed.
 
-  // S8.24.3a: Send garbage to opponent on line clears.
+  // S8.24.3a: Send garbage to opponent on line clears — always registered.
   useEffect(() => {
-    if (!mpPlaying) return;
     const onLines = (e: Event) => {
+      if (!mpPlayingRef.current) return;
       const ev = e as CustomEvent<{ cleared?: number }>;
       const cleared = ev.detail?.cleared ?? 0;
       if (cleared < 1) return;
@@ -174,14 +176,14 @@ export function NeonfallApp() {
     };
     window.addEventListener('nf-lines-cleared', onLines as EventListener);
     return () => window.removeEventListener('nf-lines-cleared', onLines as EventListener);
-  }, [mpPlaying]);
+  }, []);
 
-  // S8.24.3a: Notify opponent on game over.
+  // S8.24.3a: Notify opponent on game over — always registered.
   useEffect(() => {
-    if (!mpPlaying) return;
     const goEl = document.getElementById('game-over-screen');
     if (!goEl) return;
     const observer = new MutationObserver(() => {
+      if (!mpPlayingRef.current) return;
       if (goEl.classList.contains('visible')) {
         mpSocketRef.current?.emit('game:over');
         setMpPlaying(false);
@@ -190,7 +192,7 @@ export function NeonfallApp() {
     });
     observer.observe(goEl, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
-  }, [mpPlaying]);
+  }, []);
 
   return (
     <>
