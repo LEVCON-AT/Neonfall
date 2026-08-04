@@ -122,11 +122,19 @@ export function NeonfallApp() {
     return () => window.removeEventListener('nf-board-updated', onBoardUpdate);
   }, [mpPlaying]);
 
-  // S8.24.3a: Receive opponent events. Registered as soon as the socket
-  // exists (not waiting for mpPlaying) so no events are lost during the
-  // transition from dialog-close to playing.
+  // S8.24.3a: Receive opponent events. Re-registers when socket changes.
+  // Uses a state to trigger re-render when socket is created.
+  const [socketReady, setSocketReady] = useState(false);
   useEffect(() => {
-    if (!mpSocketRef.current) return;
+    requestAnimationFrame(() => {
+      if (mpSocketRef.current) {
+        setSocketReady(true);
+      }
+    });
+  }, [multiplayerOpen, mpPlaying]);
+
+  useEffect(() => {
+    if (!socketReady || !mpSocketRef.current) return;
     const sock = mpSocketRef.current;
 
     const onGarbage = (data: { count: number }) => {
@@ -177,7 +185,7 @@ export function NeonfallApp() {
       sock.off('opponent:left', onLeft);
       sock.off('opponent:restart', onRestart);
     };
-  }, []); // Register once when socket is created (ref accessed in effect)
+  }, [socketReady]); // Re-register when socket becomes ready
 
   // S8.24.3a: Send garbage to opponent on line clears.
   useEffect(() => {
