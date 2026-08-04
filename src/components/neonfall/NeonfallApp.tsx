@@ -96,6 +96,43 @@ export function NeonfallApp() {
     });
     mpSocketRef.current = sock;
 
+    // S8.24.3a-fix: Register opponent:joined IMMEDIATELY when socket is
+    //   created — not in a separate Effect. This guarantees the listener
+    //   is active before any opponent:joined event arrives (e.g. when the
+    //   joiner's room:join callback triggers the backend to emit
+    //   opponent:joined with the host's name).
+    sock.on('opponent:joined', (data: { playerName: string }) => {
+      setOpponentData(prev => ({ name: data.playerName, board: prev.board }));
+    });
+
+    // S8.24.3a-fix: Also register opponent:board immediately — the
+    //   opponent's board updates start arriving as soon as both players
+    //   are in 'playing' state.
+    sock.on('opponent:board', (data: { board: (number | string)[][] }) => {
+      setOpponentData(prev => ({ name: prev.name, board: data.board }));
+    });
+
+    // S8.24.3a-fix: opponent:garbage — applies garbage to our board.
+    sock.on('opponent:garbage', (data: { count: number }) => {
+      if (!mpPlayingRef.current) return;
+      try { (window as unknown as { __nfAddGarbage?: (n: number) => void }).__nfAddGarbage?.(data.count); } catch {}
+    });
+
+    // S8.24.3a-fix: opponent:win / opponent:left / opponent:restart
+    sock.on('opponent:win', () => {
+      if (!mpPlayingRef.current) return;
+      setMpPlaying(false);
+      setMultiplayerOpen(true);
+    });
+    sock.on('opponent:left', () => {
+      if (!mpPlayingRef.current) return;
+      setMpPlaying(false);
+      setMultiplayerOpen(true);
+    });
+    sock.on('opponent:restart', () => {
+      try { (window as unknown as { __nfRestart?: () => void }).__nfRestart?.(); } catch {}
+    });
+
     return () => {
       // Only disconnect when BOTH multiplayer dialog is closed AND not playing
       if (!multiplayerOpen && !mpPlaying) {
@@ -122,70 +159,9 @@ export function NeonfallApp() {
     return () => window.removeEventListener('nf-board-updated', onBoardUpdate);
   }, [mpPlaying]);
 
-  // S8.24.3a: Receive opponent events. Re-registers when socket changes.
-  // Uses a state to trigger re-render when socket is created.
-  const [socketReady, setSocketReady] = useState(false);
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      if (mpSocketRef.current) {
-        setSocketReady(true);
-      }
-    });
-  }, [multiplayerOpen, mpPlaying]);
-
-  useEffect(() => {
-    if (!socketReady || !mpSocketRef.current) return;
-    const sock = mpSocketRef.current;
-
-    const onGarbage = (data: { count: number }) => {
-      if (!mpPlayingRef.current) return;
-      try { (window as unknown as { __nfAddGarbage?: (n: number) => void }).__nfAddGarbage?.(data.count); } catch {}
-    };
-
-    const onBoard = (data: { board: (number | string)[][] }) => {
-      setOpponentData(prev => ({ name: prev.name, board: data.board }));
-    };
-
-    // S8.24.3a-fix: Also listen for opponent:joined — the joiner goes to
-    //   'playing' immediately but the host's name arrives via this event.
-    //   The dialog's listener is cleaned up when it closes, so NeonfallApp
-    //   must handle it to ensure the name is set.
-    const onJoined = (data: { playerName: string }) => {
-      setOpponentData(prev => ({ name: data.playerName, board: prev.board }));
-    };
-
-    const onWin = () => {
-      if (!mpPlayingRef.current) return;
-      setMpPlaying(false);
-      setMultiplayerOpen(true);
-    };
-
-    const onLeft = () => {
-      if (!mpPlayingRef.current) return;
-      setMpPlaying(false);
-      setMultiplayerOpen(true);
-    };
-
-    const onRestart = () => {
-      try { (window as unknown as { __nfRestart?: () => void }).__nfRestart?.(); } catch {}
-    };
-
-    sock.on('opponent:joined', onJoined);
-    sock.on('opponent:garbage', onGarbage);
-    sock.on('opponent:board', onBoard);
-    sock.on('opponent:win', onWin);
-    sock.on('opponent:left', onLeft);
-    sock.on('opponent:restart', onRestart);
-
-    return () => {
-      sock.off('opponent:joined', onJoined);
-      sock.off('opponent:garbage', onGarbage);
-      sock.off('opponent:board', onBoard);
-      sock.off('opponent:win', onWin);
-      sock.off('opponent:left', onLeft);
-      sock.off('opponent:restart', onRestart);
-    };
-  }, [socketReady]); // Re-register when socket becomes ready
+  // S8.24.3a: All opponent event listeners are now registered directly in
+  //   the socket-creation Effect above — guarantees they're active before
+  //   any event arrives. No separate Effect needed.
 
   // S8.24.3a: Send garbage to opponent on line clears.
   useEffect(() => {
